@@ -1165,7 +1165,9 @@ const CONFIG = {
     quad:     { hp: 6,  speed: 55,  dmg: 8,  atk: 0.60,range: 16,  r: 4,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, kamikaze: true, splash: 12, real: 'Quadcopter loitering munition' }
   },
   BUILDINGS: {
-    camp:    { hp: 1800, r: 40, armor: 'fortified', capturable: true },
+    /* A field headquarters, not a fortress: 1100 HP keeps the capture loop
+       (suppress, then hold with infantry) inside one tactical push. */
+    camp:    { hp: 1100, r: 40, armor: 'fortified', capturable: true },
     /* A bunker should stop infantry cold but still need armour or ATGM fire to
        crack: 200 HP, 6.5 dps vs infantry, negligible damage from rifles. */
     tower:   { hp: 200, r: 14, dmg: 4,  atk: 0.55,range: 150, hitsGround: true,  hitsAir: false, dmgType: 'autocannon', armor: 'structure' },

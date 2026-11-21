@@ -1,0 +1,10 @@
+.tmpcheck/
+node_modules/
+dist/
+index.backup-*.html
+index.html.bak-*
+*.bak-*
+.DS_Store
+.env
+.env.*
+!.env.example

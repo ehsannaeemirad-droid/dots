@@ -5047,11 +5047,27 @@ function updateObjectives() {
   /* Any player can win by completing their own objectives once the opening
      ten minutes are over. The conditions themselves require real actions. */
   let winner = null;
+  const finishers = [];
   for (const p of world.players) {
     if (!p.alive) continue;
     p.objs = objectivesFor(p);
     p.objDone = p.objs.filter(o => o.done).length;
-    if (p.objs.length && p.objDone === p.objs.length) winner = p;
+    if (p.objs.length && p.objDone === p.objs.length) {
+      /* Stamp the tick this player first completed every objective. A clock
+         that later breaks (a city lost) clears the stamp, so re-completion is
+         timed from scratch instead of inheriting the earlier tick. */
+      if (p.objWonT == null) p.objWonT = world.time;
+      finishers.push(p);
+    } else p.objWonT = null;
+  }
+  /* Deterministic tiebreak, so victory never depends on roster order alone:
+     earliest completion wins; a same-tick finish goes to the most cities,
+     then the largest treasury, then the lower faction index. */
+  if (finishers.length) {
+    finishers.sort((a, b) =>
+      (a.objWonT - b.objWonT) || (cityCount(b) - cityCount(a)) ||
+      (b.cents - a.cents) || (a.idx - b.idx));
+    winner = finishers[0];
   }
   /* Keep an open objectives panel counting down instead of freezing the timer
      at the moment it was opened. */
@@ -6670,7 +6686,8 @@ function openObjectivesModal() {
         </div>
       </div>`;
     }).join('')}
-    <div class="dim" style="margin-top:10px">Defeat: your capital is captured and no city remains to host your government, which removes every remaining unit from play.</div>
+    <div class="dim" style="margin-top:10px">Simultaneous finish: the earliest completion wins. If two powers finish on the same tick, the most cities wins, then the largest treasury, then roster order.</div>
+    <div class="dim" style="margin-top:6px">Defeat: your capital is captured and no city remains to host your government, which removes every remaining unit from play.</div>
   `;
   $('objScr').classList.remove('hidden');
 }

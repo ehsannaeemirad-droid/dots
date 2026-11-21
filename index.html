@@ -4804,6 +4804,8 @@ function cityCount(p) {
    a 20-minute horizon: stay alive and lose no city for SURVIVE_T seconds. */
 const SURVIVE_T = 1200;
 const HOLD_T = 1200;          // every "hold for 20 minutes" condition
+/* How long the objectives panel explains a broken hold clock after a city loss. */
+const HOLD_LOSS_LABEL_T = 30;
 /* No strategic victory inside the opening ten minutes, in either direction:
    this is the guard that makes a three-minute AI win impossible. */
 const MIN_MATCH_T = 600;
@@ -4842,12 +4844,20 @@ function heldFor(p, id) { return (world.holdT && world.holdT[p.idx + ':' + id]) 
 function holdObj(p, id, title, names, desc) {
   const held = names.every(n => cityHeldBy(p, n));
   const secs = heldFor(p, id);
+  /* The clock is zeroed on the very tick a city falls, so the loss itself is
+     remembered with a timestamp and explained in the panel for a short window
+     instead of the timer silently jumping back to 20:00. */
+  const lostAt = (world.holdLost && world.holdLost[p.idx + ':' + id]) || 0;
+  const lostCity = !held ? (names.find(n => !cityHeldBy(p, n)) || names[0]) : null;
+  const lossText = (!held && lostAt && (world.time - lostAt) <= HOLD_LOSS_LABEL_T)
+    ? 'Lost: ' + lostCity + ' \u2014 timer reset to 20:00'
+    : null;
   return {
     id: id, ic: 'HLD', title: title,
     desc: (desc || ('Hold ' + names.join(' and ') + ' for 20 minutes.')) + ' Losing one of them resets the clock.',
     done: secs >= HOLD_T, prog: Math.round(secs), target: HOLD_T,
     timed: true, timeLeft: Math.max(0, HOLD_T - secs),
-    holding: held, fail: !held && secs > 0,
+    holding: held, fail: !!lossText, lossText: lossText,
     stateText: held ? 'holding' : 'not held'
   };
 }
@@ -5007,9 +5017,14 @@ function updateObjectives() {
   /* Every "hold for N minutes" clock is accumulated here, keyed by player and
      condition. A lost city zeros its clock, which is the documented reset. */
   world.holdT = world.holdT || {};
+  world.holdLost = world.holdLost || {};
   const bump = (p, key, on) => {
     const k = p.idx + ':' + key;
-    world.holdT[k] = on ? (world.holdT[k] || 0) + CFG.DT : 0;
+    const prev = world.holdT[k] || 0;
+    world.holdT[k] = on ? prev + CFG.DT : 0;
+    /* Remember when a running clock broke, so openObjectivesModal() can say why
+       the timer reset rather than only showing it back at 20:00. */
+    if (!on && prev > 0) world.holdLost[k] = world.time;
   };
   if (world.mode === 'real') {
     const hzb = world.players.find(p => p.alive && p.country === 'HZB');
@@ -6670,6 +6685,7 @@ function openObjectivesModal() {
       const pct = clamp(o.prog / o.target, 0, 1) * 100;
       let val;
       if (o.done) val = 'complete';
+      else if (o.lossText) val = o.lossText;
       else if (o.fail) val = 'city lost — clock reset';
       else if (o.id === 'sau_win') val = 'Leading: ' + fmtTime(o.prog) + ' / 20m';
       else if (o.timed) val = fmtTime(o.timeLeft) + (o.timerPaused ? ' · clock paused' : ' remaining');

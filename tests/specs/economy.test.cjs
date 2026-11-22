@@ -35,6 +35,49 @@ module.exports = {
     check.ok(loss.after < loss.before, 'losing two cities lowers income', loss);
     check.ok(loss.share < 1, 'city share falls below 1 after the loss', loss.share);
 
+    /* Industrial infrastructure: mines are the only building that pays income.
+       Each mine is worth 9 cr/min; destroying it removes exactly that. */
+    await fresh();
+    const ind = await page.json(`(() => {
+      const me = GEOTEST.player('IRN');
+      const before = +me.eco.cpt.toFixed(1);
+      const built = [];
+      for (const d of world.deposits) {
+        if (built.length >= 2) break;
+        if (d.mineId) continue;
+        if (!canPlaceBuilding(me.idx, 'mine', d.x, d.y)) {
+          const b = placeBuilding(me.idx, 'mine', d.x, d.y);
+          if (b) built.push(b.id);
+        }
+      }
+      updateEconomy();
+      const withMines = +me.eco.cpt.toFixed(1);
+      const perMine = +((withMines - before) / Math.max(1, built.length)).toFixed(1);
+      for (const id of built) { const b = ent(id); if (b) b.dead = true; }
+      updateEconomy();
+      return { built: built.length, before, withMines, perMine, after: +me.eco.cpt.toFixed(1),
+        mineStream: +me.eco.mine.toFixed(1) };
+    })()`);
+    check.eq(ind.built, 2, 'two mines can be built on free deposits', ind);
+    check.near(ind.perMine, 9, 0.2, 'each mine adds 9 cr/min', ind);
+    check.near(ind.after, ind.before, 0.2, 'destroying the mines removes that income', ind);
+    check.eq(ind.mineStream, 0, 'the mine income stream is zero after the loss');
+
+    /* War must not silently change the income rate: there is no upkeep, and the
+       only war-specific money event is a one-off patron package later on. */
+    const warEco = await page.json(`(() => {
+      const me = GEOTEST.player('IRN'), foe = GEOTEST.player('ISR');
+      updateEconomy();
+      const before = +me.incomeCpt.toFixed(3);
+      const c0 = me.cents;
+      setRelation(me.idx, foe.idx, 'WAR', false);
+      GEOTEST.sim(30);
+      updateEconomy();
+      return { before, after: +me.incomeCpt.toFixed(3), gain: +((me.cents - c0) / 100).toFixed(1) };
+    })()`);
+    check.near(warEco.after, warEco.before, 0.01, 'declaring war does not change the income rate', warEco);
+    check.gt(warEco.gain, 30, 'a belligerent still earns its full income for the first 30 s', warEco);
+
     /* Spending guards: no negative treasury, unaffordable purchases refused. */
     const broke = await page.json(`(() => {
       const me = GEOTEST.player('IRN');

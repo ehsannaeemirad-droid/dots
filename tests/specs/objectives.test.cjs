@@ -54,6 +54,34 @@ module.exports = {
     check.gt(reset.before, 0, 'clock was running before the city fell');
     check.eq(reset.after, 0, 'losing a held city resets the clock to zero', reset);
 
+    /* Israel's card says "take and hold Tehran": a capture alone must not win. */
+    await page.eval(`GEOTEST.boot({ mode: 'real', diff: 'Normal', human: 'ISR',
+      countries: ['ISR','IRN'], seed: ${seed}, allAI: true })`);
+    await page.eval('for (const p of world.players) p.aiCtl = null;');
+    await page.json('GEOTEST.sim(61)');
+    await page.eval('GEOTEST.clearUnits()');
+    const isr = await page.json(`(() => {
+      const isr = GEOTEST.player('ISR'), irn = GEOTEST.player('IRN');
+      setRelation(isr.idx, irn.idx, 'WAR', false);
+      const tehran = GEOTEST.city('Tehran');
+      tehran.owner = isr.idx; refreshCityShares(); applyCityCaps();
+      const atCapture = objectivesFor(isr)[0];
+      GEOTEST.sim(30);
+      const at30 = objectivesFor(isr)[0];
+      GEOTEST.sim(155);
+      const at185 = objectivesFor(isr)[0];
+      tehran.owner = irn.idx; refreshCityShares(); applyCityCaps();
+      GEOTEST.sim(3);
+      const afterLoss = objectivesFor(isr)[0];
+      return { doneAtCapture: atCapture.done, prog30: at30.prog, done185: at185.done,
+        progAfterLoss: afterLoss.prog, target: atCapture.target };
+    })()`);
+    check.eq(isr.doneAtCapture, false, 'capturing Tehran alone does not complete the objective');
+    check.eq(isr.target, 180, 'the hold target is 180 s');
+    check.ok(isr.prog30 > 25 && isr.prog30 < 36, 'the hold clock runs after the capture', isr.prog30);
+    check.eq(isr.done185, true, 'holding Tehran for three minutes completes it');
+    check.eq(isr.progAfterLoss, 0, 'losing Tehran resets the hold clock', isr.progAfterLoss);
+
     /* Skirmish: one conquest objective, no hold timers. */
     const skm = await page.json(`(() => {
       GEOTEST.boot({ mode: 'classic', diff: 'Normal', human: 'IRN',

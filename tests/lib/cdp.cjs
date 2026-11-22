@@ -117,7 +117,9 @@ async function launch(opts = {}) {
   });
 
   const file = opts.file || 'index.html';
-  const url = 'file:///' + path.join(root, file).replace(/\\/g, '/') + '?test=' + Date.now();
+  /* opts.url loads a hosted page (deployment verification); the default is the
+     local game file, which is what every regression spec uses. */
+  const url = opts.url || ('file:///' + path.join(root, file).replace(/\\/g, '/') + '?test=' + Date.now());
   const loaded = new Promise(res => cdp.onceLoad = res);
   let loadResolve;
   const loadP = new Promise(res => { loadResolve = res; });

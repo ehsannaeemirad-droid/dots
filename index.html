@@ -4181,8 +4181,14 @@ function updateUnits() {
       u.face = Math.atan2(tgt.y - u.y, tgt.x - u.x);
       if (d <= u.range) {
         if (u.kamikaze) {
-          splashDamage(u.x, u.y, u.splash || 40, u.dmg, u, 1.5);
-          world.effects.push({ k: 'boom', x: u.x, y: u.y, r: u.splash || 40, t: 0.35, maxT: 0.35, color: '#ff7b3a' });
+          /* Detonate against the target's edge, not at the drone's own position:
+             a camp (r=40) is wider than the 38 px blast, so a blast centred on
+             the drone that stopped at attack range never touched the structure. */
+          const ang = Math.atan2(tgt.y - u.y, tgt.x - u.x);
+          const bx = tgt.x - Math.cos(ang) * tgt.r * 0.9;
+          const by = tgt.y - Math.sin(ang) * tgt.r * 0.9;
+          splashDamage(bx, by, u.splash || 40, u.dmg, u, 1.5);
+          world.effects.push({ k: 'boom', x: bx, y: by, r: u.splash || 40, t: 0.35, maxT: 0.35, color: '#ff7b3a' });
           u.dead = true; world.ents.delete(u.id);
           SFX.play('boom');
           continue;
@@ -5165,10 +5171,16 @@ function objectivesFor(p) {
     case 'ISR': {
       const tehran = (world.cities || []).find(c => !c.razed && c.name === 'Tehran');
       const captured = !!tehran && tehran.owner === p.idx;
+      /* The card says "take and hold"; a capture alone used to satisfy it, so a
+         player who reached Tehran won at the earliest permitted second. */
+      const held = heldFor(p, 'isr_tehran');
+      const done = eliminated('PSE') || (captured && held >= 180);
       return [{
-        id: 'isr_win', ic: 'ELM', title: 'Eliminate Palestine, or capture Tehran',
-        desc: 'Destroy the Palestinian movement, or take and hold Tehran.',
-        done: eliminated('PSE') || captured, prog: captured ? 1 : 0, target: 1
+        id: 'isr_win', ic: 'ELM', title: 'Eliminate Palestine, or capture and hold Tehran',
+        desc: 'Destroy the Palestinian movement, or take Tehran and hold it for three minutes.',
+        done, prog: captured ? Math.round(Math.min(held, 180)) : 0, target: 180,
+        timed: captured, timeLeft: Math.max(0, 180 - held), timerPaused: !captured,
+        stateText: captured ? (held >= 180 ? 'held' : 'holding') : 'Tehran not taken'
       }];
     }
     case 'PSE': return [holdObj(p, 'pse_hold', 'Hold Ramallah and Gaza for 20 min', ['Ramallah', 'Gaza City'])];
@@ -5273,6 +5285,8 @@ function updateObjectives() {
       bump(p, 'irn_hormuz', !!(hz && hz.closed));
       /* Hold clocks are war clocks: they run only while this state is at war. */
       const war = atWar(p);
+      /* Israel's decapitation objective is a hold, not a touch. */
+      bump(p, 'isr_tehran', war && cityHeldBy(p, 'Tehran'));
       bump(p, 'pse_hold', war && holdableCity(p, 'Ramallah') && holdableCity(p, 'Gaza City'));
       bump(p, 'egy_hold', war && holdableCity(p, 'Cairo') && holdableCity(p, 'Suez'));
       bump(p, 'jor_hold', war && holdableCity(p, 'Amman'));

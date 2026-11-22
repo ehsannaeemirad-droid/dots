@@ -1102,7 +1102,11 @@ const CONFIG = {
   },
   DAMAGE: {
     TABLE: {
-      smallArms:  { infantry: 1.00, light: 0.35, armor: 0.05, air: 0.00, structure: 0.08, fortified: 0.03 },
+      /* Rifle fire must be able to grind down a capturable field HQ: a camp is
+         only taken after suppression, so a 0.03 multiplier made the whole
+         skirmish capture loop unreachable (measured 11-34 min of uninterrupted
+         rifle fire). Bunkers are 'structure' (0.08), so they still need armour. */
+      smallArms:  { infantry: 1.00, light: 0.35, armor: 0.05, air: 0.00, structure: 0.08, fortified: 0.28 },
       autocannon: { infantry: 0.90, light: 1.00, armor: 0.28, air: 0.85, structure: 0.30, fortified: 0.18 },
       tankGun:    { infantry: 0.45, light: 1.00, armor: 1.00, air: 0.00, structure: 0.70, fortified: 0.40 },
       he:         { infantry: 1.00, light: 1.00, armor: 0.50, air: 0.00, structure: 1.25, fortified: 0.90 },
@@ -1121,9 +1125,9 @@ const CONFIG = {
     /* Real-mode airframes (legacy `air` and the superpower types above are kept for skirmish). */
     mig29: 90, f16: 110, mirage: 105, fa18: 115, rafale: 160, typhoon: 160,
     f15: 150, f35i: 185, su24: 105, tornado: 125, a29: 55,
-    tb2: 45, hermes: 40, wingloong: 42, quad: 8,
+    tb2: 45, hermes: 40, wingloong: 42, quad: 8, ababil: 14,
     missile: 320, nuke: 720,
-    tower: 75, aa: 115, sam: 210, mine: 45, airbase: 160, radar: 85, bribe: 130, depot: 90,
+    tower: 75, aa: 115, sam: 210, mine: 45, airbase: 160, radar: 85, depot: 90,
     rearm_air: 8, resupply_tank: 12, repair_hp: 0.12
   },
   UNITS: {
@@ -1162,7 +1166,8 @@ const CONFIG = {
     tb2:      { hp: 18, speed: 120, dmg: 12, atk: 1.20,range: 45,  r: 7,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, ammo: 4, real: 'Bayraktar TB2 · MALE UCAV' },
     hermes:   { hp: 16, speed: 130, dmg: 10, atk: 1.10,range: 50,  r: 7,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, ammo: 4, real: 'Hermes 900 · MALE UCAV' },
     wingloong:{ hp: 18, speed: 110, dmg: 11, atk: 1.20,range: 48,  r: 7,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, ammo: 4, real: 'Wing Loong II · MALE UCAV' },
-    quad:     { hp: 6,  speed: 55,  dmg: 8,  atk: 0.60,range: 16,  r: 4,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, kamikaze: true, splash: 12, real: 'Quadcopter loitering munition' }
+    quad:     { hp: 6,  speed: 55,  dmg: 8,  atk: 0.60,range: 16,  r: 4,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, kamikaze: true, splash: 12, real: 'Quadcopter loitering munition' },
+    ababil:   { hp: 8,  speed: 85,  dmg: 20, atk: 0.70,range: 20,  r: 5,  dmgType: 'bomb',      armor: 'air', aa: false, fly: true, siege: true, kamikaze: true, splash: 24, real: 'Ababil-2 loitering munition' }
   },
   BUILDINGS: {
     /* A field headquarters, not a fortress: 1100 HP keeps the capture loop
@@ -1185,7 +1190,11 @@ const CONFIG = {
     MAX_FOE: 8,
     DIMINISH: 0.72,
     CONTEST_MULT: 0.4,
-    SUPPRESS_FRAC: 0.30,
+    /* Suppression is the gate that makes capture a two-phase operation. At 30%
+       a field HQ needed eleven minutes of rifle fire before the hold could even
+       start, so the first phase was effectively unreachable; 45% keeps the
+       two-phase design while letting a real push finish the job. */
+    SUPPRESS_FRAC: 0.45,
     REQUIRE_SUPPRESS: true,
     GRACE: 45,
     DECAY: 0.03,
@@ -1227,12 +1236,14 @@ const CONFIG = {
     scud:    { name: 'Scud-B', price: 220, cd: 30, speed: 130, dmg: 110, radius: 80, bldMult: 1.5, pk: 0.60, arc: 0.5, low: false,
                 info: 'Legacy liquid-fuel SRBM. Cheap and numerous, but inaccurate and easy to intercept.' },
     burkan:  { name: 'Burkan-2H', price: 240, cd: 34, speed: 140, dmg: 120, radius: 80, bldMult: 1.5, pk: 0.50, arc: 0.6, low: false,
-                info: 'Houthi medium-range ballistic missile (Scud derivative). Widely inaccurate, useful as terror and area denial.' }
+                info: 'Houthi medium-range ballistic missile (Scud derivative). Widely inaccurate, useful as terror and area denial.' },
+    qassam:  { name: 'Qassam (improvised)', price: 80, cd: 55, speed: 110, dmg: 45, radius: 60, bldMult: 1.2, pk: 0.30, arc: 0.4, low: false,
+                info: 'Short-range improvised rocket: cheap, slow to reload and wildly inaccurate, but enough to keep a city under fire.' }
   },
   MISSILE: { dmg: 130, radius: 85, speed: 150, cooldown: 30, bldMult: 1.5, dmgType: 'missile' },
   NUKE:    { dmg: 220, radius: 140, speed: 200, cooldown: 65, bldMult: 2.0, dmgType: 'nuke' },
   STANCE: { AGG_ACQUIRE: 160, DEF_ENGAGE: 65, DEF_DROP: 95, GUARD_R: 140, GUARD_LEASH: 230, GUARD_RETURN: 45 },
-  NEUTRAL: { CAMP_HP: 420, CAMP_R: 32, GARRISON: 8, AGGRO_R: 200, LEASH_R: 260, SOLDIER_SPEED: 46, DMG: 5, RANGE: 170, BRIBE_BASE: 130, BRIBE_STEP: 60, RESPAWN: 16 },
+  NEUTRAL: { CAMP_HP: 420, CAMP_R: 32, GARRISON: 8, AGGRO_R: 200, LEASH_R: 260, SOLDIER_SPEED: 46, DMG: 5, RANGE: 170, RESPAWN: 16 },
   WORKER_FLEE_T: 30,
   FORMATION: { SPACING: 20, LINE_PER_ROW: 12, BLOCK_MAX_COLS: 6 },
   SEPARATION: { STRENGTH: 0.6 },
@@ -1251,17 +1262,17 @@ const CONFIG = {
   AI: {
     THREAT_R: 460,
     POWER: { worker: 0.2, soldier: 1.2, manpads: 2.5, atgm: 4.0, spaag: 8.5, tank: 10, air: 13, drone: 2.5, bomber: 20, t90: 11, su34: 14, f35: 15, b1: 22, b2: 30, j20: 15, h6k: 22,
-             mig29: 11, f16: 12, mirage: 11, fa18: 12, rafale: 14, typhoon: 14, f15: 15, f35i: 16, su24: 12, tornado: 13, a29: 6, tb2: 5, hermes: 5, wingloong: 5, quad: 1.5 },
+             mig29: 11, f16: 12, mirage: 11, fa18: 12, rafale: 14, typhoon: 14, f15: 15, f35i: 16, su24: 12, tornado: 13, a29: 6, tb2: 5, hermes: 5, wingloong: 5, quad: 1.5, ababil: 2.2 },
     WANT_WORKERS: 14, WANT_MINES: 4, MINE_TIME: 16,
     DIFF: {
       /* pushEvery: max seconds between attack launches after minute 1 — the attack
          cadence that v8 lacked. teamDef: cross-defense between teammates.
          Every difficulty now earns exactly the same income: difficulty changes
          aggression cadence, never a hidden treasury multiplier. */
-      Easy:   { react: 2.4, mistakeEvery: 45, mistakeFor: 7, opening: 10, cap: 44, maxTowers: 2, minAttack: 12, retreat: 0.85, spend: 2.0, bribe: 0, missile: 'none', nuke: false, repair: false, focus: false, harass: false, forceAfter: 420, pushEvery: 75, teamDef: false },
-      Medium: { react: 1.0, mistakeEvery: 90, mistakeFor: 3, opening: 14, cap: 68, maxTowers: 3, minAttack: 10, retreat: 1.00, spend: 0.8, bribe: 1, missile: 'camp', nuke: false, repair: true, focus: true, harass: false, forceAfter: 330, pushEvery: 52, teamDef: true },
-      Hard:   { react: 0.45, mistakeEvery: 0, mistakeFor: 0, opening: 18, cap: 92, maxTowers: 4, minAttack: 8, retreat: 1.20, spend: 0.3, bribe: 2, missile: 'cluster', nuke: true, repair: true, focus: true, harass: true, forceAfter: 240, pushEvery: 36, teamDef: true },
-      ally:   { react: 0.8, mistakeEvery: 0, mistakeFor: 0, opening: 14, cap: 72, maxTowers: 3, minAttack: 9, retreat: 1.05, spend: 0.7, bribe: 1, missile: 'camp', nuke: false, repair: true, focus: true, harass: false, forceAfter: 300, pushEvery: 44, teamDef: true }
+      Easy:   { react: 2.4, mistakeEvery: 45, mistakeFor: 7, opening: 10, cap: 44, maxTowers: 2, minAttack: 12, retreat: 0.85, spend: 2.0, missile: 'none', nuke: false, repair: false, focus: false, harass: false, forceAfter: 420, pushEvery: 75, teamDef: false },
+      Medium: { react: 1.0, mistakeEvery: 90, mistakeFor: 3, opening: 14, cap: 68, maxTowers: 3, minAttack: 10, retreat: 1.00, spend: 0.8, missile: 'camp', nuke: false, repair: true, focus: true, harass: false, forceAfter: 330, pushEvery: 52, teamDef: true },
+      Hard:   { react: 0.45, mistakeEvery: 0, mistakeFor: 0, opening: 18, cap: 92, maxTowers: 4, minAttack: 8, retreat: 1.20, spend: 0.3, missile: 'cluster', nuke: true, repair: true, focus: true, harass: true, forceAfter: 240, pushEvery: 36, teamDef: true },
+      ally:   { react: 0.8, mistakeEvery: 0, mistakeFor: 0, opening: 14, cap: 72, maxTowers: 3, minAttack: 9, retreat: 1.05, spend: 0.7, missile: 'camp', nuke: false, repair: true, focus: true, harass: false, forceAfter: 300, pushEvery: 44, teamDef: true }
     }
   },
   PERF: { GRID_CELL: 80, MAX_STEPS: 28, HEAT_CELL: 100 },
@@ -1271,7 +1282,7 @@ const CONFIG = {
     { t: 18,  txt: 'FOG OF WAR: you only see what your units, camps and RADAR spot. Radar clears a huge circle.' },
     { t: 40,  txt: 'Camps are captured only AFTER suppression: smash a camp to ≤30% HP, then hold it with infantry.' },
     { t: 70,  txt: 'Missiles fly SLOW now — you get a countdown. Build a SAM (Patriot/S-400/HQ-9/Bavar) to shoot them down!' },
-    { t: 100, txt: 'Neutral camps regrow their garrison. Bribe one or capture it — bridges and straits are chokepoints.' },
+    { t: 100, txt: 'Neutral camps regrow their garrison. Suppress one, then hold it with infantry — bridges and straits are chokepoints.' },
     { t: 140, txt: 'Your ally AI pushes shared targets and defends you — watch for ⚑ ALLIED PUSH and join it.' }
   ],
 
@@ -1294,6 +1305,7 @@ const CONFIG = {
     f35:     { weight: { infantry: 0.65, light: 0.8, armor: 0.65, air: 1.3, structure: 0.75, fortified: 0.55 } },
     j20:     { weight: { infantry: 0.55, light: 0.75, armor: 0.6, air: 1.35, structure: 0.45, fortified: 0.35 } },
     drone:   { weight: { infantry: 0.65, light: 0.8, armor: 0.7, air: 0, structure: 0.85, fortified: 0.65 } },
+    ababil:  { weight: { infantry: 0.60, light: 0.75, armor: 0.65, air: 0, structure: 0.80, fortified: 0.60 } },
     bomber:  { weight: { infantry: 0.65, light: 0.8, armor: 0.75, air: 0, structure: 1.35, fortified: 1.15 } },
     b1:      { weight: { infantry: 0.7, light: 0.85, armor: 0.8, air: 0, structure: 1.4, fortified: 1.2 } },
     b2:      { weight: { infantry: 0.75, light: 0.9, armor: 0.9, air: 0, structure: 1.6, fortified: 1.4 } },
@@ -1900,14 +1912,14 @@ const REAL_COUNTRY_DB = {
     },
     politics: {
       agendaStandard: 'Survive as an organisation; inflict unacceptable costs on Israel',
-      agendaMaximalist: 'Destroy 50% of the IDF starting army',
+      agendaMaximalist: 'Bleed the IDF and survive as an organisation',
       source: 'ICG (2026)', confidence: 'Medium'
     },
-    startUnits: ['soldier', 'soldier', 'soldier', 'soldier', 'atgm', 'atgm', 'manpads', 'drone'],
+    startUnits: ['soldier', 'soldier', 'soldier', 'soldier', 'atgm', 'atgm', 'manpads', 'drone', 'quad', 'ababil'],
     startSam: false,
-    build: { army: ['soldier', 'atgm', 'manpads', 'drone'], def: ['tower', 'aa'], msl: ['fateh', 'kheibar', 'fattah'], eco: [] },
+    build: { army: ['soldier', 'atgm', 'manpads', 'drone', 'quad', 'ababil'], def: ['tower', 'aa'], msl: ['qassam'], eco: [] },
     armorName: 'None (improvised)',
-    mix: { soldier: 0.45, atgm: 0.25, manpads: 0.12, drone: 0.18 },
+    mix: { soldier: 0.36, atgm: 0.20, manpads: 0.10, drone: 0.14, quad: 0.10, ababil: 0.10 },
     mul: { soldier: 0.70, atgm: 0.80, manpads: 0.85, drone: 0.45 }
   },
   HZB: {
@@ -1935,14 +1947,14 @@ const REAL_COUNTRY_DB = {
     },
     politics: {
       agendaStandard: 'Survive; hold southern Lebanon against Israel',
-      agendaMaximalist: 'Hold southern Lebanon for 30 minutes under attack',
+      agendaMaximalist: 'Hold southern Lebanon and outlast Israeli pressure',
       source: 'ICG (2026)', confidence: 'Medium'
     },
-    startUnits: ['soldier', 'soldier', 'soldier', 'soldier', 'atgm', 'atgm', 'atgm', 'manpads', 'manpads', 'tank', 'drone'],
+    startUnits: ['soldier', 'soldier', 'soldier', 'soldier', 'atgm', 'atgm', 'atgm', 'manpads', 'manpads', 'tank', 'drone', 'quad'],
     startSam: false,
-    build: { army: ['soldier', 'atgm', 'manpads', 'tank', 'drone'], def: ['tower', 'aa'], msl: ['fateh', 'kheibar', 'fattah'], eco: [] },
+    build: { army: ['soldier', 'atgm', 'manpads', 'tank', 'drone', 'quad'], def: ['tower', 'aa'], msl: ['fateh'], eco: [] },
     armorName: 'T-55 / T-62 (limited)',
-    mix: { soldier: 0.40, atgm: 0.24, manpads: 0.12, tank: 0.10, drone: 0.14 },
+    mix: { soldier: 0.34, atgm: 0.22, manpads: 0.10, tank: 0.10, drone: 0.14, quad: 0.10 },
     mul: { soldier: 0.70, atgm: 0.78, manpads: 0.82, tank: 0.86, drone: 0.45 }
   },
   HOU: {
@@ -1970,7 +1982,7 @@ const REAL_COUNTRY_DB = {
     },
     politics: {
       agendaStandard: 'Survive; close Bab el-Mandeb and attack Israel-linked shipping',
-      agendaMaximalist: 'Close Bab el-Mandeb for 10 cumulative minutes',
+      agendaMaximalist: 'Red Sea denial and sustained maritime pressure',
       source: 'ICG (2026)', confidence: 'Medium'
     },
     startUnits: ['soldier', 'soldier', 'soldier', 'soldier', 'soldier', 'drone', 'drone', 'drone', 'drone', 'atgm', 'manpads', 'drone'],
@@ -2811,6 +2823,19 @@ function friendly(a, b) {
 /* Skirmish has no 2026 scenario file, so its relation matrix is seeded from the
    lobby's teams: teammates are allies, everyone else starts at war. A ceasefire
    or pact then writes into the same matrix Real mode uses. */
+/* A war objective may only count while its holder is actually at war. Without
+   this, "hold your cities for 20 minutes" was satisfied by twenty quiet minutes
+   of peace, and the first such country (always Egypt) won every Real match at
+   exactly 20:00 with all nineteen states still on the map. */
+function atWar(p) {
+  if (!world || !p) return false;
+  for (const o of world.players) {
+    if (!o.alive || o.idx === p.idx) continue;
+    if (getRelation(p.idx, o.idx) === 'WAR') return true;
+  }
+  return false;
+}
+
 function seedClassicRelations() {
   for (const a of world.players) {
     for (const b of world.players) {
@@ -2999,12 +3024,19 @@ function noteSpend(p, cents) {
 }
 function playerForGeo(geoName) {
   if (!geoName || !world) return null;
+  /* A state governs its own cities. A non-state actor that shares the state’s
+     geography (Hamas in Palestine, Hezbollah in Lebanon) only governs one when
+     the host state is not in the match. */
+  let group = null;
   for (const p of world.players) {
     if (!p.alive) continue;
     const c = countryOf(p);
-    if (c.geoName === geoName || p.name === geoName) return p;
+    if (c.geoName === geoName || p.name === geoName) {
+      if (!isNonState(p.country)) return p;
+      if (!group) group = p;
+    }
   }
-  return null;
+  return group;
 }
 function geoOwnerAt(x, y) {
   if (!world || !world.map || !world.map.terrain || !world.map.terrain.countryAt) return null;
@@ -3684,14 +3716,16 @@ function updateEconomy() {
 
     // Trade pacts: income scales with the partner's GDP, not a flat rate.
     let tradeCount = 0, tradeNatural = 0;
+    /* Skirmish runs the same authored per-country economy as Real mode; the old
+       FACTION_MIX income is gone from the economy path. */
+    for (const o of world.players) {
+      if (!o.alive || o.idx === p.idx) continue;
+      const tRel = getRelation(p.idx, o.idx);
+      if (tRel !== 'TRADE' && tRel !== 'ALLY') continue;
+      tradeCount++;
+      tradeNatural += tradeValue(p, o);
+    }
     if (world.mode === 'real') {
-      for (const o of world.players) {
-        if (!o.alive || o.idx === p.idx) continue;
-        const tRel = getRelation(p.idx, o.idx);
-        if (tRel !== 'TRADE' && tRel !== 'ALLY') continue;
-        tradeCount++;
-        tradeNatural += tradeValue(p, o);
-      }
       // Strait of Hormuz closure penalizes Gulf export-dependent states while Iran's domestic resistance economy adapts
       if (world.hormuz.blockedBy >= 0 && ['SAU', 'UAE', 'QAT', 'KWT', 'BHR', 'IRQ'].includes(p.country)) {
         resCount = Math.max(0, resCount - 1);
@@ -3705,20 +3739,18 @@ function updateEconomy() {
        as cents/s, so every label read 100x the money actually paid in. */
     const minesOwned = mineCount[p.idx] || 0, miners = minerCount[p.idx] || 0;
 
-    const share = world.mode === 'real' ? cityIncomeShare(p) : 1;
-    const prof = world.mode === 'real'
-      ? (INCOME_PROFILES[p.country] || { base: p.baseCpt || 0, cities: 0, aid: 0, trade: 0, fields: 0 })
-      : { base: p.baseCpt || 0, cities: 0, aid: 0, trade: 0, fields: 0 };
+    const share = cityIncomeShare(p);
+    const prof = INCOME_PROFILES[p.country] || { base: p.baseCpt || 0, cities: 0, aid: 0, trade: 0, fields: 0 };
     const baseCpm = prof.base * share;
     const citiesCpm = prof.cities * share;
     /* Oil and gas income tracks control of the country itself. Counting map
        deposits instead made Saudi income vanish when two fields flipped and
        doubled the UAE's when it took one, which is not what the profiles mean. */
     const fieldsCpm = prof.fields * share * oilBonusMul;
-    const fromTradeCpm = world.mode === 'real' ? tradeCpmFor(p, tradeNatural) : 0;
+    const fromTradeCpm = tradeCpmFor(p, tradeNatural);
     /* Aid is a full income stream, not a capped supplement: the old
        min(aid, base*0.5) cap made it impossible for aid to matter. */
-    const fromAid = world.mode === 'real' ? aidCptFor(p) : 0;
+    const fromAid = aidCptFor(p);
     /* One mine pays 9 cr/min and one engineer 3 cr/min, so both repay their
        price in about five minutes instead of twenty-five. */
     const fromMines = minesOwned * MINE_CPM;
@@ -4427,10 +4459,14 @@ function convertBuildingOwner(b, newOwner) {
         fallback.kind = 'camp'; fallback.maxHp = CFG.BUILDINGS.camp.hp; fallback.hp = Math.round(fallback.maxHp * 0.6);
         lp.campId = fallback.id;
         toast(lp.country + ' ' + lp.name + ' capital fell — government relocated to ' + (fallback.city || 'outpost') + '.', 'err');
-      } else {
+      } else if (!hasForce(lp)) {
         lp.alive = false;
         for (const u of world.units) if (!u.dead && u.owner === oldOwner) { u.dead = true; world.ents.delete(u.id); }
         toast(lp.country + ' ' + lp.name + ' capitulated to ' + np.country + ' ' + np.name, 'err');
+      } else {
+        /* No city left to host the government, but the army is still in the
+           field: the war continues and a captured city can restore it. */
+        toast(lp.country + ' ' + lp.name + ' lost its last city — government in exile, army still fighting.', 'err');
       }
     }
     if (np.isHuman) SFX.play('capture');
@@ -4459,7 +4495,9 @@ function makeAI(owner, diff) {
     owner: owner, diff: diff, cfg: d,
     thinkT: 0.6 + Math.random() * 1.2,
     spendT: 0.5 + Math.random() * 0.8,
-    pushT: 18 + Math.random() * 15,
+    /* The opening delay is the difficulty's own knob, so a Hard AI moves
+       earlier than an Easy one instead of every AI sharing 18-33 s. */
+    pushT: (d.opening || 14) + Math.random() * 12,
     aidT: 25 + Math.random() * 20,
     // Budget discipline: the AI plans against its own income instead of emptying
     // the treasury the instant it can afford a unit.
@@ -4533,6 +4571,52 @@ function aiLog(p, msg) {
   if (world.aiLog.length > 400) world.aiLog.shift();
 }
 
+/* One composition-aware purchase rule for both the economy tick and the idle
+   fallback. The fallback used to buy the cheapest buildable type, which turned
+   every poor or infantry-capped AI into a mono-army (measured: 61-76 MANPADS
+   per Gulf army, 29 riflemen for Turkey). A type may only be bought while it
+   stays under its share of the army, and only if it is actually affordable. */
+const AA_TYPES = ['manpads', 'spaag', 'air', 'aa'];
+function pickBuildType(p, mix, free) {
+  const have = {};
+  for (const u of world.units) if (!u.dead && u.owner === p.idx && !u.isWorker) have[u.type] = (have[u.type] || 0) + 1;
+  let total = 0;
+  for (const k in have) total += have[k];
+  const affordable = Object.keys(mix)
+    .filter(k => canBuildType(p, k) && !buyBlockedReason(p, k))
+    .filter(k => free >= costOf(p, k));
+  if (!affordable.length) return null;
+  /* Over-represented classes keep a small chance instead of being forbidden:
+     forbidding them deadlocked the opening (a three-soldier army could never
+     buy a fourth soldier because it would be 100% of the army). Specialists
+     still have a hard ceiling so anti-air cannot become the whole army. */
+  const weights = affordable.map(k => {
+    const share = total >= 8 ? (have[k] || 0) / total : 0;
+    const limit = AA_TYPES.includes(k) ? 0.30 : 0.45;
+    if (AA_TYPES.includes(k) && share > 0.38) return 0;
+    return share > limit ? mix[k] * 0.08 : mix[k];
+  });
+  const sum = weights.reduce((a, b) => a + b, 0);
+  /* Everything affordable is already over-represented (usually anti-air): bank
+     the money instead of buying more of a specialist the army does not need. */
+  if (sum <= 0) return null;
+  /* Save up for the unit the doctrine actually wants rather than trickle-buying
+     the cheapest one forever. Without this a poor AI never accumulates the 100
+     coins a tank costs and fields nothing but riflemen. */
+  const income = incomeCoinsPerSec(p) || 0;
+  const bestMix = Math.max.apply(null, affordable.map(a => mix[a]));
+  const wanted = Object.keys(mix).find(k =>
+    canBuildType(p, k) && !buyBlockedReason(p, k) && !AA_TYPES.includes(k) &&
+    mix[k] > bestMix && costOf(p, k) > free && costOf(p, k) <= free + income * 30);
+  if (wanted) return null;
+  let r = Math.random() * sum;
+  for (let i = 0; i < affordable.length; i++) {
+    if (r < weights[i]) return affordable[i];
+    r -= weights[i];
+  }
+  return affordable[affordable.length - 1];
+}
+
 /* Fallback spend rule: if the economy tick above spent nothing and the treasury
    sits above the reserve plus the cheapest buildable unit, buy instead of
    hoarding. */
@@ -4545,12 +4629,10 @@ function aiSpendIdle(p, c) {
   const note = () => { if (!p.aiIdleT || world.time - p.aiIdleT > 30) { p.aiIdleT = world.time; return true; } return false; };
   if (free <= 0) { if (note()) aiLog(p, 'idle: at reserve'); return; }
   const mix = c.mix || { soldier: 0.4, tank: 0.3, atgm: 0.3 };
-  const opts = Object.keys(mix).filter(k => canBuildType(p, k) && !buyBlockedReason(p, k)).map(k => [k, costOf(p, k)]).sort((a, b) => a[1] - b[1]);
-  if (!opts.length) { if (note()) aiLog(p, 'idle: nothing buildable'); return; }
-  const [k, cost] = opts[0];
-  if (free < cost) { if (note()) aiLog(p, 'idle: cheapest ' + k + ' is ' + cost + ', free ' + Math.floor(free)); return; }
+  const k = pickBuildType(p, mix, free);
+  if (!k) { if (note()) aiLog(p, 'idle: nothing affordable'); return; }
   const ok = queueUnit(p.idx, k);
-  aiLogBuy(p, (ok ? 'bought ' : 'blocked ') + k + ' @' + cost, ok);
+  aiLogBuy(p, (ok ? 'bought ' : 'blocked ') + k + ' @' + costOf(p, k), ok);
   if (ok) p.aiCtl.lastBuyT = world.time;
 }
 
@@ -4560,8 +4642,12 @@ function updateAIs() {
     const ai = p.aiCtl;
     const c = countryOf(p);
 
+    /* Easy difficulty hesitates: for a few seconds every so often it stops
+       spending, which is a visible sloppiness instead of a hidden bonus. */
+    const hesitating = ai.cfg.mistakeEvery > 0 &&
+      (Math.floor(world.time) % ai.cfg.mistakeEvery) < ai.cfg.mistakeFor;
     ai.spendT -= CFG.DT;
-    if (ai.spendT <= 0) {
+    if (ai.spendT <= 0 && !hesitating) {
       ai.spendT = ai.cfg.spend + Math.random() * 0.4;
       const centsBefore = p.cents;
       aiEconomyAndBuild(p, ai, c);
@@ -4601,12 +4687,13 @@ function aiEconomyAndBuild(p, ai, c) {
 
   if (ai.cfg.repair && camp.hp < camp.maxHp * 0.7 && coins > reserve * 0.6) repairBuilding(p.idx, camp);
 
-  let myMines = 0, myWorkers = 0, myAirbases = 0, mySams = 0;
+  let myMines = 0, myWorkers = 0, myAirbases = 0, mySams = 0, myTowers = 0;
   for (const b of world.buildings) {
     if (b.dead || b.owner !== p.idx) continue;
     if (b.kind === 'mine') myMines++;
     if (b.kind === 'airbase') myAirbases++;
     if (b.kind === 'sam') mySams++;
+    if (b.kind === 'tower') myTowers++;
   }
   for (const u of world.units) if (!u.dead && u.owner === p.idx && u.isWorker) myWorkers++;
 
@@ -4648,6 +4735,20 @@ function aiEconomyAndBuild(p, ai, c) {
     if (!canPlaceBuilding(p.idx, 'sam', sp.x, sp.y)) { placeBuilding(p.idx, 'sam', sp.x, sp.y); aiLog(p, 'bought sam'); return; }
   }
 
+  /* Static defences: the difficulty's maxTowers knob decides how much the AI
+     fortifies instead of leaving its cities naked to infantry. */
+  if (!isNonState(p.country) && myTowers < ai.cfg.maxTowers && freeBuild >= costOf(p, 'tower') + 20 && world.time > 60) {
+    let spot = null;
+    for (const cc of (world.cities || [])) {
+      if (cc.razed || cc.owner !== p.idx) continue;
+      spot = freeSpotLocal(cc.x + (Math.random() - 0.5) * 70, cc.y + (Math.random() - 0.5) * 70, world.w, world.h, world.obstacles, world.terrainBlocked);
+      if (!canPlaceBuilding(p.idx, 'tower', spot.x, spot.y)) break;
+      spot = null;
+    }
+    if (!spot) spot = freeSpotLocal(camp.x + (Math.random() - 0.5) * 120, camp.y + (Math.random() - 0.5) * 120, world.w, world.h, world.obstacles, world.terrainBlocked);
+    if (!canPlaceBuilding(p.idx, 'tower', spot.x, spot.y)) { placeBuilding(p.idx, 'tower', spot.x, spot.y); aiLog(p, 'bought tower'); return; }
+  }
+
   const cMsl = (c.build && c.build.msl) || [];
   if (ai.cfg.missile !== 'none' && cMsl.length && world.time > 50) {
     const mKey = cMsl[(Math.random() * cMsl.length) | 0];
@@ -4665,31 +4766,14 @@ function aiEconomyAndBuild(p, ai, c) {
     if (!underThreat && (p.spendCpt || 0) > Math.max(5, income) * 1.15) return;
 
     const mix = c.mix || { soldier: 0.4, tank: 0.3, atgm: 0.3 };
-    const entries = Object.keys(mix).filter(k => canBuildType(p, k) && !buyBlockedReason(p, k));
-    if (!entries.length) return;
-    /* Avoid repeatedly buying the same type: weight down over-represented classes. */
-    const have = {};
-    for (const u of world.units) if (!u.dead && u.owner === p.idx && !u.isWorker) have[u.type] = (have[u.type] || 0) + 1;
-    let total = 0;
-    for (const k in have) total += have[k];
-    let r = Math.random() * entries.reduce((s, k) => s + mix[k], 0);
-    let chosen = entries[0];
-    for (const k of entries) {
-      const share = total ? (have[k] || 0) / total : 0;
-      const w = mix[k] * (share > 0.45 ? 0.35 : 1);
-      if (r < w) { chosen = k; break; }
-      r -= w;
-    }
-
-    if (free >= costOf(p, chosen)) {
-      const ok = queueUnit(p.idx, chosen);
-      if (ok) ai.lastBuyT = world.time;
-      aiLogBuy(p, (ok ? 'bought ' : 'blocked ') + chosen + (ok ? '' : ' (' + buyBlockReason(p, chosen, free) + ')'), ok);
-      return;
-    }
-    /* Under budget pressure, keep a credible defensive floor rather than nothing. */
-    const fallback = ['soldier', 'manpads', 'atgm'].find(k => canBuildType(p, k) && free >= costOf(p, k));
-    if (fallback && queueUnit(p.idx, fallback)) ai.lastBuyT = world.time;
+    /* Composition control: one shared chooser, so an AI only buys what it can
+       pay for and never lets one class dominate the army. */
+    const chosen = pickBuildType(p, mix, free);
+    if (!chosen) return;
+    const ok = queueUnit(p.idx, chosen);
+    if (ok) ai.lastBuyT = world.time;
+    aiLogBuy(p, (ok ? 'bought ' : 'blocked ') + chosen + (ok ? '' : ' (' + buyBlockReason(p, chosen, free) + ')'), ok);
+    return;
   }
 }
 
@@ -4702,6 +4786,10 @@ function pickEnemyTargetFor(p) {
     let sc = -d * 0.5 + (b.kind === 'camp' ? 220 : 120);
     const pref = archetypeTargetFor(p);
     if (pref && b.owner === pref.idx) sc += 900;   // archetype target selection (decisive over distance)
+    /* Focus (Medium+): a capital is the decisive objective, so concentrating on
+       it is worth more than another outpost on the frontier. */
+    const ai2 = p.aiCtl;
+    if (ai2 && ai2.cfg && ai2.cfg.focus && b.kind === 'camp' && b.owner >= 0 && world.players[b.owner] && world.players[b.owner].capitalHeld) sc += 260;
     if (sc > bestScore) { bestScore = sc; best = b; }
   }
   return best;
@@ -4724,6 +4812,11 @@ function aiTacticalCommands(p, ai) {
     /* Only restate orders for units that are not already converging on this threat.
        Previously every unit was re-pathed on every think tick, which both wasted
        CPU and produced jittery, indecisive movement. */
+    /* Nuclear release is a last resort on a breached capital perimeter, and
+       only a difficulty that allows it will press the button. */
+    if (ai.cfg.nuke && (p.nukes || 0) > 0 && canFireNuke(p)) {
+      if (fireNuke(p)) aiLog(p, 'nuclear release on its own capital perimeter');
+    }
     for (const u of combatUnits) {
       const already = u.order && u.order.k === 'amove' && dist2(u.order.x, u.order.y, threat.x, threat.y) < 150 * 150;
       if (already) continue;
@@ -4740,6 +4833,141 @@ function aiTacticalCommands(p, ai) {
     ai.posture = 'expand';
   }
 
+  /* Persistent siege (bug fix). A push used to re-target on every cadence, so
+     an army that had almost suppressed a camp scattered to a fresh objective
+     and the ground was never actually taken (measured: 0-3 ownership flips in
+     20 simulated minutes). A committed target is kept until it falls, becomes
+     invalid, or the siege times out, and idle units keep feeding into it. */
+  const nowT = world.time;
+  let siege = ai.siegeId ? ent(ai.siegeId) : null;
+  if (!siege || siege.dead || !hostile(p, siege) || nowT > (ai.siegeUntil || 0)) { siege = null; ai.siegeId = 0; }
+  /* Risk awareness: a push that meets a stronger force withdraws instead of
+     feeding itself into a meat grinder. Hard presses on longer than Easy. */
+  if (siege && nowT >= (ai.retreatT || 0)) {
+    ai.retreatT = nowT + 4;
+    let mine = 0, theirs = 0;
+    forNear(siege.x, siege.y, 320, e => {
+      if (e.dead || e.kind !== 'unit') return false;
+      const w = (CFG.AI.POWER[e.type] || 1);
+      if (e.owner === p.idx) mine += w;
+      else if (hostile(p, e)) theirs += w;
+      return false;
+    });
+    if (theirs > 0 && mine < theirs * (1.4 - ai.cfg.retreat * 0.5)) {
+      aiLog(p, 'withdrawing from ' + (siege.city || siege.kind) + ' — outnumbered');
+      for (const u of combatUnits) {
+        if (u.order && dist2(u.x, u.y, siege.x, siege.y) < 260 * 260) { u.order = null; u.path = null; }
+      }
+      ai.siegeId = 0;
+      ai.pushT = Math.max(ai.pushT, 12);
+      siege = null;
+    }
+  }
+  if (siege && nowT >= (ai.siegeFeedT || 0)) {
+    ai.siegeFeedT = nowT + 6;
+    let spdSum = 0;
+    for (const u of combatUnits) spdSum += (u.speed || 0) * unitSpeedFactor(u);
+    const reach = (spdSum / Math.max(1, combatUnits.length)) * 200 + 120;
+    let sent = 0;
+    for (const u of combatUnits) {
+      if (sent >= 10) break;
+      if (u.order || u.target) continue;
+      if (dist2(u.x, u.y, siege.x, siege.y) > reach * reach) continue;
+      // Never strip the capital's home guard to feed a siege.
+      if (dist2(u.x, u.y, camp.x, camp.y) < 150 * 150) continue;
+      const ox = siege.x + (Math.random() - 0.5) * 55;
+      const oy = siege.y + (Math.random() - 0.5) * 55;
+      u.order = { k: 'amove', x: ox, y: oy };
+      assignPath(u, ox, oy);
+      sent++;
+    }
+    if (sent) aiLog(p, 'reinforcing siege of ' + (siege.city || siege.kind));
+  }
+
+  /* Idle army (bug fix): most of a large AI army stood at its spawn point with
+     no order at all (measured 65-70% of all units in both modes), which is why
+     the map barely changed over twenty minutes. Idle units now garrison a
+     friendly city that is under pressure, or move to the nearest front as a
+     group - never in dribs and drabs that would feed the enemy piecemeal. */
+  /* Harassment (Hard only): a small raid on an exposed node keeps a second
+     front alive without splitting the main army. */
+  if (ai.cfg.harass && nowT >= (ai.harassT || 0)) {
+    ai.harassT = nowT + 90;
+    const prey = world.buildings.find(b => !b.dead && b.owner >= 0 && hostile(p, b) &&
+      (b.kind === 'mine' || b.kind === 'depot' || b.kind === 'airbase'));
+    if (prey) {
+      const raid = combatUnits.filter(u => !u.order && !u.target && dist2(u.x, u.y, prey.x, prey.y) <= 900 * 900).slice(0, 3);
+      if (raid.length >= 2) {
+        for (const u of raid) {
+          const ox = prey.x + (Math.random() - 0.5) * 50;
+          const oy = prey.y + (Math.random() - 0.5) * 50;
+          u.order = { k: 'amove', x: ox, y: oy };
+          assignPath(u, ox, oy);
+        }
+        aiLog(p, 'raiding ' + prey.kind);
+      }
+    }
+  }
+
+  if (nowT >= (ai.idleTaskT || 0)) {
+    ai.idleTaskT = nowT + 12;
+    const idle = combatUnits.filter(u => !u.order && !u.target);
+    if (idle.length >= 4) {
+      let hot = null;
+      for (const c of (world.cities || [])) {
+        if (c.razed || c.owner !== p.idx) continue;
+        let near = false;
+        forNear(c.x, c.y, 220, e => {
+          if (!e.dead && e.kind === 'unit' && hostile(p, e)) { near = true; return true; }
+          return false;
+        });
+        if (near) { hot = c; break; }
+      }
+      /* Team defence: an ally's capital under attack pulls a portion of the
+         idle army, which is what a coalition partner should do. */
+      if (!hot && ai.cfg.teamDef) {
+        for (const ally of world.players) {
+          if (ally.idx === p.idx || !ally.alive || getRelation(p.idx, ally.idx) !== 'ALLY') continue;
+          const ac = ent(ally.campId);
+          if (!ac || ac.dead) continue;
+          let near = false;
+          forNear(ac.x, ac.y, 300, e => {
+            if (!e.dead && e.kind === 'unit' && hostile(p, e)) { near = true; return true; }
+            return false;
+          });
+          if (near) { hot = ac; break; }
+        }
+      }
+      let dest = hot;
+      if (!dest && !siege && archetypeAllowsPush(p)) dest = pickEnemyTargetFor(p);
+      if (!dest && !archetypeAllowsPush(p)) {
+        /* A survivor that never attacks still spreads its army across its own
+           cities instead of stacking eighty units on the capital. */
+        let bestC = null, bestDef = 1e9;
+        for (const c of (world.cities || [])) {
+          if (c.razed || c.owner !== p.idx) continue;
+          let def = 0;
+          forNear(c.x, c.y, 90, e => { if (!e.dead && e.kind === 'unit' && e.owner === p.idx) def++; return false; });
+          if (def < bestDef) { bestDef = def; bestC = c; }
+        }
+        if (bestC && bestDef < 6) dest = bestC;
+      }
+      if (dest) {
+        let sent = 0;
+        for (const u of idle) {
+          if (sent >= 14) break;
+          if (dist2(u.x, u.y, dest.x, dest.y) > 1400 * 1400) continue;
+          const ox = dest.x + (Math.random() - 0.5) * 70;
+          const oy = dest.y + (Math.random() - 0.5) * 70;
+          u.order = { k: 'amove', x: ox, y: oy };
+          assignPath(u, ox, oy);
+          sent++;
+        }
+        if (sent) aiLog(p, (hot ? 'garrisoning ' : 'advancing on ') + (dest.name || dest.city || dest.kind));
+      }
+    }
+  }
+
   ai.pushT -= ai.cfg.react;
   /* Archetype gate: Survivors and the Neutral Trader never open an offensive;
      they only fight the defensive reaction above. */
@@ -4751,9 +4979,12 @@ function aiTacticalCommands(p, ai) {
   /* Non-state actors field a handful of fighters by design (caps of 3/3/40),
      so the state-sized 10-unit attack threshold could never be met and they
      never raided. Their trigger scales down with the force they can field. */
-  const needForce = isNonState(p.country)
+  let needForce = isNonState(p.country)
     ? Math.min(Math.ceil(ai.cfg.minAttack * riskMul), 4)
     : Math.ceil(ai.cfg.minAttack * riskMul);
+  /* A long war loosens the requirement: waiting for a textbook army forever is
+     its own kind of passivity, and Hard releases the brake sooner. */
+  if (world.time > (ai.cfg.forceAfter || 330)) needForce = Math.max(3, Math.round(needForce * 0.6));
   if (ai.pushT <= 0 && combatUnits.length >= needForce && archetypeAllowsPush(p)) {
     const rules = archetypeRules(p);
     ai.pushT = (rules.pushEvery || ai.cfg.pushEvery) * (0.85 + Math.random() * 0.35);
@@ -4762,6 +4993,9 @@ function aiTacticalCommands(p, ai) {
     if (tgt) {
       /* Instrumentation: only a push that actually issues orders counts. */
       ai.pushes = (ai.pushes || 0) + 1;
+      if (ai.siegeId !== tgt.id) ai.siegeFeedT = 0;
+      ai.siegeId = tgt.id;
+      ai.siegeUntil = world.time + 300;
       ai.lastTarget = tgt.owner >= 0 && world.players[tgt.owner] ? world.players[tgt.owner].country : null;
       ai.lastPushT = Math.round(world.time);
       /* Commitment horizon: no formation is ordered further than it could march
@@ -4797,6 +5031,14 @@ function cityCount(p) {
   return n;
 }
 
+/* A player is only finished when nothing is left to fight with: losing every
+   city while units or a production queue remain is not defeat. */
+function hasForce(p) {
+  if (p.spawnQ && p.spawnQ.length) return true;
+  for (const u of world.units) if (!u.dead && u.owner === p.idx) return true;
+  return false;
+}
+
 /* Objectives are derived from each nation's own economic weight, so a small
    state gets a survivable influence target while a large economy is asked to
    hold more ground and a deeper reserve. They are gameplay abstractions, not
@@ -4811,9 +5053,6 @@ const HOLD_LOSS_LABEL_T = 30;
 /* No strategic victory inside the opening ten minutes, in either direction:
    this is the guard that makes a three-minute AI win impossible. */
 const MIN_MATCH_T = 600;
-/* Hard end at 25 minutes, resolved on cities x population, then treasury, then
-   units. No match can run forever. */
-const MATCH_TIME = 1500;
 
 function eliminated(code) {
   const q = world.players.find(x => x.country === code);
@@ -4843,8 +5082,22 @@ function cityHeldBy(p, name) {
 /* Timers live in world.holdT keyed by player and condition id, so the panel and
    the victory check read the same clock. */
 function heldFor(p, id) { return (world.holdT && world.holdT[p.idx + ':' + id]) || 0; }
+/* A city only counts toward a defensive victory once it has been fought over. */
+function holdableCity(p, name) {
+  const c = (world.cities || []).find(x => !x.razed && x.name === name);
+  return !!c && c.owner === p.idx && !!c.everContested;
+}
 function holdObj(p, id, title, names, desc) {
-  const held = names.every(n => cityHeldBy(p, n));
+  const war = atWar(p);
+  /* "Hold X for 20 minutes" means holding it through an attack: the clock only
+     runs while the state is at war and each named city has actually been
+     contested. Otherwise an untouched Gulf state won every Real match at 20:00
+     with all nineteen countries still on the map. */
+  const contested = names.every(n => {
+    const c = (world.cities || []).find(x => !x.razed && x.name === n);
+    return !!(c && c.everContested);
+  });
+  const held = war && contested && names.every(n => cityHeldBy(p, n));
   const secs = heldFor(p, id);
   /* The clock is zeroed on the very tick a city falls, so the loss itself is
      remembered with a timestamp and explained in the panel for a short window
@@ -4860,7 +5113,7 @@ function holdObj(p, id, title, names, desc) {
     done: secs >= HOLD_T, prog: Math.round(secs), target: HOLD_T,
     timed: true, timeLeft: Math.max(0, HOLD_T - secs),
     holding: held, fail: !!lossText, lossText: lossText,
-    stateText: held ? 'holding' : 'not held'
+    stateText: held ? 'holding' : (!war ? 'at peace — clock idle' : (!contested ? 'not yet attacked here' : 'not held'))
   };
 }
 function surviveObj(p, requireAttack) {
@@ -4889,7 +5142,6 @@ function objectivesFor(p) {
       done: aliveN <= 1, prog: Math.max(0, total - aliveN), target: Math.max(1, total - 1)
     }];
   }
-  const ch = world.chokes || {};
   const tradeCount = world.players.filter(o => o.alive && o.idx !== p.idx &&
     (getRelation(p.idx, o.idx) === 'TRADE' || getRelation(p.idx, o.idx) === 'ALLY')).length;
 
@@ -4916,27 +5168,25 @@ function objectivesFor(p) {
     case 'PSE': return [holdObj(p, 'pse_hold', 'Hold Ramallah and Gaza for 20 min', ['Ramallah', 'Gaza City'])];
     case 'SAU': {
       const lead = world.leadIdx === p.idx ? (world.leadT || 0) : 0;
+      const iranGone = eliminated('IRN');
       return [{
-        id: 'sau_win', ic: 'ECO', title: 'Largest economy for 20 min, or eliminate Iran',
-        desc: 'Be the largest economy for 20 minutes straight, or eliminate Iran. Being overtaken resets the clock.',
-        done: lead >= HOLD_T || eliminated('IRN'),
+        id: 'sau_win', ic: 'ECO', title: 'Largest economy for 20 min and eliminate Iran',
+        desc: 'Be the largest economy for 20 minutes straight and knock Iran out of the war. Being overtaken resets the clock.',
+        done: lead >= HOLD_T && iranGone,
         prog: Math.round(Math.min(lead, HOLD_T)), target: HOLD_T,
-        timed: true, timeLeft: Math.max(0, HOLD_T - lead), timerPaused: world.leadIdx !== p.idx
+        timed: true, timeLeft: Math.max(0, HOLD_T - lead), timerPaused: world.leadIdx !== p.idx,
+        stateText: iranGone ? 'Iran eliminated' : 'Iran still standing'
       }];
     }
     case 'TUR': {
-      const bos = ch.bosphorus;
-      const own = !!(bos && bos.controller === p.idx);
+      const syriaGone = eliminated('SYR');
+      const funded = p.cents >= 10000 * 100;
       return [{
-        id: 'tur_bosphorus', ic: 'SEA', title: 'Seize the Bosphorus',
-        desc: 'The straits start unclaimed. Open or close them from the Strategic tab to seize control.',
-        done: own, prog: own ? 1 : 0, target: 1,
-        stateText: own ? 'controlled' : 'not controlled'
-      }, {
-        id: 'tur_neighbour', ic: 'ELM', title: 'Eliminate Iraq or Syria',
-        desc: 'Knock out one of Turkey\u2019s southern neighbours.',
-        done: eliminated('IRQ') || eliminated('SYR'),
-        prog: (eliminated('IRQ') || eliminated('SYR')) ? 1 : 0, target: 1
+        id: 'tur_win', ic: 'ELM', title: 'Capture Syria and hold 10,000 coins',
+        desc: 'Knock Syria out of the war and keep 10,000 coins in the treasury at the same time.',
+        done: syriaGone && funded,
+        prog: (syriaGone ? 1 : 0) + (funded ? 1 : 0), target: 2,
+        stateText: !syriaGone ? 'Syria still standing' : (funded ? 'requirements met' : 'treasury below 10,000')
       }];
     }
     case 'EGY': return [holdObj(p, 'egy_hold', 'Hold Cairo and Suez for 20 min', ['Cairo', 'Suez'])];
@@ -4953,10 +5203,13 @@ function objectivesFor(p) {
       return [o];
     }
     case 'OMN': {
-      const so = surviveObj(p, false);
+      /* Oman's neutrality means it is rarely attacked, so an unqualified
+         survival clock let it win every match by doing nothing. The clock now
+         counts a war it actually had to survive, like the insurgent condition. */
+      const so = surviveObj(p, true);
       return [{
-        id: 'omn_win', ic: 'TRD', title: 'Survive 20 min with trade to 3+ states',
-        desc: 'Stay alive for 20 minutes while holding trade pacts with at least three countries.',
+        id: 'omn_win', ic: 'TRD', title: 'Survive 20 min under attack with trade to 3+ states',
+        desc: 'Be attacked and stay alive for 20 minutes while holding trade pacts with at least three countries.',
         done: so.done && tradeCount >= 3, prog: Math.round(so.prog), target: SURVIVE_T,
         timed: true, timeLeft: so.timeLeft, tradeN: tradeCount
       }];
@@ -4965,52 +5218,18 @@ function objectivesFor(p) {
     case 'SYR': return [holdObj(p, 'syr_hold', 'Hold Damascus and Latakia for 20 min', ['Damascus', 'Latakia'])];
     case 'LBN': return [holdObj(p, 'lbn_hold', 'Hold Beirut and Tripoli for 20 min', ['Beirut', 'Tripoli'])];
     case 'YEM': {
-      const s = heldFor(p, 'yem_sanaa'), a = heldFor(p, 'yem_aden');
-      const best = Math.max(s, a);
+      const gone = eliminated('SAU');
       return [{
-        id: 'yem_win', ic: 'HLD', title: 'Hold Sana\u2019a or Aden for 20 min',
-        desc: 'Hold either of Yemen\u2019s two anchors for 20 minutes. Losing the one you hold resets the clock.',
-        done: best >= HOLD_T, prog: Math.round(best), target: HOLD_T,
-        timed: true, timeLeft: Math.max(0, HOLD_T - best),
-        stateText: best > 0 ? 'holding' : 'not held'
+        id: 'yem_win', ic: 'ELM', title: 'Conquer Saudi Arabia',
+        desc: 'Knock Saudi Arabia out of the war. That is Yemen\u2019s only path to victory.',
+        done: gone, prog: gone ? 1 : 0, target: 1,
+        stateText: gone ? 'complete' : 'Saudi Arabia still standing'
       }];
     }
-    case 'HMS': {
-      const isr = world.players.find(x => x.country === 'ISR');
-      const start = isr ? (isr.startArmyN || 0) : 0;
-      const need = Math.ceil(start * 0.5);
-      const killed = p.stats.isrKills || 0;
-      const gutted = !!isr && start >= 4 && killed >= need;
-      const so = surviveObj(p, true);
-      return [{
-        id: 'hms_win', ic: 'INS', title: 'Survive 20 min under attack, or destroy half of Israel\u2019s army',
-        desc: 'Outlast a 20-minute war you were attacked in, or destroy at least half of Israel\u2019s starting army yourself.',
-        done: so.done || gutted, prog: gutted ? SURVIVE_T : Math.round(so.prog), target: SURVIVE_T,
-        timed: true, timeLeft: gutted ? 0 : so.timeLeft
-      }];
-    }
-    case 'HZB': {
-      const so = surviveObj(p, true);
-      const south = Math.min(world.hzbHoldT || 0, HOLD_T);
-      const best = Math.max(so.prog, south);
-      return [{
-        id: 'hzb_win', ic: 'INS', title: 'Survive 20 min under attack, or hold south Lebanon for 20 min',
-        desc: 'Outlast a 20-minute war you were attacked in, or keep Israeli forces out of southern Lebanon for 20 minutes.',
-        done: so.done || south >= HOLD_T, prog: Math.round(best), target: SURVIVE_T,
-        timed: true, timeLeft: Math.max(0, SURVIVE_T - best)
-      }];
-    }
-    case 'HOU': {
-      const so = surviveObj(p, true);
-      const bab = Math.min(world.babClosedT || 0, 600);
-      const best = Math.max(so.prog, bab);
-      return [{
-        id: 'hou_win', ic: 'INS', title: 'Survive 20 min under attack, or close Bab el-Mandeb for 10 min',
-        desc: 'Outlast a 20-minute war you were attacked in, or keep Bab el-Mandeb shut for 10 minutes.',
-        done: so.done || bab >= 600, prog: Math.round(best), target: SURVIVE_T,
-        timed: true, timeLeft: Math.max(0, SURVIVE_T - best)
-      }];
-    }
+    /* Hamas, Hezbollah and the Houthis are players, not governments: they have
+       their own goals but no political victory condition. They can still win by
+       conquest; only states can claim a strategic victory. */
+    case 'HMS': case 'HZB': case 'HOU': return [];
     default: return [];
   }
 }
@@ -5046,17 +5265,19 @@ function updateObjectives() {
       bump(p, 'survive_attacked', intact && !!p.wasAttacked);
       const hz = world.chokes && world.chokes.hormuz;
       bump(p, 'irn_hormuz', !!(hz && hz.closed));
-      bump(p, 'pse_hold', cityHeldBy(p, 'Ramallah') && cityHeldBy(p, 'Gaza City'));
-      bump(p, 'egy_hold', cityHeldBy(p, 'Cairo') && cityHeldBy(p, 'Suez'));
-      bump(p, 'jor_hold', cityHeldBy(p, 'Amman'));
-      bump(p, 'uae_hold', cityHeldBy(p, 'Abu Dhabi') && cityHeldBy(p, 'Dubai'));
-      bump(p, 'kwt_hold', cityHeldBy(p, 'Kuwait City'));
-      bump(p, 'qat_hold', cityHeldBy(p, 'Doha'));
+      /* Hold clocks are war clocks: they run only while this state is at war. */
+      const war = atWar(p);
+      bump(p, 'pse_hold', war && holdableCity(p, 'Ramallah') && holdableCity(p, 'Gaza City'));
+      bump(p, 'egy_hold', war && holdableCity(p, 'Cairo') && holdableCity(p, 'Suez'));
+      bump(p, 'jor_hold', war && holdableCity(p, 'Amman'));
+      bump(p, 'uae_hold', war && holdableCity(p, 'Abu Dhabi') && holdableCity(p, 'Dubai'));
+      bump(p, 'kwt_hold', war && holdableCity(p, 'Kuwait City'));
+      bump(p, 'qat_hold', war && holdableCity(p, 'Doha'));
       const usBase = (world.bases || []).find(b => b.code === p.country && b.kind === 'us');
-      bump(p, 'bhr_hold', cityHeldBy(p, 'Manama') && !!usBase && usBase.intact && usBase.owner === p.idx);
-      bump(p, 'irq_hold', cityHeldBy(p, 'Baghdad') && cityHeldBy(p, 'Basra'));
-      bump(p, 'syr_hold', cityHeldBy(p, 'Damascus') && cityHeldBy(p, 'Latakia'));
-      bump(p, 'lbn_hold', cityHeldBy(p, 'Beirut') && cityHeldBy(p, 'Tripoli'));
+      bump(p, 'bhr_hold', war && holdableCity(p, 'Manama') && !!usBase && usBase.intact && usBase.owner === p.idx);
+      bump(p, 'irq_hold', war && holdableCity(p, 'Baghdad') && holdableCity(p, 'Basra'));
+      bump(p, 'syr_hold', war && holdableCity(p, 'Damascus') && holdableCity(p, 'Latakia'));
+      bump(p, 'lbn_hold', war && holdableCity(p, 'Beirut') && holdableCity(p, 'Tripoli'));
       bump(p, 'yem_sanaa', cityHeldBy(p, "Sana'a"));
       bump(p, 'yem_aden', cityHeldBy(p, 'Aden'));
     }
@@ -5164,14 +5385,7 @@ function checkWin() {
     }
     return;
   }
-  /* Hard end: cities x population, then treasury, then units. */
-  if (world.time >= MATCH_TIME) {
-    const score = p => cityCount(p) * (p.cityPop || 0);
-    const ranked = alivePlayers.slice().sort((a, b) =>
-      score(b) - score(a) || b.cents - a.cents || armyCount(b.idx) - armyCount(a.idx));
-    endMatch('timeout', ranked[0] ? ranked[0].idx : -1,
-      '25-minute tiebreak: cities x population, treasury, units');
-  }
+  /* No clock: a match ends only by objectives, conquest or annihilation. */
 }
 
 function stepSim() {
@@ -5184,6 +5398,8 @@ function stepSim() {
     updateHormuzSpec();
     updateTradeRoutes();
     updateEconomyLead();
+  } else {
+    syncCityOwnersToGround();
   }
   updateEconomy();
   if (world.mode === 'real') {
@@ -6680,9 +6896,12 @@ function openObjectivesModal() {
   const total = objs.filter(o => o.done).length;
   if ($('objIntro')) $('objIntro').textContent = world.mode === 'classic'
     ? 'Skirmish: last faction standing. Knock every rival out — the match ends only when one command remains.'
-    : 'One strategic route per nation. Hold your named cities, or take the war to your enemy. Nothing is decided in the first 10 minutes.';
+    : (!objs.length
+      ? 'Non-state actor: you have no national victory condition. You fight for your own goals — survival, leverage and your patron’s war.'
+      : 'One strategic route per nation. Hold your named cities, or take the war to your enemy. Nothing is decided in the first 10 minutes.');
   $('objBody').innerHTML = `
-    <div class="dim" style="margin-bottom:6px">Achieved <b style="color:#eaf2fb">${total} / ${objs.length}</b> — complete every objective for a strategic victory, or eliminate every rival.</div>
+    ${objs.length ? `<div class="dim" style="margin-bottom:6px">Achieved <b style="color:#eaf2fb">${total} / ${objs.length}</b> — complete every objective for a strategic victory, or eliminate every rival.</div>`
+      : `<div class="obj"><span class="oic">—</span><div style="flex:1"><div class="ot">No political victory condition <span class="dim">non-state actor</span></div><div class="od">Hamas, Hezbollah and the Houthis cannot win the war politically. Fight for your own goals: survive, bleed your enemies, hold what ground you can — and win only by destroying every rival.</div></div></div>`}
     ${objs.map(o => {
       const pct = clamp(o.prog / o.target, 0, 1) * 100;
       let val;
@@ -6705,7 +6924,7 @@ function openObjectivesModal() {
       </div>`;
     }).join('')}
     <div class="dim" style="margin-top:10px">Simultaneous finish: the earliest completion wins. If two powers finish on the same tick, the most cities wins, then the largest treasury, then roster order.</div>
-    <div class="dim" style="margin-top:6px">Defeat: your capital is captured and no city remains to host your government, which removes every remaining unit from play.</div>
+    <div class="dim" style="margin-top:6px">Defeat: your last city is gone and no unit or production remains. Losing every city with an army still in the field only sends the government into exile — take a city back to recover.</div>
   `;
   $('objScr').classList.remove('hidden');
 }
@@ -7782,15 +8001,26 @@ function isNonState(code) { return NONSTATE_CODES.includes(code); }
 function popOf(code) { return POP_M[code] || 5; }
 function archetypeOf(p) { return ARCHETYPE_OF[p && p.country] || 'Buffer Survivor'; }
 function archetypeRules(p) { return ARCHETYPE_RULES[archetypeOf(p)] || ARCHETYPE_RULES['Buffer Survivor']; }
+/* Conscription and reserve systems decide how much infantry a state can put in
+   the field, not population alone. Population x 1.7 alone gave Israel 17
+   infantry slots against Iran's 90, i.e. roughly the inverse of the real
+   mobilisation balance (Israel: ~170k active + ~465k reserves from 10M people;
+   Iran: ~610k total from 92M). These are gameplay abstractions of IISS
+   personnel figures, not claims of exact army size. */
+const MOBILISATION = {
+  ISR: 2.4, JOR: 1.8, SYR: 1.5, EGY: 1.2, IRN: 1.1, TUR: 1.3,
+  SAU: 1.0, UAE: 1.0, QAT: 1.0, KWT: 1.0, BHR: 1.1, OMN: 1.0,
+  IRQ: 1.2, LBN: 1.0, YEM: 1.2
+};
 function infantryCapFor(code) {
   /* Non-state actors are mobilisation movements, not small states: their
-     manpower ceiling is the Israeli baseline, never a fraction of a country
-     they do not govern. */
+     manpower ceiling is the Israeli population baseline, never a fraction of a
+     country they do not govern. */
   if (isNonState(code)) {
     const isrCap = clamp(Math.floor(popOf('ISR') * 1.7), 3, 150);
     return code === 'HOU' ? Math.max(40, isrCap) : isrCap;
   }
-  return clamp(Math.floor(popOf(code) * 1.7), 3, 150);
+  return clamp(Math.floor(popOf(code) * 1.7 * (MOBILISATION[code] || 1)), 3, 150);
 }
 function mdSystemFor(code) { return MD_SYSTEMS[code] || { name: 'Hawk', pk: 0.30 }; }
 
@@ -7996,10 +8226,12 @@ function refreshCityShares() {
       const cap = (world.cities || []).find(c => c.code === p.country && c.capital && !c.razed);
       p.capitalHeld = !!(cap && cap.owner === p.idx);
       /* Defeat needs the capital captured AND no fallback left: an outpost or
-         forward camp is still a city that can host the government. The old
-         check killed a state the moment its named cities flipped, even while
-         it still held fortified ground. */
-      if (p.alive && p.cityShare === 0 && cityCount(p) === 0) {
+         forward camp is still a city that can host the government. Losing every
+         city while an army is still in the field only puts the government in
+         exile — the war goes on until nothing at all remains. */
+      /* Skirmish decides elimination from the buildings and units on the map,
+         so the real-mode capitulation path is skipped there. */
+      if (world.mode === 'real' && p.alive && p.cityShare === 0 && cityCount(p) === 0 && !hasForce(p)) {
         p.alive = false;
         p.capitalHeld = false;
         for (const u of world.units) if (!u.dead && u.owner === p.idx) { u.dead = true; world.ents.delete(u.id); }
@@ -8010,7 +8242,7 @@ function refreshCityShares() {
     /* A non-state actor owns no cities: it is destroyed only when the state it
        operates from has been wholly captured. */
     const home = NONSTATE_HOME[p.country];
-    if (p.alive && home) {
+    if (world.mode === 'real' && p.alive && home) {
       const host = world.players.find(q => q.country === home);
       if (!host || !host.alive || host.cityShare <= 0.001) {
         p.alive = false;
@@ -8037,6 +8269,54 @@ function applyCityCaps() {
 }
 function cityIncomeShare(p) { return p.cityShare == null ? 1 : p.cityShare; }
 
+/* Skirmish has no urban capture timer of its own: the outpost or camp standing
+   on a city is the ground a player actually takes, so city ownership follows
+   those buildings and captured ground moves the same city-share income Real
+   mode gets from its infantry capture model. */
+function cityForBuilding(b) {
+  if (!world.cityIndex) {
+    world.cityIndex = new Map();
+    for (const c of world.cities) world.cityIndex.set(c.name, c);
+  }
+  const raw = (b.city || '').split(' (')[0].trim();
+  let hit = raw ? world.cityIndex.get(raw) : null;
+  if (!hit && raw) {
+    for (const c of world.cities) {
+      if (c.razed) continue;
+      if (c.name.startsWith(raw + ' ') || raw.startsWith(c.name + ' ')) { hit = c; break; }
+    }
+  }
+  if (!hit) {
+    let bd = 90 * 90;
+    for (const c of world.cities) {
+      if (c.razed) continue;
+      const d = dist2(b.x, b.y, c.x, c.y);
+      if (d < bd) { bd = d; hit = c; }
+    }
+  }
+  return hit || null;
+}
+function syncCityOwnersToGround() {
+  if (world.mode !== 'classic' || !world.cities) return false;
+  if (!world.cityOf) world.cityOf = new Map();
+  let changed = false;
+  for (const b of world.buildings) {
+    if (b.dead || b.owner < 0 || (b.kind !== 'outpost' && b.kind !== 'camp')) continue;
+    /* A movement's command post is not a city government: it can sit on the
+       host state's city without that city changing hands. */
+    const holder = world.players[b.owner];
+    if (!holder || isNonState(holder.country)) continue;
+    let c = world.cityOf.get(b.id);
+    if (c === undefined) { c = cityForBuilding(b); world.cityOf.set(b.id, c); }
+    if (!c || c.owner === b.owner) continue;
+    c.owner = b.owner;
+    c.captureT = 0;
+    changed = true;
+  }
+  if (changed) refreshCityShares();
+  return changed;
+}
+
 function updateCities() {
   if (world.mode !== 'real' || !world.cities) return;
   world.cityTick = (world.cityTick || 0) + CFG.DT;
@@ -8045,7 +8325,7 @@ function updateCities() {
   updateChokeTransits();
   for (const c of world.cities) {
     if (c.razed) continue;
-    let enemy = null, friendly = null;
+    let enemy = null, friendly = null, attackers = 0;
     forNear(c.x, c.y, 45, e => {
       if (e.dead || e.kind !== 'unit' || e.fly || e.isWorker) return false;
       if (e.owner < 0) return false;
@@ -8054,19 +8334,33 @@ function updateCities() {
       if (!e.capture) return false;
       if (dist2(e.x, e.y, c.x, c.y) > 45 * 45) return false;
       if (e.owner === c.owner) { friendly = e; return false; }
-      if (c.owner < 0) { enemy = e; return false; }
+      if (c.owner < 0) { attackers++; enemy = e; return false; }
       /* Cities change hands only in war. Peace-time entry is not an attack; the
          player declares war through the diplomacy panel or by firing first. */
       if (getRelation(e.owner, c.owner) !== 'WAR') return false;
-      enemy = e;
+      attackers++; enemy = e;
       return false;
     });
     /* A garrisoned city does not fall: the attacker must clear the defenders.
-       Capitals take longer, and nothing flips during the opening minute. */
-    c.contested = !!enemy && !friendly;
-    if (enemy && !friendly && world.time > 60) {
+       A capital needs a company, not a lone scout: the required force scales
+       with what the city is, and extra infantry speed the clock up with
+       diminishing returns. Nothing flips during the opening minute. */
+    const needInf = c.capital ? 3 : (c.pop >= 6 ? 2 : 1);
+    c.contested = attackers > 0 && !friendly;
+    /* A hold victory must be a defence, not a quiet twenty minutes: remember
+       whether this city was ever actually besieged. */
+    if (c.contested) c.everContested = true;
+    if (attackers > 0 && !friendly && world.time > 60 && attackers < needInf && enemy) {
+      const ap = world.players[enemy.owner];
+      if (ap && ap.isHuman && (!world._cityForceHintT || world.time - world._cityForceHintT > 15)) {
+        world._cityForceHintT = world.time;
+        toast(c.name + ' needs ' + needInf + ' infantry in the city to be taken (' + attackers + ' present)', 'err');
+      }
+    }
+    if (attackers >= needInf && !friendly && world.time > 60) {
       /* updateCities runs every 0.5 s, so advance by that interval. */
-      c.captureT += 0.5 / (c.capital ? 30 : 18);
+      const baseSec = c.capital ? 45 : (c.pop >= 6 ? 30 : 18);
+      c.captureT += (0.5 / baseSec) * Math.sqrt(Math.min(6, attackers));
       if (c.captureT >= 1) {
         c.captureT = 0;
         const old = c.owner;
@@ -8100,7 +8394,9 @@ function updateCities() {
         applyCityCaps();
       }
     } else if (c.captureT > 0) {
-      c.captureT = Math.max(0, c.captureT - CFG.DT * 0.2);
+      /* A stalled siege (too small a force) holds its progress; an abandoned
+         one decays. */
+      if (attackers === 0) c.captureT = Math.max(0, c.captureT - CFG.DT * 0.2);
     }
   }
 }
@@ -9111,7 +9407,9 @@ function logStuckUnit(u, moved) {
   };
   world.stuckLog.push(rec);
   if (world.stuckLog.length > 200) world.stuckLog.shift();
-  if (window.console) console.warn('[GeoDots] stuck unit order released', rec);
+  /* Diagnostics only: a large battle legitimately trips this thousands of times
+     per minute, which flooded the console and slowed headless runs. */
+  if (window.GD_DEBUG && window.console) console.warn('[GeoDots] stuck unit order released', rec);
 }
 
 function renderCompare() {

@@ -1,4 +1,5 @@
 .tmpcheck/
+tests/.tmp/
 node_modules/
 dist/
 index.backup-*.html

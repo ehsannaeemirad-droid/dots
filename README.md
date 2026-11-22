@@ -23,6 +23,22 @@ in a Freebuff Cloud preview.
 Replace the greeting with your website. Add a framework only if your project
 needs one.
 
+## Tests
+
+The game ships its own regression suite. It drives the real `index.html` in
+headless Chrome through the same functions the UI uses, with a fixed RNG seed
+so a failure can be replayed.
+
+```sh
+npm test                 # every spec
+npm test -- capture      # one area (capture, economy, ai, objectives, …)
+npm test -- --seed=42    # reproduce a specific run
+```
+
+No test dependency is installed: the harness talks to Chrome over the DevTools
+protocol using Node's built-in `fetch`/`WebSocket` (Node 22+). Chrome is found at
+the usual paths; set `CHROME_PATH` if it lives elsewhere.
+
 ## Build and publish
 
 ```sh

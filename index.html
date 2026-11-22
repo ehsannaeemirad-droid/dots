@@ -4607,10 +4607,13 @@ function pickBuildType(p, mix, free) {
      the cheapest one forever. Without this a poor AI never accumulates the 100
      coins a tank costs and fields nothing but riflemen. */
   const income = incomeCoinsPerSec(p) || 0;
-  const bestMix = Math.max.apply(null, affordable.map(a => mix[a]));
+  /* Bank for a doctrine unit this army is short of. The old test compared a mix
+     weight with the maximum of the same list, which is never true, so the AI
+     trickle-bought riflemen forever: measured armies were 76-92% infantry. */
   const wanted = Object.keys(mix).find(k =>
     canBuildType(p, k) && !buyBlockedReason(p, k) && !AA_TYPES.includes(k) &&
-    mix[k] > bestMix && costOf(p, k) > free && costOf(p, k) <= free + income * 30);
+    (total ? (have[k] || 0) / total : 0) < (mix[k] || 0) * 0.9 &&
+    costOf(p, k) > free && costOf(p, k) <= free + income * 30);
   if (wanted) return null;
   let r = Math.random() * sum;
   for (let i = 0; i < affordable.length; i++) {
@@ -8329,21 +8332,41 @@ function updateCities() {
   for (const c of world.cities) {
     if (c.razed) continue;
     let enemy = null, friendly = null, attackers = 0;
-    forNear(c.x, c.y, 45, e => {
+    /* Two hostile factions inside one city must not cooperate: only the largest
+       attacking faction can make progress, and a tie means nobody can. */
+    const tally = new Map(), who = new Map();
+    /* One radius, used everywhere (CFG.CAPTURE.RADIUS). This loop used to check
+       45 px while the rest of the game used 75, so a formation that had reached
+       the city and stopped at collision range still counted as outside it. */
+    const RADIUS = CFG.CAPTURE.RADIUS;
+    forNear(c.x, c.y, RADIUS, e => {
       if (e.dead || e.kind !== 'unit' || e.fly || e.isWorker) return false;
       if (e.owner < 0) return false;
       /* Urban capture is an infantry task: armour cannot hold ground here.
          forNear walks grid cells, so the true radius is re-checked. */
       if (!e.capture) return false;
-      if (dist2(e.x, e.y, c.x, c.y) > 45 * 45) return false;
+      if (dist2(e.x, e.y, c.x, c.y) > RADIUS * RADIUS) return false;
       if (e.owner === c.owner) { friendly = e; return false; }
-      if (c.owner < 0) { attackers++; enemy = e; return false; }
+      if (c.owner < 0) {
+        tally.set(e.owner, (tally.get(e.owner) || 0) + 1); who.set(e.owner, e);
+        attackers++; enemy = e; return false;
+      }
       /* Cities change hands only in war. Peace-time entry is not an attack; the
          player declares war through the diplomacy panel or by firing first. */
       if (getRelation(e.owner, c.owner) !== 'WAR') return false;
+      tally.set(e.owner, (tally.get(e.owner) || 0) + 1); who.set(e.owner, e);
       attackers++; enemy = e;
       return false;
     });
+    if (tally.size > 1) {
+      let topN = 0, topOwner = -1, tied = false;
+      for (const [o, n] of tally) {
+        if (n > topN) { topN = n; topOwner = o; tied = false; }
+        else if (n === topN) tied = true;
+      }
+      attackers = tied ? 0 : topN;
+      if (topOwner >= 0) enemy = who.get(topOwner);
+    }
     /* A garrisoned city does not fall: the attacker must clear the defenders.
        A capital needs a company, not a lone scout: the required force scales
        with what the city is, and extra infantry speed the clock up with
@@ -8601,13 +8624,28 @@ function nukeTargets(p) {
   const out = [];
   for (const u of world.units) {
     if (u.dead || u.owner === p.idx || !hostile(p, u) || u.kind !== 'unit') continue;
+    /* Only a ground breakthrough is a nuclear problem: aircraft overhead are
+       what the air force and SAMs are for. */
+    if (u.fly) continue;
     if (dist2(u.x, u.y, camp.x, camp.y) <= (CFG.CAPTURE.RADIUS + 10) * (CFG.CAPTURE.RADIUS + 10)) out.push(u);
   }
   return out;
 }
+/* Release is a last resort, not a reflex. It needs a real ground assault on the
+   seat of government (six or more units) that has already broken the perimeter
+   (capital at or below half strength), or a state reduced to its last city.
+   A single scout used to be enough, which made the AI raze its own capital. */
 function canFireNuke(p) {
   if (!p || p.country !== 'ISR' || (p.nukes || 0) <= 0) return false;
-  return nukeTargets(p).length > 0;
+  const camp = ent(p.campId);
+  if (!camp || camp.dead) return false;
+  const targets = nukeTargets(p);
+  if (targets.length < 6) return false;
+  const power = targets.reduce((s, u) => s + (u.maxHp || u.hp || 0), 0);
+  if (power < 90) return false;
+  const breached = camp.hp / camp.maxHp <= 0.5;
+  const lastStand = (world.cities || []).filter(c => c.owner === p.idx && !c.razed).length <= 1;
+  return breached || lastStand;
 }
 function fireNuke(p) {
   if (!canFireNuke(p)) {
@@ -8615,7 +8653,10 @@ function fireNuke(p) {
     return false;
   }
   const camp = ent(p.campId);
-  const cities = (world.cities || []).filter(c => !c.razed && dist2(c.x, c.y, camp.x, camp.y) <= 240 * 240).slice(0, 2);
+  /* Denial, not self-immolation: the strike denies ground the enemy holds. Only
+     foreign or unclaimed cities inside the blast are razed. */
+  const cities = (world.cities || []).filter(c => !c.razed && c.owner !== p.idx &&
+    dist2(c.x, c.y, camp.x, camp.y) <= 240 * 240).slice(0, 2);
   const names = cities.map(c => c.name).join(', ') || 'no city';
   if (p.isHuman && typeof confirm === 'function' && !confirm('Authorise nuclear release?\n\nThis will raze: ' + names + '\nAll foreign aid ends permanently and every Arab state declares war.')) return false;
   p.nukes--;
@@ -8647,7 +8688,10 @@ function fireNuke(p) {
 function useSovereignWealth(p) {
   if (!RICH_STATES.includes(p.country)) { toast('No sovereign wealth fund available', 'err'); return false; }
   if ((p.swCd || 0) > 0) { toast('Sovereign wealth on cooldown (' + Math.ceil(p.swCd) + 's)', 'err'); return false; }
-  const gain = Math.round((p.incomeCpt || 5) * 8 * 100);
+  /* Two minutes of income, once every twenty: a real emergency reserve that
+     cannot replace the economy. The old expression multiplied cents/second by
+     8*100, paying ~13-23 minutes of income per click. */
+  const gain = Math.round((p.incomeCpt || 5) * 120);
   p.cents += gain; p.stats.earned += gain;
   p.swCd = 1200;
   logEvent(p.country + ' liquidated sovereign wealth: +' + Math.round(gain / 100) + ' cr');

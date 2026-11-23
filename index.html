@@ -1076,6 +1076,44 @@ body.map-focus #minimapWrap{opacity:.9}
 @media (prefers-reduced-motion: reduce){
   .menu-shell::after{opacity:.55}
 }
+
+/* Landscape phones: the same command surface, compressed vertically. The bar
+   keeps identity, clock, treasury and pause in view; secondary tools scroll. */
+@media (max-height:520px) and (orientation:landscape){
+  :root{--bar1:54px;--bar2:42px}
+  #topbar{height:46px;padding:0 6px;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  #topbar::-webkit-scrollbar{display:none}
+  .tb-id{order:1;gap:6px;padding-right:6px;flex:0 0 auto}
+  .tb-idtext small{display:none}
+  .tb-idtext b{font-size:10.5px;max-width:78px}
+  .tb-id img,.tb-id .tbflag{width:20px!important;height:13px!important}
+  .tb-div{margin:0 4px 0 0;height:20px}
+  .tb-clock{order:2;min-width:40px}.tb-clock small{display:none}#tbTimer{font-size:11px}
+  .tb-stat{display:none}
+  .tb-spacer{display:none}
+  #ecoHudBtn{order:3;margin-left:auto;height:30px;padding:0 7px}
+  #ecoHudBtn small{display:none}#ecoHudBtn svg{display:none}
+  #pauseBtn{order:4;width:26px;height:26px;flex:0 0 auto}
+  .spdgroup{order:5;margin-left:4px;height:28px}
+  .spd{min-width:20px;padding:0 2px;font-size:8.5px}
+  #rosterBtn{order:6}#objHudBtn{order:7}#diploHudBtn{order:8}#mpHudBtn{order:9}#fogHudBtn{order:10}#sndBtn{order:11}
+  .hudbtn{height:28px;padding:0 6px;flex:0 0 auto}
+  #realStrip{top:46px;font-size:8px;padding:5px 8px}
+  #selinfo{left:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px);max-width:min(338px,47vw);min-width:250px;max-height:calc(100vh - var(--bar1) - var(--bar2) - 62px);overflow:hidden}
+  #selinfo.idle{display:none}
+  .si-head{grid-template-columns:30px 1fr auto;padding:8px 10px}
+  .si-icon{width:30px;height:30px}.si-name{font-size:12px}.si-sub{font-size:8px}
+  .si-grid .si-cell{padding:7px 8px}
+  .si-note{display:none}
+  #toasts{top:54px;right:8px;width:min(296px,38vw);max-height:96px;overflow:hidden}
+  .toast{font-size:9.5px;padding:6px 9px 6px 24px}
+  #minimapWrap{right:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px);width:116px;padding:3px}
+  #minimap{width:108px}
+  #cmdbar{padding:2px 8px}
+  #buildbar{padding:4px 8px calc(4px + var(--safe))}
+  #buildbar .bbtn{width:72px;min-height:0;height:100%;padding:3px 6px}
+  .btab{width:44px;min-height:0;height:100%}
+}
 </style>
 </head>
 <body>
@@ -5846,19 +5884,21 @@ function drawOrderRoutes(hp) {
     if (o.k === 'attack') {
       const t = ent(o.target);
       if (!t || t.dead) continue;
+      const tx = t.kind === 'unit' ? t.x : (t._px == null ? t.x : t._px);
+      const ty = t.kind === 'unit' ? t.y : (t._py == null ? t.y : t._py);
       ctx.save();
       ctx.setLineDash([5 / z, 5 / z]);
       ctx.strokeStyle = 'rgba(224,122,95,.34)';
       ctx.lineWidth = 1 / z;
-      ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(tx, ty); ctx.stroke();
       ctx.setLineDash([]);
       const r = (t.r || 10) + 7;
       ctx.strokeStyle = 'rgba(224,122,95,.7)'; ctx.lineWidth = 1.1 / z;
       ctx.beginPath();
-      ctx.moveTo(t.x - r, t.y - r + 4); ctx.lineTo(t.x - r, t.y - r); ctx.lineTo(t.x - r + 4, t.y - r);
-      ctx.moveTo(t.x + r - 4, t.y - r); ctx.lineTo(t.x + r, t.y - r); ctx.lineTo(t.x + r, t.y - r + 4);
-      ctx.moveTo(t.x + r, t.y + r - 4); ctx.lineTo(t.x + r, t.y + r); ctx.lineTo(t.x + r - 4, t.y + r);
-      ctx.moveTo(t.x - r + 4, t.y + r); ctx.lineTo(t.x - r, t.y + r); ctx.lineTo(t.x - r, t.y + r - 4);
+      ctx.moveTo(tx - r, ty - r + 4); ctx.lineTo(tx - r, ty - r); ctx.lineTo(tx - r + 4, ty - r);
+      ctx.moveTo(tx + r - 4, ty - r); ctx.lineTo(tx + r, ty - r); ctx.lineTo(tx + r, ty - r + 4);
+      ctx.moveTo(tx + r, ty + r - 4); ctx.lineTo(tx + r, ty + r); ctx.lineTo(tx + r - 4, ty + r);
+      ctx.moveTo(tx - r + 4, ty + r); ctx.lineTo(tx - r, ty + r); ctx.lineTo(tx - r, ty + r - 4);
       ctx.stroke();
       ctx.restore();
     } else if (o.k === 'move' || o.k === 'amove') {
@@ -5900,12 +5940,12 @@ function cityForBuilding(b) {
   return b._cityRef;
 }
 
-function drawBuildingGlyph(b) {
+function drawBuildingGlyph(b, px, py) {
   const r = b.r;
   const body = b.color || '#94a3b8';
   const dark = '#0b131c';
   ctx.save();
-  ctx.translate(b.x, b.y);
+  ctx.translate(px == null ? b.x : px, py == null ? b.y : py);
   ctx.fillStyle = 'rgba(3,8,13,.4)';
   ctx.beginPath(); ctx.ellipse(1, 3, r * 1.02, r * 0.92, 0, 0, TAU); ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = dark;
@@ -6122,6 +6162,127 @@ function mountainBaseLayer() {
   return c;
 }
 
+/* ---------- labels and installation de-confliction ----------
+   Structures are simulation objects at fixed coordinates. Their glyphs are a
+   presentation layer, so co-located installations may be drawn on a small ring
+   around the true site with a tether back to it. Labels are placed afterwards
+   by one solver that knows every city label, every structure label and every
+   marker, so no two plates can cover each other. */
+function boxesOverlap(a, b, pad) {
+  pad = pad || 0;
+  return a.x < b.x + b.w + pad && a.x + a.w + pad > b.x &&
+    a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
+}
+
+function buildingPoseLayout(bs) {
+  const poses = new Map(), groupSize = new Map();
+  if (!bs || !bs.length) return { poses, groupSize };
+  const parent = bs.map((_, i) => i);
+  const find = i => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+  for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+    /* A lone capital command is later pushed off its city marker; the margin
+       must already include that move, or the command can land on its SAM. */
+    const lim = (bs[i].r + bs[j].r) * 1.3 + 10;
+    if (dist2(bs[i].x, bs[i].y, bs[j].x, bs[j].y) < lim * lim) join(i, j);
+  }
+  const groups = new Map();
+  bs.forEach((b, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(b); });
+  const rank = { camp: 0, outpost: 1, airbase: 2, sam: 3, radar: 4, aa: 5, ncamp: 6, tower: 7, depot: 8, mine: 9 };
+  for (const group of groups.values()) {
+    let cx = 0, cy = 0;
+    for (const b of group) { cx += b.x; cy += b.y; }
+    cx /= group.length; cy /= group.length;
+    let city = null, best = Infinity;
+    for (const c of (world.cities || [])) {
+      const d = dist2(cx, cy, c.x, c.y);
+      if (d < best) { best = d; city = c; }
+    }
+    if (best > 140 * 140) city = null;
+    const ax = city ? city.x : cx, ay = city ? city.y : cy;
+    const maxR = Math.max.apply(null, group.map(b => b.r));
+    const cityR = city ? (2.1 + Math.sqrt(Math.max(0.05, city.pop || 0)) * 1.3) * clamp(cam.z, 0.78, 1.16) : 0;
+    let overlapsSite = false;
+    for (const b of group) if (Math.hypot(b.x - ax, b.y - ay) < b.r + cityR + 6) overlapsSite = true;
+    if (group.length === 1 && !overlapsSite) {
+      poses.set(group[0].id, { x: group[0].x, y: group[0].y, ax, ay });
+      groupSize.set(group[0].id, 1);
+      continue;
+    }
+    /* Chord between neighbours must clear the largest pair of glyphs, and the
+       ring must clear the city marker at its centre. */
+    const n = group.length;
+    const ring = n > 1 ? (maxR * 1.15 + 12) / Math.sin(Math.PI / n) : maxR + cityR + 18;
+    const R = Math.max(ring, maxR + cityR + 12);
+    const ordered = group.slice().sort((a, b) => ((rank[a.kind] == null ? 9 : rank[a.kind]) - (rank[b.kind] == null ? 9 : rank[b.kind])) || a.id - b.id);
+    ordered.forEach((b, i) => {
+      const ang = n === 1 ? 0 : (n === 2 ? (i === 0 ? Math.PI : 0) : -Math.PI / 2 + i * TAU / n);
+      poses.set(b.id, { x: ax + Math.cos(ang) * R, y: ay + Math.sin(ang) * R, ax, ay });
+      groupSize.set(b.id, n);
+    });
+  }
+  return { poses, groupSize };
+}
+
+function drawMapLabels(cands, obstacles) {
+  const accepted = [];
+  const sorted = cands.slice().sort((a, b) => b.prio - a.prio || a.seq - b.seq);
+  const pad = 3 / clamp(cam.z, 0.5, 1.4);
+  for (const cd of sorted) {
+    ctx.font = cd.font;
+    try { ctx.letterSpacing = cd.spacing || '0px'; } catch (e) { /* older canvas */ }
+    const tw = ctx.measureText(cd.txt).width;
+    const w = tw + cd.fs * 0.9, h = cd.fs * 1.55;
+    const gap = 6 / clamp(cam.z, 0.55, 1.2), mr = cd.mr;
+    const tries = [
+      [cd.ax - w / 2, cd.ay - mr - gap - h],
+      [cd.ax + mr + gap, cd.ay - h / 2],
+      [cd.ax - mr - gap - w, cd.ay - h / 2],
+      [cd.ax - w / 2, cd.ay + mr + gap],
+      [cd.ax + mr * 0.72 + gap, cd.ay - mr * 0.72 - gap - h],
+      [cd.ax - mr * 0.72 - gap - w, cd.ay - mr * 0.72 - gap - h],
+      [cd.ax + mr * 0.72 + gap, cd.ay + mr * 0.72 + gap],
+      [cd.ax - mr * 0.72 - gap - w, cd.ay + mr * 0.72 + gap]
+    ];
+    for (let level = 1; level <= 3; level++) {
+      tries.push([cd.ax - w / 2, cd.ay - mr - gap - h - level * (h + 4)]);
+      tries.push([cd.ax - w / 2, cd.ay + mr + gap + level * (h + 4)]);
+    }
+    let box = null;
+    const maxReach = (cd.kind === 'city' ? 112 : 84) / clamp(cam.z, 0.55, 1.6);
+    for (const t of tries) {
+      const b = { x: t[0], y: t[1], w, h };
+      if (Math.hypot(b.x + w / 2 - cd.ax, b.y + h / 2 - cd.ay) > maxReach) continue;
+      if (accepted.some(o => boxesOverlap(b, o, pad))) continue;
+      if (obstacles.some(o => o.own !== cd.own && boxesOverlap(b, o, pad))) continue;
+      box = b; break;
+    }
+    if (!box) continue;
+    accepted.push({ txt: cd.txt, own: cd.own, fs: cd.fs, color: cd.color, bar: cd.bar, font: cd.font, spacing: cd.spacing,
+      prio: cd.prio, ax: cd.ax, ay: cd.ay, x: box.x, y: box.y, w: box.w, h: box.h });
+  }
+  try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+  const drawOrder = accepted.slice().sort((a, b) => a.prio - b.prio);
+  for (const L of drawOrder) {
+    const lx = clamp(L.ax, L.x, L.x + L.w), ly = clamp(L.ay, L.y, L.y + L.h);
+    ctx.strokeStyle = 'rgba(222,234,244,.20)';
+    ctx.lineWidth = 0.8 / clamp(cam.z, 0.55, 1.25);
+    ctx.beginPath(); ctx.moveTo(L.ax, L.ay); ctx.lineTo(lx, ly); ctx.stroke();
+    ctx.fillStyle = 'rgba(5,10,14,.82)';
+    ctx.fillRect(L.x, L.y, L.w, L.h);
+    ctx.fillStyle = L.bar;
+    ctx.fillRect(L.x, L.y, Math.max(1, L.fs * 0.12), L.h);
+    ctx.font = L.font;
+    try { ctx.letterSpacing = L.spacing || '0px'; } catch (e) { /* older canvas */ }
+    ctx.fillStyle = L.color;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(L.txt, L.x + L.fs * 0.52, L.y + L.h / 2 + 0.3);
+  }
+  try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+  world._mapLabelBoxes = accepted.map(a => ({ txt: a.txt, own: a.own, x: a.x, y: a.y, w: a.w, h: a.h }));
+  return world._mapLabelBoxes;
+}
+
 function drawWorld() {
   const vw = window.innerWidth, vh = window.innerHeight;
   ctx.save();
@@ -6136,6 +6297,7 @@ function drawWorld() {
 
   const T = world.map.terrain;
   const hp = humanPlayer();
+  const mapLabelCands = [], mapLabelObstacles = [];
   if (!world._cityNameSet && world.cities) world._cityNameSet = new Set(world.cities.map(c => c.name.toUpperCase()));
 
   /* One blitted terrain plate replaces the sea, chart, relief and road passes. */
@@ -6373,14 +6535,15 @@ function drawWorld() {
         ctx.strokeStyle = 'rgba(5,9,13,.9)'; ctx.lineWidth = 1; ctx.stroke();
       }
       if (c.role) roleMark(c, c.x + rr + 5.5, c.y - rr - 3.5, 'rgba(224,214,188,.85)');
+      const siteR = rr + (c.capital ? 11 : 3);
+      mapLabelObstacles.push({ own: 'c:' + c.name, x: c.x - siteR, y: c.y - siteR, w: siteR * 2, h: siteR * 2 });
       if (c.captureT > 0) {
         ctx.beginPath(); ctx.arc(c.x, c.y, rr + 9, -Math.PI / 2, -Math.PI / 2 + TAU * c.captureT);
         ctx.strokeStyle = '#e0a95b'; ctx.lineWidth = 2.4; ctx.stroke();
       }
     }
-    /* Labels are laid out after all markers, by strategic priority, with a hard
-       collision test: a capital name never loses to a village. */
-    const boxes = [];
+    /* Candidate labels only. They are placed and drawn after every marker and
+       structure exists, so one solver can see the whole crowded field. */
     for (const c of ordered) {
       if (c.razed) continue;
       const p = prio(c);
@@ -6389,28 +6552,20 @@ function drawWorld() {
       const pop = Math.max(0.05, c.pop || 0);
       const rr = (2.1 + Math.sqrt(pop) * 1.3) * clamp(z, 0.78, 1.16);
       const fs = (c.capital ? 12 : 9) / clamp(z, 0.55, 1.15);
-      ctx.font = (c.capital ? '600 ' : '700 ') + fs.toFixed(1) + 'px Palatino, "Palatino Linotype", Georgia, serif';
-      try { ctx.letterSpacing = c.capital ? '0.4px' : '1.1px'; } catch (e) { /* older canvas */ }
       const txt = c.capital ? c.name : c.name.toUpperCase();
-      const tw = ctx.measureText(txt).width;
-      const padX = fs * 0.45, h = fs * 1.5;
-      const bx = c.x - tw / 2 - padX, by = c.y - rr - h - 9 / clamp(z, 0.55, 1.2), bw = tw + padX * 2;
-      const clash = boxes.some(o => bx < o.x + o.w + 3 && bx + bw + 3 > o.x && by < o.y + o.h + 2 && by + h + 2 > o.y);
-      if (clash) { try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ } continue; }
-      boxes.push({ x: bx, y: by, w: bw, h });
-      ctx.fillStyle = 'rgba(5,10,14,.74)';
-      ctx.fillRect(bx, by, bw, h);
-      ctx.fillStyle = c.capital ? 'rgba(211,172,98,.9)' : (c.owner >= 0 ? tintHex(world.players[c.owner].color, 0.9, '#9aa8b4') : 'rgba(154,168,180,.7)');
-      ctx.fillRect(bx, by, Math.max(1, fs * 0.12), h);
-      ctx.beginPath();
-      ctx.moveTo(c.x, c.y - rr - 2);
-      ctx.lineTo(c.x, by + h);
-      ctx.strokeStyle = 'rgba(237,243,248,.18)'; ctx.lineWidth = 0.8; ctx.stroke();
-      ctx.fillStyle = c.capital ? '#f3ead6' : 'rgba(226,234,241,.88)';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText(txt, bx + padX + fs * 0.1, by + h / 2 + 0.3);
-      if (c.role) roleMark(c, bx + bw + 7, by + h / 2, 'rgba(224,214,188,.9)');
-      try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+      const cityPad = 90 / z + 120;
+      if (c.x < cam.x - vw / (2 * z) - cityPad || c.x > cam.x + vw / (2 * z) + cityPad ||
+          c.y < cam.y - vh / (2 * z) - cityPad || c.y > cam.y + vh / (2 * z) + cityPad) continue;
+      mapLabelCands.push({
+        kind: 'city', own: 'c:' + c.name, txt, fs,
+        font: (c.capital ? '600 ' : '700 ') + fs.toFixed(1) + 'px Palatino, "Palatino Linotype", Georgia, serif',
+        spacing: c.capital ? '0.4px' : '1.1px',
+        ax: c.x, ay: c.y, mr: rr + (c.capital ? 12 : 8),
+        prio: c.capital ? 130 : (p === 3 ? 72 : (p === 2 ? 55 : 42)),
+        seq: mapLabelCands.length,
+        color: c.capital ? '#f3ead6' : 'rgba(226,234,241,.9)',
+        bar: c.capital ? 'rgba(211,172,98,.9)' : (c.owner >= 0 ? tintHex(world.players[c.owner].color, 0.9, '#9aa8b4') : 'rgba(154,168,180,.7)')
+      });
     }
   }
 
@@ -6483,11 +6638,26 @@ function drawWorld() {
     }
   }
 
-  // Buildings
-  const labelBoxes = [];
-  for (const b of world.buildings) {
-    if (b.dead) continue;
-    if (!buildingVisibleToHuman(b)) continue;
+  // Buildings — co-located glyphs share a ring and tether back to the true site.
+  const visibleBuildings = world.buildings.filter(b => !b.dead && buildingVisibleToHuman(b));
+  const poseLayout = buildingPoseLayout(visibleBuildings);
+  const viewHalfW = vw / (2 * cam.z) + 120, viewHalfH = vh / (2 * cam.z) + 120;
+  const structureLabel = { camp: 'COMMAND', ncamp: 'NEUTRAL', outpost: 'OUTPOST', airbase: 'AIRBASE',
+    sam: 'LONG SAM', radar: 'RADAR', aa: 'FLAK', tower: 'BUNKER', depot: 'DEPOT', mine: 'RESOURCE' };
+  const structurePrio = { airbase: 94, camp: 92, outpost: 90, sam: 88, radar: 86, aa: 84, tower: 80, depot: 78, mine: 76 };
+  for (const b of visibleBuildings) {
+    const pose = poseLayout.poses.get(b.id) || { x: b.x, y: b.y, ax: b.x, ay: b.y };
+    b._px = pose.x; b._py = pose.y;
+    const tethered = Math.hypot(pose.x - b.x, pose.y - b.y) > 3;
+    if (tethered) {
+      ctx.strokeStyle = 'rgba(200,216,228,.30)';
+      ctx.lineWidth = 0.8 / clamp(cam.z, 0.55, 1.25);
+      ctx.setLineDash([2.5 / cam.z, 3.5 / cam.z]);
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(pose.x, pose.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(b.x, b.y, 1.8 / cam.z, 0, TAU);
+      ctx.fillStyle = 'rgba(224,236,244,.75)'; ctx.fill();
+    }
 
     if (b.capturable) {
       ctx.beginPath(); ctx.arc(b.x, b.y, CFG.CAPTURE.RADIUS, 0, TAU);
@@ -6503,7 +6673,7 @@ function drawWorld() {
 
     if (sel.bId === b.id) {
       const pulse = app.reduceMotion ? 0 : (Math.sin(performance.now() / 300) * 0.5 + 0.5);
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 7 + pulse * 1.5, 0, TAU);
+      ctx.beginPath(); ctx.arc(pose.x, pose.y, b.r + 7 + pulse * 1.5, 0, TAU);
       ctx.strokeStyle = 'rgba(201,164,92,.85)'; ctx.lineWidth = 1.4; ctx.stroke();
       const rng = (CFG.BUILDINGS[b.kind] && CFG.BUILDINGS[b.kind].range) || 0;
       if (rng > 0) {
@@ -6516,49 +6686,40 @@ function drawWorld() {
     const bRing = bOwned ? 'rgba(125,211,252,.75)'
       : (b.owner >= 0 && friendly(b, hp) ? 'rgba(74,222,128,.7)'
         : (b.owner >= 0 ? 'rgba(248,113,113,.75)' : 'rgba(148,163,184,.4)'));
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 3, 0, TAU);
+    ctx.beginPath(); ctx.arc(pose.x, pose.y, b.r + 3, 0, TAU);
     ctx.strokeStyle = b.suppressed ? '#facc15' : bRing;
     ctx.lineWidth = 1.6; ctx.stroke();
 
     if (b.flash > 0) {
       ctx.globalAlpha = clamp(b.flash / 0.18, 0, 1) * 0.45;
       ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(pose.x, pose.y, b.r, 0, TAU); ctx.fill();
       ctx.globalAlpha = 1;
     }
-    drawBuildingGlyph(b);
+    drawBuildingGlyph(b, pose.x, pose.y);
 
-    /* City seats are labelled by the cartographic city layer, which ranks and
-       declutters capitals against towns. Only standalone installations keep a
-       local label here. */
-    if (b.city && b.kind !== 'camp' && b.kind !== 'ncamp' && b.kind !== 'outpost') {
-      /* Only label what is legible at this zoom, and never let two labels collide. */
-      const show = b.kind === 'camp' || b.r > 20 || cam.z > 0.66;
-      if (show) {
-        const fs = b.kind === 'camp' ? 12 : 10;
-        ctx.font = '600 ' + fs + 'px Palatino, "Palatino Linotype", Georgia, serif';
-        const txt = b.city;
-        const w = ctx.measureText(txt).width;
-        const lx = b.x, ly = b.y - b.r - (b.kind === 'camp' ? 22 : 15);
-        const box = { x: lx - w / 2 - 4, y: ly - 8, w: w + 8, h: 15 };
-        const clash = labelBoxes.some(o => box.x < o.x + o.w && box.x + box.w > o.x && box.y < o.y + o.h && box.y + box.h > o.y);
-        if (!clash) {
-          labelBoxes.push(box);
-          ctx.fillStyle = 'rgba(6,12,18,.6)';
-          ctx.fillRect(box.x, box.y, box.w, box.h);
-          ctx.fillStyle = b.kind === 'camp' ? '#ffffff' : '#dbe7f3';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(txt, lx, ly + 1);
-        }
-      }
+    mapLabelObstacles.push({ own: 'b:' + b.id, x: pose.x - b.r * 1.08, y: pose.y - b.r * 1.08, w: b.r * 2.16, h: b.r * 2.16 });
+    const grouped = (poseLayout.groupSize.get(b.id) || 1) > 1;
+    const seat = b.kind === 'camp' || b.kind === 'ncamp' || b.kind === 'outpost';
+    const inView = pose.x > cam.x - viewHalfW && pose.x < cam.x + viewHalfW &&
+      pose.y > cam.y - viewHalfH && pose.y < cam.y + viewHalfH;
+    if (inView && cam.z >= (grouped ? 0.54 : 0.60) && (!seat || grouped)) {
+      const fs = 9.5 / clamp(cam.z, 0.55, 1.2);
+      mapLabelCands.push({
+        kind: 'building', own: 'b:' + b.id, txt: structureLabel[b.kind] || buildingLabel(b.kind), fs,
+        font: '600 ' + fs.toFixed(1) + 'px "Cascadia Mono", Consolas, monospace',
+        spacing: '0.3px', ax: pose.x, ay: pose.y, mr: b.r * 1.35 + 3,
+        prio: structurePrio[b.kind] || 74, seq: mapLabelCands.length,
+        color: 'rgba(223,235,244,.94)', bar: tintHex(b.color, 0.85, 'rgba(154,168,180,.7)')
+      });
     }
 
     if (b.hp < b.maxHp) {
       const bw = b.r * 2;
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(b.x - bw / 2, b.y + b.r + 5, bw, 4);
+      ctx.fillRect(pose.x - bw / 2, pose.y + b.r + 5, bw, 4);
       ctx.fillStyle = b.suppressed ? '#facc15' : '#22c55e';
-      ctx.fillRect(b.x - bw / 2, b.y + b.r + 5, bw * clamp(b.hp / b.maxHp, 0, 1), 4);
+      ctx.fillRect(pose.x - bw / 2, pose.y + b.r + 5, bw * clamp(b.hp / b.maxHp, 0, 1), 4);
     }
   }
 
@@ -6571,13 +6732,13 @@ function drawWorld() {
       if (!buildingVisibleToHuman(b)) continue;
       const sweep = (now * 0.9 + (b.id % 7) * 0.7) % TAU;
       const rad = (b.kind === 'radar' ? 95 : 58);
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(sweep);
+      ctx.save(); ctx.translate(b._px == null ? b.x : b._px, b._py == null ? b.y : b._py); ctx.rotate(sweep);
       const g = ctx.createLinearGradient(0, 0, rad, 0);
-      g.addColorStop(0, 'rgba(127,192,212,.10)');
+      g.addColorStop(0, 'rgba(127,192,212,.22)');
       g.addColorStop(1, 'rgba(127,192,212,0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rad, -0.32, 0.02); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = 'rgba(127,192,212,.26)'; ctx.lineWidth = 0.8;
+      ctx.strokeStyle = 'rgba(127,192,212,.55)'; ctx.lineWidth = 1.1;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(rad, 0); ctx.stroke();
       ctx.restore();
     }
@@ -6640,9 +6801,12 @@ function drawWorld() {
   const fxHigh = app.fxQuality === 'high' && !app.reduceMotion;
   const fxMid = app.fxQuality !== 'off';
   for (const fx of world.effects) {
+    /* Off is a genuinely empty effects layer: no tracers, blasts, smoke, tags
+       or shockwaves. Reduced keeps impact feedback but drops the costly and
+       ambient layers; High adds smoke, heat trails and sensor sweeps. */
+    if (!fxMid) continue;
     const a = clamp(fx.t / fx.maxT, 0, 1), age = 1 - a;
     if (fx.k === 'shot') {
-      if (!fxMid) continue;
       const grad = ctx.createLinearGradient(fx.x1, fx.y1, fx.x2, fx.y2);
       grad.addColorStop(0, 'rgba(255,236,178,.05)');
       grad.addColorStop(0.7, fx.color || 'rgba(253,224,71,.65)');
@@ -6654,10 +6818,19 @@ function drawWorld() {
       ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
     } else if (fx.k === 'boom') {
       const rr = fx.r * (0.55 + age * 0.85);
-      if (!fxMid) {
-        ctx.globalAlpha = a * 0.7; ctx.fillStyle = fx.color || '#e0a95b';
-        ctx.beginPath(); ctx.arc(fx.x, fx.y, rr * 0.6, 0, TAU); ctx.fill();
-      } else {
+      if (fxMid) {
+        if (fxHigh) {
+          for (let k = 0; k < 4; k++) {
+            const ang = (k / 4) * TAU + (fx.x + fx.y) * 0.01;
+            ctx.globalAlpha = 0.18 + age * 0.26;
+            ctx.fillStyle = '#4e5860';
+            ctx.beginPath(); ctx.arc(fx.x + Math.cos(ang) * rr * (0.55 + age * 0.7), fx.y + Math.sin(ang) * rr * (0.5 + age * 0.6) - age * 12, rr * (0.34 + age * 0.26), 0, TAU); ctx.fill();
+          }
+          for (let k = 0; k < 3; k++) {
+            ctx.globalAlpha = 0.13 + age * 0.22;
+            ctx.beginPath(); ctx.arc(fx.x + Math.sin((fx.x + k) * 0.7) * rr * 0.24, fx.y - rr * (0.45 + k * 0.24) - age * 18, rr * (0.25 + k * 0.08), 0, TAU); ctx.fill();
+          }
+        }
         const core = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, rr);
         core.addColorStop(0, 'rgba(255,246,214,' + (0.9 * a).toFixed(2) + ')');
         core.addColorStop(0.28, 'rgba(244,184,96,' + (0.72 * a).toFixed(2) + ')');
@@ -6668,17 +6841,8 @@ function drawWorld() {
         ctx.globalAlpha = a * 0.55;
         ctx.strokeStyle = 'rgba(255,240,210,.8)'; ctx.lineWidth = 1.1;
         ctx.beginPath(); ctx.arc(fx.x, fx.y, rr * 1.08, 0, TAU); ctx.stroke();
-        if (fxHigh) {
-          for (let k = 0; k < 3; k++) {
-            const ang = (k / 3) * TAU + (fx.x + fx.y) * 0.01;
-            ctx.globalAlpha = a * 0.16;
-            ctx.fillStyle = '#39424a';
-            ctx.beginPath(); ctx.arc(fx.x + Math.cos(ang) * rr * (0.5 + age), fx.y + Math.sin(ang) * rr * (0.5 + age) - age * 8, rr * (0.28 + age * 0.2), 0, TAU); ctx.fill();
-          }
-        }
       }
     } else if (fx.k === 'ring') {
-      if (!fxMid) continue;
       ctx.globalAlpha = a * 0.8;
       ctx.strokeStyle = fx.color || '#7fc0d4'; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1.25 - a * 0.55), 0, TAU); ctx.stroke();
@@ -6703,12 +6867,14 @@ function drawWorld() {
     const hv = ent(app.hover.id);
     if (hv && !hv.dead) {
       const r = (hv.r || 8) + 7, c = 5;
+      const hx = hv.kind === 'unit' ? hv.x : (hv._px == null ? hv.x : hv._px);
+      const hy = hv.kind === 'unit' ? hv.y : (hv._py == null ? hv.y : hv._py);
       ctx.strokeStyle = 'rgba(201,164,92,.9)'; ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(hv.x - r, hv.y - r + c); ctx.lineTo(hv.x - r, hv.y - r); ctx.lineTo(hv.x - r + c, hv.y - r);
-      ctx.moveTo(hv.x + r - c, hv.y - r); ctx.lineTo(hv.x + r, hv.y - r); ctx.lineTo(hv.x + r, hv.y - r + c);
-      ctx.moveTo(hv.x + r, hv.y + r - c); ctx.lineTo(hv.x + r, hv.y + r); ctx.lineTo(hv.x + r - c, hv.y + r);
-      ctx.moveTo(hv.x - r + c, hv.y + r); ctx.lineTo(hv.x - r, hv.y + r); ctx.lineTo(hv.x - r, hv.y + r - c);
+      ctx.moveTo(hx - r, hy - r + c); ctx.lineTo(hx - r, hy - r); ctx.lineTo(hx - r + c, hy - r);
+      ctx.moveTo(hx + r - c, hy - r); ctx.lineTo(hx + r, hy - r); ctx.lineTo(hx + r, hy - r + c);
+      ctx.moveTo(hx + r, hy + r - c); ctx.lineTo(hx + r, hy + r); ctx.lineTo(hx + r - c, hy + r);
+      ctx.moveTo(hx - r + c, hy + r); ctx.lineTo(hx - r, hy + r); ctx.lineTo(hx - r, hy + r - c);
       ctx.stroke();
     } else app.hover = null;
   }
@@ -6759,6 +6925,10 @@ function drawWorld() {
     ctx.restore();
   }
 
+  /* All city and installation labels are placed together above the fog, then
+     geography names are admitted only where they do not cover one of them. */
+  const mapLabelBoxes = drawMapLabels(mapLabelCands, mapLabelObstacles);
+
   /* Geography labels sit above the fog: place names are public knowledge, and a
      theatre with unreadable names is a map with no orientation. */
   if (T && T.labels) {
@@ -6771,12 +6941,23 @@ function drawWorld() {
       ctx.font = (lb.sz >= 2 ? '600 ' : '700 ') + fs + 'px Palatino, "Palatino Linotype", Georgia, serif';
       try { ctx.letterSpacing = (lb.sz >= 2 ? '2.4px' : '1.2px'); } catch (e) { /* older canvas */ }
       const txt = lb.n.toUpperCase();
-      if (world._cityNameSet && world._cityNameSet.has(txt)) continue; // the city layer labels these
+      if (world._cityNameSet && world._cityNameSet.has(txt)) {
+        try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+        continue; // the city layer labels these
+      }
+      const tw = ctx.measureText(txt).width;
+      const geoBox = { x: lb.p.x - tw / 2, y: lb.p.y - fs * 0.7, w: tw, h: fs * 1.4 };
+      if (mapLabelBoxes.some(o => boxesOverlap(geoBox, o, 2)) ||
+          mapLabelObstacles.some(o => boxesOverlap(geoBox, o, 2))) {
+        try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+        continue;
+      }
       ctx.shadowColor = 'rgba(2,5,9,.95)';
       ctx.shadowBlur = 7;
       ctx.fillStyle = lb.sz >= 2 ? 'rgba(244,247,250,.7)' : 'rgba(206,216,227,.4)';
       ctx.fillText(txt, lb.p.x, lb.p.y);
       ctx.shadowBlur = 0;
+      mapLabelBoxes.push({ txt, own: 'geo:' + txt, x: geoBox.x, y: geoBox.y, w: geoBox.w, h: geoBox.h });
       try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
     }
   }
@@ -6786,8 +6967,16 @@ function drawWorld() {
       if (sb.small && cam.z < 0.7) continue;
       ctx.font = 'italic 600 ' + (sb.small ? 11 : 15) + 'px Palatino, "Palatino Linotype", Georgia, serif';
       try { ctx.letterSpacing = '1px'; } catch (e) { /* older canvas */ }
+      const stw = ctx.measureText(sb.n).width;
+      const sBox = { x: sb.p.x - stw / 2, y: sb.p.y - (sb.small ? 8 : 11), w: stw, h: sb.small ? 16 : 22 };
+      if (mapLabelBoxes.some(o => boxesOverlap(sBox, o, 2)) ||
+          mapLabelObstacles.some(o => boxesOverlap(sBox, o, 2))) {
+        try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
+        continue;
+      }
       ctx.fillStyle = 'rgba(140, 214, 240, 0.4)';
       ctx.fillText(sb.n, sb.p.x, sb.p.y);
+      mapLabelBoxes.push({ txt: sb.n, own: 'sea:' + sb.n, x: sBox.x, y: sBox.y, w: sBox.w, h: sBox.h });
       try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
     }
   }
@@ -7943,7 +8132,8 @@ function selectAt(w) {
     }
   }
   for (const b of world.buildings) {
-    if (buildingVisibleToHuman(b) && dist2(w.x, w.y, b.x, b.y) <= (b.r + 10) ** 2) {
+    const bx = b._px == null ? b.x : b._px, by = b._py == null ? b.y : b._py;
+    if (buildingVisibleToHuman(b) && dist2(w.x, w.y, bx, by) <= (b.r + 10) ** 2) {
       if (b.owner === hp.idx) sel.bId = b.id;
       else sel.inspect = { kind: 'building', id: b.id };
       SFX.play('select'); return;
@@ -7966,7 +8156,8 @@ function issueMoveOrder(tx, ty) {
   }
   if (!focus) {
     for (const b of world.buildings) {
-      if (!b.dead && hostile(hp, b) && dist2(tx, ty, b.x, b.y) <= (b.r + 14) * (b.r + 14)) { focus = b; break; }
+      const bx = b._px == null ? b.x : b._px, by = b._py == null ? b.y : b._py;
+      if (!b.dead && hostile(hp, b) && dist2(tx, ty, bx, by) <= (b.r + 14) * (b.r + 14)) { focus = b; break; }
     }
   }
   const cols = Math.ceil(Math.sqrt(sel.units.length));

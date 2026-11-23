@@ -814,14 +814,280 @@ body.mode-real [data-only="classic"]{display:none!important}
 .tscroll #resTable th:last-child,.tscroll #resTable td:last-child{padding-right:10px}
 #objBody .obj .oic{width:26px;font-size:10px;letter-spacing:.06em}
 
+/* =========================================================================
+   COMMAND SURFACE V2 — operational atlas
+   The map is the document; the interface is the instrument frame around it.
+   Flat plates, hairline separators, engraved micro-labels, tabular figures.
+   ========================================================================= */
+:root{
+  --panel: rgba(8,14,19,.94);
+  --panel-solid:#0a1117;
+  --hair: rgba(173,196,214,.09);
+  --hair-2: rgba(173,196,214,.16);
+  --ivory:#edf3f8;
+  --steel:#9fb2c2;
+  --muted:#6f8494;
+  --accent:#d3ac62;
+  --accent-2:#e2c489;
+  --ok:#6fc596;
+  --warn:#e0a95b;
+  --bad:#e07a5f;
+  --shadow-panel: 0 22px 50px -26px rgba(0,0,0,.95);
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-data: "Cascadia Mono", "SF Mono", Consolas, "Roboto Mono", ui-monospace, monospace;
+}
+body{letter-spacing:.005em}
+
+/* ------------------------------------------------------------- menu frame */
+.menu-shell{max-width:1380px;margin:0 auto;padding:0 clamp(22px,4.2vw,64px);height:100%;min-height:0;display:flex;flex-direction:column;position:relative;z-index:2}
+.menu-shell::after{
+  content:"";position:absolute;right:clamp(20px,4vw,60px);top:8vh;bottom:10vh;width:min(46vw,620px);pointer-events:none;
+  background:
+    radial-gradient(closest-side, transparent 58%, rgba(211,172,98,.10) 59%, transparent 60%) 50% 46% / 380px 380px no-repeat,
+    radial-gradient(closest-side, transparent 68%, rgba(128,164,190,.08) 69%, transparent 70%) 50% 46% / 540px 540px no-repeat,
+    radial-gradient(closest-side, transparent 78%, rgba(128,164,190,.05) 79%, transparent 80%) 50% 46% / 720px 720px no-repeat;
+  opacity:.9;
+}
+.menu-shell::before{
+  background:
+    linear-gradient(90deg, rgba(150,178,200,.05) 1px, transparent 1px) 0 0 / 84px 84px,
+    linear-gradient(0deg, rgba(150,178,200,.04) 1px, transparent 1px) 0 0 / 84px 84px;
+  opacity:.5;
+  mask-image:linear-gradient(90deg,transparent,#000 55%,#000);
+}
+.menu-brand{align-self:stretch;max-width:none;padding-top:clamp(28px,7vh,74px)}
+.menu-eyebrow{font-family:var(--font-data);letter-spacing:.42em;font-size:9px;margin-bottom:20px}
+.wordmark{font-size:clamp(46px,6.4vw,86px);letter-spacing:.02em;font-weight:400}
+.wordmark em{font-style:normal;color:var(--accent)}
+.brand-sub{max-width:60ch;font-size:12.5px;line-height:1.75;color:var(--steel);margin-top:18px}
+.menu-grid{grid-template-columns:minmax(0,1fr) 372px;gap:clamp(28px,5vw,84px);align-items:start;padding:clamp(26px,5.5vh,58px) 0 26px;flex:1;min-height:0}
+.menu-list{border-top:1px solid var(--hair-2);max-width:720px}
+.menu-item{grid-template-columns:52px 1fr;padding:19px 6px;border-bottom:1px solid var(--hair)}
+.menu-item .mi-index{font-size:9px;color:var(--muted);letter-spacing:.14em}
+.menu-item .mi-label{font-size:14px;font-weight:600;color:#dbe6ef;letter-spacing:.01em}
+.menu-item .mi-note{font-size:11px;color:var(--muted)}
+.menu-item:hover{background:linear-gradient(90deg,rgba(211,172,98,.07),transparent 62%)}
+.menu-item:hover .mi-index{color:var(--accent)}
+.menu-board{width:100%;background:linear-gradient(180deg,rgba(15,23,30,.92),rgba(8,13,18,.96));border:1px solid var(--hair-2);box-shadow:var(--shadow-panel);padding:0;border-radius:2px;position:relative;overflow:hidden}
+.menu-board::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,var(--accent),transparent 72%);opacity:.8}
+.menu-board .board-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-data);font-size:8.5px;letter-spacing:.28em;padding:15px 18px;border-bottom:1px solid var(--hair);color:var(--accent);background:rgba(255,255,255,.012)}
+.menu-board .board-head i{font-style:normal;color:var(--muted);letter-spacing:.12em}
+.board-country{display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:center;margin:0;padding:18px}
+.board-country .bflag{width:52px;height:34px;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0;border-color:var(--hair-2)}
+.board-country .bflag .flagimg{width:48px;height:31px}
+.board-country .bname{font-family:var(--font-display);font-size:25px;color:var(--ivory);line-height:1.05}
+.board-country .bcode{font-family:var(--font-data);font-size:8.5px;letter-spacing:.1em;color:var(--muted);margin-top:5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.board-kv{display:grid;grid-template-columns:1fr auto;gap:0;margin:0;padding:0 18px;font-size:11px}
+.board-kv dt{color:var(--muted);padding:8px 0;border-top:1px solid var(--hair);font-size:9px;letter-spacing:.13em;text-transform:uppercase;align-self:center}
+.board-kv dd{color:var(--steel);font-family:var(--font-data);font-size:10.5px;text-align:right;padding:8px 0;border-top:1px solid var(--hair)}
+.board-meter{padding:16px 18px 4px}
+.board-meter .bm-top{display:flex;justify-content:space-between;font-family:var(--font-data);font-size:8px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
+.board-meter .bm-bar{height:3px;background:rgba(255,255,255,.06);position:relative;overflow:hidden}
+.board-meter .bm-bar i{position:absolute;inset:0 auto 0 0;width:62%;background:linear-gradient(90deg,#8f6f38,var(--accent))}
+.board-meter .bm-legend{display:flex;justify-content:space-between;margin-top:6px;font-size:8.5px;color:var(--muted);font-family:var(--font-data);letter-spacing:.08em}
+.board-foot{display:flex;gap:8px;padding:16px 18px 18px;border-top:1px solid var(--hair);margin-top:12px}
+.board-foot .btn{margin:0;flex:1}
+.menu-foot{border-top:1px solid var(--hair);padding:14px 0 18px;font-size:9px;letter-spacing:.14em;color:var(--muted)}
+.menu-foot .foot-note{font-size:10.5px;color:var(--muted)}
+@media (max-width:980px){
+  .menu-grid{grid-template-columns:1fr;gap:26px;padding-top:24px}
+  .menu-board{display:block;max-width:520px}
+  .menu-shell::after{display:none}
+  .menu-brand{padding-top:30px}
+}
+@media (max-width:560px){
+  .menu-shell{padding:0 18px}
+  .menu-item{grid-template-columns:38px 1fr;padding:15px 2px}
+  .menu-item .mi-label{font-size:13px}
+  .menu-item .mi-note{font-size:10px;line-height:1.45}
+  .wordmark{font-size:clamp(42px,15vw,64px)}
+  .brand-sub{font-size:11.5px;line-height:1.65}
+  .menu-foot{font-size:8px}
+}
+
+/* ------------------------------------------------------------ command bar */
+#topbar{height:52px;padding:0 8px 0 10px;gap:0;background:linear-gradient(180deg,rgba(10,17,23,.98),rgba(6,11,15,.98));border-bottom:1px solid var(--hair-2);box-shadow:0 12px 30px -24px #000}
+.tb-id{display:flex;align-items:center;gap:10px;min-width:0;flex:0 0 auto;padding-right:12px}
+.tb-id .tbflag,.tb-id img{width:24px!important;height:16px!important;margin:0}
+.tb-idtext{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tb-idtext b{font-size:11.5px;font-weight:600;color:var(--ivory);letter-spacing:.03em;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.tb-idtext small{font-family:var(--font-data);font-size:7.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.tb-div{width:1px;height:24px;background:var(--hair);margin:0 12px 0 2px;flex:0 0 auto}
+.tb-clock{display:flex;flex-direction:column;gap:1px;flex:0 0 auto;min-width:56px}
+.tb-clock small,.tb-stat small,.hudbtn .hudk{font-family:var(--font-data);font-size:7px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+#tbTimer{font-family:var(--font-data);font-size:13px;letter-spacing:.04em;color:var(--ivory);font-variant-numeric:tabular-nums;min-width:0;line-height:1.15}
+.tb-stat{display:flex;flex-direction:column;gap:1px;padding:0 12px;border-left:1px solid var(--hair);flex:0 0 auto}
+.tb-stat b{font-family:var(--font-data);font-size:12px;font-weight:600;color:var(--steel);font-variant-numeric:tabular-nums;line-height:1.2}
+.tb-spacer{flex:1 1 auto;min-width:6px}
+.spdgroup{border-color:var(--hair);margin-left:12px;height:28px;align-items:center}
+.spd{min-width:26px;height:26px;font-family:var(--font-data);font-size:9.5px;color:var(--muted)}
+.spd.on{background:rgba(211,172,98,.14);color:var(--accent);box-shadow:inset 0 -1px 0 var(--accent)}
+#pauseBtn,#sndBtn{width:28px;height:28px;border-color:var(--hair);color:var(--steel)}
+.hudbtn{height:30px;border-color:var(--hair);background:rgba(255,255,255,.012);color:var(--steel);gap:6px;padding:0 9px}
+.hudbtn:hover{border-color:var(--hair-2);background:rgba(255,255,255,.03)}
+.hudbtn b{font-size:11.5px;color:var(--accent);letter-spacing:.02em}
+.hudbtn small{font-size:8px;color:var(--ok)}
+.hudbtn .hudlbl{font-size:8px;letter-spacing:.1em}
+#ecoHudBtn{border-color:rgba(211,172,98,.26);background:linear-gradient(180deg,rgba(211,172,98,.09),rgba(211,172,98,.03));min-height:32px}
+#ecoHudBtn b{font-size:12.5px}
+#ecoHudBtn small{font-family:var(--font-data);font-size:8px;opacity:.9}
+#tbArmy,#tbCities{font-size:12.5px;color:var(--ivory)}
+@media (max-width:1180px){
+  .tb-stat{display:none}
+  #ecoHudBtn small{display:none}
+}
+@media (max-width:900px){
+  .tb-idtext b{max-width:92px}
+  .hudbtn .hudlbl{display:none}
+}
+@media (max-width:760px){
+  #topbar{height:50px;padding:0 6px}
+  .tb-id{gap:6px;padding-right:6px}
+  .tb-idtext small{display:none}
+  .tb-idtext b{font-size:10.5px;max-width:74px}
+  .tb-id img,.tb-id .tbflag{width:20px!important;height:13px!important}
+  .tb-div{margin:0 6px 0 0}
+  .tb-clock{min-width:44px}
+  #tbTimer{font-size:11px}
+  .spdgroup{margin-left:6px}
+  .spd{min-width:20px;padding:0 2px;font-size:8.5px}
+  .hudbtn{height:28px;padding:0 6px}
+  #pauseBtn,#sndBtn{width:26px;height:26px}
+  #realStrip{top:50px}
+  #rosterPanel{top:50px}
+}
+@media (max-width:760px){
+  /* Mobile command bar order: identity, clock, treasury, pause, then tempo and
+     secondary tools. The essential four always fit before any scrolling. */
+  #topbar{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:4px}
+  #topbar::-webkit-scrollbar{display:none}
+  .tb-id{order:1}
+  .tb-clock{order:2}
+  #ecoHudBtn{order:3;margin-left:auto}
+  #pauseBtn{order:4}
+  .spdgroup{order:5}
+  #rosterBtn{order:6}#objHudBtn{order:7}#diploHudBtn{order:8}#mpHudBtn{order:9}#fogHudBtn{order:10}#sndBtn{order:11}
+  .tb-spacer{display:none}
+  .tb-stat{display:none}
+}
+@media (max-width:520px){
+  .tb-clock small{display:none}
+  .tb-clock{min-width:36px}
+  #ecoHudBtn b{font-size:11px}
+  #ecoHudBtn svg{display:none}
+  #fogHudBtn{display:none}
+  #objHudBtn{display:inline-flex!important}
+}
+
+/* --------------------------------------------------------- selection card */
+#selinfo{left:14px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 14px);max-width:min(392px,58vw);min-width:286px;padding:0;background:linear-gradient(160deg,rgba(13,21,28,.97),rgba(7,12,16,.97));border:1px solid var(--hair-2);border-left:1px solid var(--hair-2);border-radius:2px;box-shadow:var(--shadow-panel);overflow:hidden}
+#selinfo::before{content:"";display:block;height:1px;background:linear-gradient(90deg,var(--accent),rgba(211,172,98,0) 70%)}
+.si-head{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:11px 13px 10px}
+.si-icon{width:36px;height:36px;border:1px solid var(--hair-2);background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.si-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.si-icon .fill{fill:currentColor;stroke:none}
+.si-name{font-size:13px;font-weight:600;color:var(--ivory);line-height:1.25;letter-spacing:.01em}
+.si-sub{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:3px;font-family:var(--font-data)}
+.si-side{font-family:var(--font-data);font-size:8.5px;letter-spacing:.12em;color:var(--muted);text-align:right;text-transform:uppercase}
+.si-side b{display:block;color:var(--steel);font-size:10px;letter-spacing:.04em;margin-top:3px;text-transform:none}
+.si-hp{padding:0 13px 10px}
+.si-hp .hp-top{display:flex;justify-content:space-between;font-family:var(--font-data);font-size:8px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.si-hp .hp-top b{color:var(--steel);letter-spacing:.02em;font-weight:600}
+.si-hp .hp-bar{height:4px;background:rgba(255,255,255,.07);overflow:hidden}
+.si-hp .hp-bar i{display:block;height:100%;background:linear-gradient(90deg,#4f9d76,#79c79c);transition:width .25s ease}
+.si-hp .hp-bar i.mid{background:linear-gradient(90deg,#a87a34,#dfa95a)}
+.si-hp .hp-bar i.low{background:linear-gradient(90deg,#8f3a2a,#e0795f)}
+.si-grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair)}
+.si-cell{padding:8px 10px;border-right:1px solid var(--hair);min-width:0}
+.si-cell:last-child{border-right:0}
+.si-cell small{display:block;font-family:var(--font-data);font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.si-cell b{display:block;font-family:var(--font-data);font-size:10.5px;font-weight:600;color:var(--steel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-cell b.hot{color:var(--warn)}
+.si-note{padding:8px 13px;border-top:1px solid var(--hair);font-size:10px;line-height:1.5;color:var(--muted);background:rgba(255,255,255,.012)}
+.si-note b{color:var(--warn);font-weight:600}
+.si-comps{display:flex;flex-wrap:wrap;gap:4px;padding:8px 13px;border-top:1px solid var(--hair)}
+.si-comps span{font-family:var(--font-data);font-size:8.5px;letter-spacing:.04em;color:var(--steel);border:1px solid var(--hair-2);padding:2px 5px;background:rgba(255,255,255,.02)}
+@media (max-width:760px){
+  #selinfo{left:8px;right:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px);max-width:none;min-width:0}
+  .si-head{grid-template-columns:32px 1fr auto;padding:9px 11px}
+  .si-icon{width:32px;height:32px}
+  .si-name{font-size:12px}
+  .si-grid .si-cell{padding:7px 8px}
+  .si-note{display:none}
+}
+
+/* -------------------------------------------------------------- intel feed */
+#toasts{top:82px;left:auto;right:14px;transform:none;align-items:flex-end;width:min(380px,calc(100vw - 28px));gap:4px}
+.toast{position:relative;width:100%;max-width:none;padding:8px 12px 8px 30px;background:linear-gradient(100deg,rgba(12,20,27,.97),rgba(9,15,20,.94));border:1px solid var(--hair-2);border-left:1px solid var(--hair-2);font-size:11px;line-height:1.45;color:#c7d5e0;box-shadow:0 16px 34px -24px #000;animation:toastIn .2s ease both}
+.toast::before{position:absolute;left:11px;top:10px;width:7px;height:7px;margin:0;border-radius:50%;background:var(--steel);box-shadow:0 0 0 3px rgba(159,178,194,.1)}
+.toast .tcat{display:block;font-family:var(--font-data);font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.toast .ttime{position:absolute;right:10px;top:8px;font-family:var(--font-data);font-size:7.5px;color:rgba(124,148,164,.7)}
+.toast.err{border-color:rgba(224,122,95,.35);color:#f0cabf}
+.toast.err::before{background:var(--bad);box-shadow:0 0 0 3px rgba(224,122,95,.12)}
+.toast.hint::before{background:var(--accent);box-shadow:0 0 0 3px rgba(211,172,98,.12)}
+.toast.aid::before{background:#7fc0d4;box-shadow:0 0 0 3px rgba(127,192,212,.12)}
+.toast.crit{border-color:rgba(224,122,95,.55);background:linear-gradient(100deg,rgba(34,15,12,.98),rgba(16,10,10,.97));color:#ffd9cf}
+.toast.crit::before{background:var(--bad)}
+@keyframes toastIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@media (max-width:760px){#toasts{top:80px;right:8px;width:calc(100vw - 16px);max-height:132px;overflow:hidden}.toast{font-size:10.5px;padding:7px 10px 7px 28px}.toast .tcat{font-size:6.5px}#selinfo.idle{display:none}}
+
+/* --------------------------------------------------------- modal polish */
+.overlay{background:radial-gradient(60% 60% at 50% 40%,rgba(4,8,11,.55),rgba(3,6,9,.84))}
+.panel{background:linear-gradient(170deg,#0d161d,#080e13);border:1px solid var(--hair-2);border-radius:2px;box-shadow:0 40px 80px -40px #000}
+.panel-hd{border-bottom:1px solid var(--hair);padding-bottom:12px;margin-bottom:4px}
+.panel h2{font-family:var(--font-display);font-weight:400;letter-spacing:.01em;color:var(--ivory)}
+.eco-chart{margin:16px 0 2px;border:1px solid var(--hair);background:rgba(255,255,255,.012);padding:10px 12px 6px}
+.eco-chart .ec-top{display:flex;justify-content:space-between;font-family:var(--font-data);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.eco-chart .ec-top b{color:var(--steel);letter-spacing:.02em}
+.eco-chart svg{display:block;width:100%;height:54px;overflow:visible}
+.eco-bars{margin:6px 0 12px}
+.eco-bars .eb{display:grid;grid-template-columns:112px 1fr 62px;align-items:center;gap:10px;margin:6px 0;font-size:10.5px;color:var(--muted)}
+.eco-bars .eb .track{height:4px;background:rgba(255,255,255,.055);overflow:hidden}
+.eco-bars .eb .track i{display:block;height:100%;background:linear-gradient(90deg,#6d8fa8,#a9c6d8)}
+.eco-bars .eb b{font-family:var(--font-data);font-size:10px;color:var(--steel);text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+@media (max-width:520px){.eco-bars .eb{grid-template-columns:92px 1fr 54px;gap:7px}}
+
+/* ------------------------------------------------------------- mobile map */
+@media (max-width:600px){
+  #minimapWrap{display:none}
+  #cmdbar{bottom:calc(var(--bar1) + var(--safe))}
+  #buildbar .bbtn{width:78px;min-height:52px}
+  .btab{width:46px;min-height:52px}
+}
+@media (hover:none) and (pointer:coarse){
+  .hudbtn,.spd{min-height:32px}
+  .bbtn{min-width:76px}
+  .spd{min-width:26px}
+}
+
+/* Effects quality selector (settings + pause) */
+.fxseg{display:flex;border:1px solid var(--hair-2);flex-wrap:wrap}
+.fxseg button{padding:7px 11px;border:0;border-right:1px solid var(--hair);background:transparent;color:var(--muted);font-family:var(--font-data);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;min-height:32px}
+.fxseg button:last-child{border-right:0}
+.fxseg button:hover{color:var(--ivory)}
+.fxseg button.on{background:rgba(211,172,98,.12);color:var(--accent);box-shadow:inset 0 -1px 0 var(--accent)}
+@media (max-width:520px){.set-row{gap:10px}.fxseg button{padding:7px 8px;font-size:8px}}
+
+/* Focused map mode: the frame recedes while the player pans. */
+body.map-focus #topbar{opacity:.94}
+body.map-focus #minimapWrap{opacity:.9}
+
+@media (prefers-reduced-motion: reduce){
+  .menu-shell::after{opacity:.55}
+}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <div id="topbar" class="hidden">
-  <div class="tb-brand"><span class="tb-mark">GD</span><span id="tbFlag"></span><span class="tb-op" id="tbCountry">—</span></div>
-  <span id="tbTimer">0:00</span>
+  <div class="tb-id"><span id="tbFlag"></span><div class="tb-idtext"><b id="tbCountry">—</b><small>Field command</small></div></div>
+  <div class="tb-div"></div>
+  <div class="tb-clock"><small>Mission time</small><span id="tbTimer">0:00</span></div>
+  <div class="tb-stat"><small>Army</small><b id="tbArmy">0</b></div>
+  <div class="tb-stat"><small>Cities</small><b id="tbCities">0</b></div>
+  <div class="tb-spacer"></div>
   <div class="spdgroup">
     <button class="spd" data-s="0" aria-label="1x speed">1×</button>
     <button class="spd on" data-s="1" aria-label="2x speed">2×</button>
@@ -886,6 +1152,10 @@ body.mode-real [data-only="classic"]{display:none!important}
       <div class="set-copy"><strong>Fog of war</strong><span>Hide units and structures outside friendly vision.</span></div>
       <button class="switch on" id="pauseFogBtn" aria-label="Toggle fog of war" aria-pressed="true"></button>
     </div>
+    <div class="pause-row" style="border-top:0;padding-top:0;flex-wrap:wrap">
+      <div class="set-copy"><strong>Battlefield effects</strong><span>Smoke, shockwaves, sensor sweeps and ambient motion.</span></div>
+      <div class="fxseg" id="pauseFx" role="group" aria-label="Effects quality" style="width:100%;margin-top:8px"><button data-fx="high" class="on">High</button><button data-fx="reduced">Low</button><button data-fx="off">Off</button></div>
+    </div>
     <button class="btn primary block" id="resumeBtn">Resume</button>
     <div class="btnrow" style="margin-top:8px"><button class="btn" id="restartBtn">Restart scenario</button><button class="btn" id="quitBtn">Main menu</button></div>
   </div>
@@ -927,15 +1197,21 @@ body.mode-real [data-only="classic"]{display:none!important}
         <button class="menu-item" id="menuCredits"><span class="mi-index">04</span><span class="mi-label">Credits</span><span class="mi-note">Sources, data notes and build</span></button>
       </nav>
       <aside class="menu-board" aria-label="Situation board">
-        <div class="board-head">Situation board</div>
+        <div class="board-head">Situation board <i>LIVE CONFIG</i></div>
         <div class="board-country"><span class="bflag" id="menuFlag">IR</span><div><div class="bname" id="menuCountry">Iran</div><div class="bcode" id="menuCode">IRN · Tehran</div></div></div>
         <dl class="board-kv">
           <dt>Mode</dt><dd id="menuMode">Real mode</dd>
           <dt>Scenario</dt><dd id="menuScenario">Nov 2026</dd>
           <dt>Difficulty</dt><dd id="menuDiff">Medium</dd>
           <dt>Doctrine</dt><dd id="menuAgenda">Standard</dd>
+          <dt>Theatre</dt><dd>Middle East · 16 states</dd>
         </dl>
-        <button class="btn small-btn" id="menuQuickStart">Open setup</button>
+        <div class="board-meter">
+          <div class="bm-top"><span>Theatre tension</span><span>Elevated</span></div>
+          <div class="bm-bar"><i></i></div>
+          <div class="bm-legend"><span>STABLE</span><span>CONTESTED</span><span>WAR</span></div>
+        </div>
+        <div class="board-foot"><button class="btn primary" id="menuQuickStart">Open setup</button><button class="btn" id="menuFieldManual">Field manual</button></div>
       </aside>
     </div>
     <footer class="menu-foot">
@@ -1017,6 +1293,7 @@ body.mode-real [data-only="classic"]{display:none!important}
   <div class="set-row"><div class="set-copy"><strong>Reduced motion</strong><span>Removes panel transitions, selection pulses and camera easing.</span></div><button class="switch" id="setMotion" aria-pressed="false"></button></div>
   <div class="set-row"><div class="set-copy"><strong>Sound</strong><span>Interface cues, alarms and combat effects.</span></div><button class="switch on" id="setSound" aria-pressed="true"></button></div>
   <div class="set-row"><div class="set-copy"><strong>Fog of war</strong><span>Hide units and structures outside friendly vision.</span></div><button class="switch on" id="setFog" aria-pressed="true"></button></div>
+  <div class="set-row" style="flex-wrap:wrap"><div class="set-copy"><strong>Battlefield effects</strong><span>High adds smoke, shockwaves, radar sweeps and ambient motion. Reduced keeps impact feedback. Off removes decorative effects on low-end devices.</span></div><div class="fxseg" id="setFx" role="group" aria-label="Effects quality" style="width:100%;margin-top:10px"><button data-fx="high" class="on">High</button><button data-fx="reduced">Reduced</button><button data-fx="off">Off</button></div></div>
   <p class="dim" style="margin-top:16px">Changes apply immediately and are remembered in this browser.</p>
 </div></div>
 
@@ -2702,6 +2979,7 @@ const app = {
   classicPreset: 'ffa',
   fog: true,
   reduceMotion: false,
+  fxQuality: 'high', // 'high' | 'reduced' | 'off' — presentation only
   endT: 0, mouseW: null, shake: 0, bbTab: 'army',
   lobby: []
 };
@@ -5460,94 +5738,166 @@ function s2w(sx, sy) {
 
 /* ---------- unit & building glyphs ---------- */
 function drawUnitGlyph(u, ringColor) {
-  const zs = clamp(cam.z, 0.72, 1.25);
-  const r = Math.max(4.5, u.r * zs);
-  const body = u.isWorker ? '#eab308' : (u.color || '#94a3b8');
-  const outline = '#08111a';
+  const zs = clamp(cam.z, 0.72, 1.2);
+  const r = Math.max(5.4, (u.r || 6) * zs);
+  const body = u.isWorker ? '#d9b26a' : (u.color || '#9fb2c2');
+  const ivory = 'rgba(238,244,249,.92)';
+  const dark = 'rgba(4,9,13,.9)';
   ctx.save();
   ctx.translate(u.x, u.y);
-  ctx.fillStyle = 'rgba(2,6,10,.3)';
-  ctx.beginPath(); ctx.ellipse(2, 3, r * 0.95, r * 0.8, 0, 0, TAU); ctx.fill();
-  ctx.rotate(u.face || 0);
-  ctx.lineWidth = 1.3;
-  ctx.strokeStyle = outline;
+  ctx.fillStyle = 'rgba(2,6,10,.34)';
+  ctx.beginPath(); ctx.ellipse(1.5, 2.5, r * 1.08, r * 0.9, 0, 0, TAU); ctx.fill();
 
   if (u.fly) {
+    ctx.rotate(u.face || 0);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(6,11,16,.9)';
     ctx.beginPath();
-    if (u.kamikaze || u.type === 'drone') {
-      ctx.moveTo(r * 1.2, 0); ctx.lineTo(-r * 0.7, -r * 1.15); ctx.lineTo(-r * 0.35, 0); ctx.lineTo(-r * 0.7, r * 1.15);
+    if (u.kamikaze || u.type === 'drone' || u.type === 'quad' || u.type === 'ababil') {
+      ctx.moveTo(r * 1.25, 0); ctx.lineTo(-r * 0.6, -r * 1.05); ctx.lineTo(-r * 0.32, 0); ctx.lineTo(-r * 0.6, r * 1.05);
     } else if (u.type === 'b2') {
-      ctx.moveTo(r * 1.5, 0); ctx.lineTo(0, -r * 0.55); ctx.lineTo(-r * 0.55, -r * 1.25); ctx.lineTo(-r * 0.95, 0); ctx.lineTo(-r * 0.55, r * 1.25); ctx.lineTo(0, r * 0.55);
+      ctx.moveTo(r * 1.45, 0); ctx.lineTo(0, -r * 0.5); ctx.lineTo(-r * 0.5, -r * 1.3); ctx.lineTo(-r * 0.95, 0); ctx.lineTo(-r * 0.5, r * 1.3); ctx.lineTo(0, r * 0.5);
     } else if (u.type === 'bomber' || u.type === 'b1' || u.type === 'h6k') {
-      ctx.moveTo(r * 1.5, 0); ctx.lineTo(r * 0.1, -r * 0.4); ctx.lineTo(-r * 0.45, -r * 1.5); ctx.lineTo(-r * 0.8, -r * 1.4);
-      ctx.lineTo(-r * 0.6, -r * 0.3); ctx.lineTo(-r * 1.0, 0); ctx.lineTo(-r * 0.6, r * 0.3); ctx.lineTo(-r * 0.8, r * 1.4);
-      ctx.lineTo(-r * 0.45, r * 1.5); ctx.lineTo(r * 0.1, r * 0.4);
+      ctx.moveTo(r * 1.5, 0); ctx.lineTo(r * 0.1, -r * 0.38); ctx.lineTo(-r * 0.42, -r * 1.5); ctx.lineTo(-r * 0.78, -r * 1.38);
+      ctx.lineTo(-r * 0.58, -r * 0.28); ctx.lineTo(-r * 1.0, 0); ctx.lineTo(-r * 0.58, r * 0.28); ctx.lineTo(-r * 0.78, r * 1.38);
+      ctx.lineTo(-r * 0.42, r * 1.5); ctx.lineTo(r * 0.1, r * 0.38);
     } else {
-      ctx.moveTo(r * 1.5, 0); ctx.lineTo(-r * 0.2, -r * 0.35); ctx.lineTo(-r * 0.55, -r * 1.35); ctx.lineTo(-r * 0.85, -r * 1.25);
-      ctx.lineTo(-r * 0.65, -r * 0.3); ctx.lineTo(-r * 1.05, 0); ctx.lineTo(-r * 0.65, r * 0.3); ctx.lineTo(-r * 0.85, r * 1.25);
-      ctx.lineTo(-r * 0.55, r * 1.35); ctx.lineTo(-r * 0.2, r * 0.35);
+      ctx.moveTo(r * 1.55, 0); ctx.lineTo(-r * 0.15, -r * 0.3); ctx.lineTo(-r * 0.5, -r * 1.32); ctx.lineTo(-r * 0.8, -r * 1.22);
+      ctx.lineTo(-r * 0.6, -r * 0.26); ctx.lineTo(-r * 1.02, 0); ctx.lineTo(-r * 0.6, r * 0.26); ctx.lineTo(-r * 0.8, r * 1.22);
+      ctx.lineTo(-r * 0.5, r * 1.32); ctx.lineTo(-r * 0.15, r * 0.3);
     }
     ctx.closePath();
     ctx.fillStyle = body; ctx.fill(); ctx.stroke();
-    if (CFG.UNITS[u.type] && CFG.UNITS[u.type].stealth) { ctx.fillStyle = 'rgba(10,18,28,.45)'; ctx.fill(); }
-    ctx.fillStyle = '#e2e8f0';
-    ctx.beginPath(); ctx.arc(r * 0.25, 0, 1.6, 0, TAU); ctx.fill();
-  } else if (u.type === 'tank' || u.type === 't90') {
-    ctx.fillStyle = '#111a24';
-    ctx.fillRect(-r, -r * 0.95, r * 2, r * 0.4);
-    ctx.fillRect(-r, r * 0.55, r * 2, r * 0.4);
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.roundRect(-r, -r * 0.62, r * 2, r * 1.24, 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-r * 0.05, 0, r * 0.5, 0, TAU); ctx.fillStyle = body; ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = Math.max(1.6, r * 0.16);
-    ctx.beginPath(); ctx.moveTo(r * 0.3, 0); ctx.lineTo(r * 1.55, 0); ctx.stroke();
-  } else if (u.type === 'spaag') {
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.roundRect(-r, -r * 0.7, r * 1.7, r * 1.4, 2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(r * 0.5, -r * 0.25); ctx.lineTo(r * 1.5, -r * 0.45);
-    ctx.moveTo(r * 0.5, r * 0.25); ctx.lineTo(r * 1.5, r * 0.45); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-r * 0.45, 0, r * 0.42, 0, TAU); ctx.fillStyle = '#0f172a'; ctx.fill();
-  } else if (u.type === 'atgm' || u.type === 'manpads') {
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.roundRect(-r * 0.85, -r * 0.75, r * 1.7, r * 1.5, 2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = u.type === 'manpads' ? '#7dd3fc' : '#fca5a5';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.moveTo(-r * 0.35, 0); ctx.lineTo(r * 1.5, 0); ctx.stroke();
-    if (u.type === 'manpads') {
-      ctx.beginPath(); ctx.moveTo(r * 0.1, -r * 0.95); ctx.lineTo(r * 0.55, -r * 0.45); ctx.lineTo(r * 1.0, -r * 0.95); ctx.stroke();
+    ctx.strokeStyle = 'rgba(238,244,249,.34)'; ctx.lineWidth = 0.7; ctx.stroke();
+    ctx.fillStyle = 'rgba(244,249,252,.92)';
+    ctx.beginPath(); ctx.arc(r * 0.4, 0, 1.1, 0, TAU); ctx.fill();
+    if (app.fxQuality === 'high' && !app.reduceMotion && !(CFG.UNITS[u.type] && CFG.UNITS[u.type].stealth)) {
+      ctx.strokeStyle = 'rgba(127,192,212,.5)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(-r * 0.95, 0); ctx.lineTo(-r * 1.5, 0); ctx.stroke();
     }
-  } else if (u.isWorker) {
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#1f2937';
-    ctx.fillRect(-r * 0.34, -r * 0.34, r * 0.68, r * 0.68);
   } else if (u.owner >= 0 && world.players[u.owner] && isNonState(world.players[u.owner].country)) {
-    /* Irregular formation: a ragged star rather than a regular army chevron. */
     ctx.fillStyle = body;
     ctx.beginPath();
     for (let k = 0; k < 7; k++) {
       const a = (k / 7) * TAU - Math.PI / 2;
-      const rr = k % 2 ? r * 0.58 : r * 1.08;
+      const rr = k % 2 ? r * 0.55 : r * 1.06;
       const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
       if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#0b1118'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(-r * 0.45, -r * 0.45); ctx.lineTo(r * 0.45, r * 0.45); ctx.stroke();
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(6,11,16,.9)'; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.strokeStyle = ivory; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(-r * 0.38, 0); ctx.lineTo(r * 0.38, 0); ctx.moveTo(0, -r * 0.38); ctx.lineTo(0, r * 0.38); ctx.stroke();
   } else {
+    /* Ground token: a dark plate with a coloured command border. Type is read
+       from the interior glyph, not from colour, so friend and foe stay legible. */
+    const w = r * 1.95, h = r * 1.62;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, Math.max(1.2, r * 0.16));
+    ctx.fillStyle = 'rgba(6,12,17,.86)'; ctx.fill();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.25; ctx.stroke();
+    ctx.strokeStyle = ivory; ctx.lineWidth = Math.max(1, r * 0.15); ctx.lineCap = 'round';
+    if (u.isWorker) {
+      ctx.strokeRect(-r * 0.3, -r * 0.3, r * 0.6, r * 0.6);
+      ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.3); ctx.lineTo(r * 0.62, -r * 0.6); ctx.stroke();
+    } else if (u.type === 'tank' || u.type === 't90') {
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.55, r * 0.34, 0, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r * 0.4, 0); ctx.lineTo(r * 0.98, 0); ctx.stroke();
+    } else if (u.type === 'spaag') {
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.45, r * 0.3); ctx.lineTo(r * 0.32, -r * 0.38);
+      ctx.moveTo(-r * 0.12, r * 0.38); ctx.lineTo(r * 0.5, -r * 0.18);
+      ctx.moveTo(-r * 0.55, -r * 0.25); ctx.lineTo(r * 0.1, -r * 0.25);
+      ctx.stroke();
+    } else if (u.type === 'atgm') {
+      ctx.beginPath(); ctx.moveTo(r * 0.5, 0); ctx.lineTo(-r * 0.25, -r * 0.45); ctx.lineTo(-r * 0.25, r * 0.45); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r * 0.62, 0); ctx.lineTo(-r * 0.25, 0); ctx.stroke();
+    } else if (u.type === 'manpads') {
+      ctx.beginPath(); ctx.moveTo(-r * 0.5, r * 0.35); ctx.lineTo(r * 0.1, -r * 0.4); ctx.lineTo(r * 0.5, -r * 0.05); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r * 0.08, -r * 0.42); ctx.lineTo(r * 0.34, -r * 0.2); ctx.stroke();
+    } else if (u.type === 'soldier') {
+      ctx.beginPath(); ctx.moveTo(-r * 0.52, -r * 0.42); ctx.lineTo(r * 0.52, r * 0.42);
+      ctx.moveTo(r * 0.52, -r * 0.42); ctx.lineTo(-r * 0.52, r * 0.42); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, TAU); ctx.stroke();
+    }
+    /* Front edge carries facing without rotating the whole symbol out of grid. */
     ctx.fillStyle = body;
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.78, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = Math.max(1.3, r * 0.22);
-    ctx.beginPath(); ctx.moveTo(r * 0.15, 0); ctx.lineTo(r * 1.25, 0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(Math.cos(u.face || 0) * w * 0.5, Math.sin(u.face || 0) * w * 0.5, Math.max(1.2, r * 0.12), 0, TAU); ctx.fill();
   }
   ctx.restore();
 
-  /* National colour carries identity; this ring carries allegiance, so the two
-     never have to be confused under fog or a crowded front line. */
-  ctx.beginPath(); ctx.arc(u.x, u.y, r + 2.6, 0, TAU);
-  ctx.strokeStyle = ringColor; ctx.lineWidth = 1.3; ctx.stroke();
+  /* Allegiance ring: the only colour that encodes sides; the glyph never does. */
+  ctx.beginPath(); ctx.arc(u.x, u.y, r + 3.1, 0, TAU);
+  ctx.strokeStyle = ringColor; ctx.lineWidth = 1.15; ctx.stroke();
+}
+
+/* Movement and attack routes for the selected formation. Straight, dashed and
+   low-contrast: they explain intent without turning the map into a diagram. */
+function drawOrderRoutes(hp) {
+  if (!sel.units.length) return;
+  const dests = new Set();
+  const z = clamp(cam.z, 0.55, 1.2);
+  for (const id of sel.units) {
+    const u = ent(id);
+    if (!u || u.dead || !u.order) continue;
+    const o = u.order;
+    if (o.k === 'attack') {
+      const t = ent(o.target);
+      if (!t || t.dead) continue;
+      ctx.save();
+      ctx.setLineDash([5 / z, 5 / z]);
+      ctx.strokeStyle = 'rgba(224,122,95,.34)';
+      ctx.lineWidth = 1 / z;
+      ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+      ctx.setLineDash([]);
+      const r = (t.r || 10) + 7;
+      ctx.strokeStyle = 'rgba(224,122,95,.7)'; ctx.lineWidth = 1.1 / z;
+      ctx.beginPath();
+      ctx.moveTo(t.x - r, t.y - r + 4); ctx.lineTo(t.x - r, t.y - r); ctx.lineTo(t.x - r + 4, t.y - r);
+      ctx.moveTo(t.x + r - 4, t.y - r); ctx.lineTo(t.x + r, t.y - r); ctx.lineTo(t.x + r, t.y - r + 4);
+      ctx.moveTo(t.x + r, t.y + r - 4); ctx.lineTo(t.x + r, t.y + r); ctx.lineTo(t.x + r - 4, t.y + r);
+      ctx.moveTo(t.x - r + 4, t.y + r); ctx.lineTo(t.x - r, t.y + r); ctx.lineTo(t.x - r, t.y + r - 4);
+      ctx.stroke();
+      ctx.restore();
+    } else if (o.k === 'move' || o.k === 'amove') {
+      const dx = (o.x || u.x) - u.x, dy = (o.y || u.y) - u.y;
+      if (Math.hypot(dx, dy) < 3) continue;
+      const col = o.k === 'amove' ? 'rgba(224,169,91,.36)' : 'rgba(127,192,212,.34)';
+      ctx.save();
+      ctx.setLineDash([4 / z, 6 / z]);
+      ctx.strokeStyle = col; ctx.lineWidth = 0.9 / z;
+      ctx.beginPath(); ctx.moveTo(u.x, u.y); ctx.lineTo(o.x, o.y); ctx.stroke();
+      ctx.setLineDash([]);
+      const ang = Math.atan2(dy, dx), mx = u.x + dx * 0.55, my = u.y + dy * 0.55;
+      ctx.strokeStyle = o.k === 'amove' ? 'rgba(224,169,91,.6)' : 'rgba(127,192,212,.6)';
+      ctx.beginPath();
+      ctx.moveTo(mx + Math.cos(ang) * 4, my + Math.sin(ang) * 4);
+      ctx.lineTo(mx + Math.cos(ang + 2.5) * 5, my + Math.sin(ang + 2.5) * 5);
+      ctx.moveTo(mx + Math.cos(ang) * 4, my + Math.sin(ang) * 4);
+      ctx.lineTo(mx + Math.cos(ang - 2.5) * 5, my + Math.sin(ang - 2.5) * 5);
+      ctx.stroke();
+      const key = Math.round(o.x / 8) + ',' + Math.round(o.y / 8);
+      if (!dests.has(key)) {
+        dests.add(key);
+        ctx.strokeStyle = o.k === 'amove' ? 'rgba(224,169,91,.8)' : 'rgba(127,192,212,.8)';
+        ctx.lineWidth = 1 / z;
+        ctx.beginPath(); ctx.arc(o.x, o.y, 5.5, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(o.x - 3, o.y); ctx.lineTo(o.x + 3, o.y);
+        ctx.moveTo(o.x, o.y - 3); ctx.lineTo(o.x, o.y + 3); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+/* Cities and their seat structures are separate entities; cache the match so the
+   per-frame glyph pass never scans the city list. */
+function cityForBuilding(b) {
+  if (b._cityRef !== undefined) return b._cityRef;
+  b._cityRef = b.city && world.cities ? (world.cities.find(c => c.name === b.city) || null) : null;
+  return b._cityRef;
 }
 
 function drawBuildingGlyph(b) {
@@ -5562,6 +5912,8 @@ function drawBuildingGlyph(b) {
   const k = b.kind;
 
   if (k === 'camp') {
+    const city = cityForBuilding(b);
+    const isCapital = !!(city && city.capital);
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = -Math.PI / 2 + i * TAU / 6;
@@ -5569,14 +5921,20 @@ function drawBuildingGlyph(b) {
       if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
     }
     ctx.closePath();
-    ctx.fillStyle = body; ctx.fill();
-    ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2.4; ctx.stroke();
-    ctx.fillStyle = 'rgba(8,15,23,.55)';
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.42, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#fde68a';
-    ctx.font = '700 ' + Math.round(r * 0.52) + 'px system-ui';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('★', 0, 1);
+    ctx.fillStyle = 'rgba(8,15,21,.82)'; ctx.fill();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.strokeStyle = 'rgba(238,244,249,.5)'; ctx.lineWidth = 0.9; ctx.stroke();
+    if (isCapital) {
+      ctx.fillStyle = 'rgba(248,241,222,.94)';
+      ctx.font = '700 ' + Math.round(r * 0.62) + 'px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('★', 0, 1);
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, TAU);
+      ctx.fillStyle = body; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.12, 0, TAU);
+      ctx.fillStyle = 'rgba(248,241,222,.9)'; ctx.fill();
+    }
   } else if (k === 'ncamp') {
     ctx.beginPath(); ctx.roundRect(-r * 0.8, -r * 0.8, r * 1.6, r * 1.6, 4);
     ctx.fillStyle = '#8b98a8'; ctx.fill(); ctx.stroke();
@@ -5599,12 +5957,17 @@ function drawBuildingGlyph(b) {
     ctx.fillStyle = '#fdba74';
     ctx.beginPath(); ctx.arc(0, r * 0.35, r * 0.2, 0, TAU); ctx.fill();
   } else if (k === 'airbase') {
-    ctx.fillStyle = '#334155';
-    ctx.beginPath(); ctx.roundRect(-r * 1.05, -r * 0.5, r * 2.1, r * 1.0, 3); ctx.fill();
-    ctx.strokeStyle = body; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(-r * 1.05, -r * 0.5, r * 2.1, r * 1.0, 3); ctx.stroke();
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.3; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(-r * 0.85, 0); ctx.lineTo(r * 0.85, 0); ctx.stroke();
+    /* Compact airfield mark: runway pair, centreline and a control tower, not a
+       large filled slab that competes with cities. */
+    const ar = Math.min(21, r * 0.78);
+    ctx.fillStyle = 'rgba(6,12,18,.9)';
+    ctx.beginPath(); ctx.roundRect(-ar, -ar * 0.42, ar * 2, ar * 0.84, 2); ctx.fill();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.strokeStyle = 'rgba(224,232,238,.66)'; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(-ar * 0.8, -ar * 0.15); ctx.lineTo(ar * 0.72, -ar * 0.15);
+    ctx.moveTo(-ar * 0.8, ar * 0.15); ctx.lineTo(ar * 0.72, ar * 0.15); ctx.stroke();
+    ctx.setLineDash([ar * 0.14, ar * 0.1]);
+    ctx.beginPath(); ctx.moveTo(-ar * 0.7, 0); ctx.lineTo(ar * 0.62, 0); ctx.stroke();
     ctx.setLineDash([]);
   } else if (k === 'sam') {
     ctx.fillStyle = '#1f2937';
@@ -5639,6 +6002,126 @@ function drawBuildingGlyph(b) {
   ctx.restore();
 }
 
+/* Static terrain base: sea, chart, relief, contours, roads. Built once per
+   match at half world resolution and blitted as a single image each frame. */
+let terrainBaseCv = null, terrainBaseWorld = null;
+function terrainBaseLayer() {
+  if (terrainBaseCv && terrainBaseWorld === world) return terrainBaseCv;
+  terrainBaseWorld = world;
+  const TG = world.terrainGrid;
+  const sc = 0.5;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(world.w * sc); c.height = Math.ceil(world.h * sc);
+  const g = c.getContext('2d');
+  g.scale(sc, sc);
+  const sea = g.createLinearGradient(0, 0, 0, world.h);
+  sea.addColorStop(0, '#071c2c'); sea.addColorStop(0.5, '#0a2a3d'); sea.addColorStop(1, '#061724');
+  g.fillStyle = sea; g.fillRect(0, 0, world.w, world.h);
+  g.strokeStyle = 'rgba(124,178,200,.05)'; g.lineWidth = 1.6;
+  for (let wy = 90; wy < world.h; wy += 118) {
+    g.beginPath();
+    for (let wx = 0; wx <= world.w; wx += 140) {
+      const yy = wy + Math.sin(wx * 0.004 + wy * 0.01) * 7;
+      if (wx === 0) g.moveTo(wx, yy); else g.lineTo(wx, yy);
+    }
+    g.stroke();
+  }
+  g.strokeStyle = 'rgba(124,178,200,.035)';
+  for (let wx = 100; wx < world.w; wx += 210) {
+    g.beginPath();
+    for (let wy = 0; wy <= world.h; wy += 140) {
+      const xx = wx + Math.cos(wy * 0.006 + wx * 0.01) * 6;
+      if (wy === 0) g.moveTo(xx, wy); else g.lineTo(xx, wy);
+    }
+    g.stroke();
+  }
+  g.strokeStyle = 'rgba(125,211,252,.045)'; g.lineWidth = 1;
+  g.beginPath();
+  for (let gx = 176; gx < world.w; gx += 176) { g.moveTo(gx, 0); g.lineTo(gx, world.h); }
+  for (let gy = 176; gy < world.h; gy += 176) { g.moveTo(0, gy); g.lineTo(world.w, gy); }
+  g.stroke();
+  if (TG && world.showTerrain !== false) {
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'low';
+    g.drawImage(terrainPlate(TG), 0, 0, world.w, world.h);
+    if (TG.hillshade) {
+      g.save(); g.globalCompositeOperation = 'soft-light'; g.globalAlpha = 0.5;
+      g.drawImage(TG.hillshade, 0, 0, world.w, world.h); g.restore();
+    }
+    const cc = terrainContours(TG);
+    if (cc) { g.save(); g.globalAlpha = 0.4; g.drawImage(cc, 0, 0, cc.width, cc.height, 0, 0, world.w, world.h); g.restore(); }
+    g.strokeStyle = 'rgba(241,245,249,.10)'; g.lineWidth = 1.5;
+    for (let cy = 0; cy < TG.ny; cy += 2) for (let cx = 0; cx < TG.nx; cx += 2) {
+      if (TG.grid[cy * TG.nx + cx] !== TCODE.salt) continue;
+      const x = cx * TG.cs + 20, y = cy * TG.cs + 20;
+      g.beginPath(); g.moveTo(x - 9, y - 3); g.lineTo(x - 2, y + 4); g.lineTo(x + 5, y - 5); g.lineTo(x + 10, y + 2); g.stroke();
+    }
+    g.strokeStyle = 'rgba(214,196,160,.20)'; g.lineWidth = 2.4;
+    g.setLineDash([9, 7]);
+    for (const path of ROAD_PATHS) {
+      g.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const q = meProj(path[i][0], path[i][1]);
+        if (i === 0) g.moveTo(q.x, q.y); else g.lineTo(q.x, q.y);
+      }
+      g.stroke();
+    }
+    g.setLineDash([]);
+  }
+  /* Bake the ground tooth into the plate: one pattern pass at build time rather
+     than a full-theatre pattern fill every frame. */
+  g.save();
+  g.globalCompositeOperation = 'overlay';
+  g.globalAlpha = 0.16;
+  g.fillStyle = landTexture();
+  g.fillRect(0, 0, world.w, world.h);
+  g.restore();
+  terrainBaseCv = c;
+  return c;
+}
+
+let mountainBaseCv = null, mountainBaseWorld = null;
+function mountainBaseLayer() {
+  if (mountainBaseCv && mountainBaseWorld === world) return mountainBaseCv;
+  mountainBaseWorld = world;
+  const sc = 0.5;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(world.w * sc); c.height = Math.ceil(world.h * sc);
+  const ctx = c.getContext('2d');
+  ctx.scale(sc, sc);
+  const bands = [
+    { amp: 0.72, fill: 'rgba(34,39,43,.30)', stroke: 'rgba(178,192,202,.10)' },
+    { amp: 0.52, fill: 'rgba(46,52,56,.34)', stroke: 'rgba(196,208,216,.12)' },
+    { amp: 0.3, fill: 'rgba(62,68,70,.30)', stroke: 'rgba(214,222,226,.10)' }
+  ];
+  for (const o of world.obstacles) {
+    const top = o.y + o.h * 0.18, base = o.y + o.h * 0.92;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(o.x - 30, top, o.w + 60, base - top + 20); ctx.clip();
+    for (const band of bands) {
+      ctx.beginPath(); ctx.moveTo(o.x - 20, base);
+      for (let x = o.x - 20; x <= o.x + o.w + 20; x += 18) {
+        const t = (x - o.x) / Math.max(1, o.w);
+        const edge = clamp(Math.min(t, 1 - t) / 0.2, 0, 1);
+        const ridge = Math.abs(Math.sin(x * 0.013 + o.y * 0.004 + band.amp * 9)) * 0.6 +
+          Math.abs(Math.sin(x * 0.031 + band.amp * 17)) * 0.4;
+        const py = base - (base - top) * band.amp * ridge * (0.35 + 0.65 * edge) - 10;
+        ctx.lineTo(x, py);
+      }
+      ctx.lineTo(o.x + o.w + 20, base); ctx.closePath();
+      ctx.fillStyle = band.fill; ctx.fill();
+      ctx.strokeStyle = band.stroke; ctx.lineWidth = 0.9; ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(22,27,30,.28)'; ctx.lineWidth = 0.8;
+    for (let x = o.x; x < o.x + o.w; x += 11) {
+      const h = (base - top) * (0.2 + 0.28 * Math.abs(Math.sin(x * 0.021 + o.y)));
+      ctx.beginPath(); ctx.moveTo(x, base - h * 0.2); ctx.lineTo(x + 5, base - h); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  mountainBaseCv = c;
+  return c;
+}
+
 function drawWorld() {
   const vw = window.innerWidth, vh = window.innerHeight;
   ctx.save();
@@ -5653,37 +6136,10 @@ function drawWorld() {
 
   const T = world.map.terrain;
   const hp = humanPlayer();
+  if (!world._cityNameSet && world.cities) world._cityNameSet = new Set(world.cities.map(c => c.name.toUpperCase()));
 
-  /* Sea: a muted vertical gradient reads as water without competing with the
-     national colours layered on top of it. */
-  const seaG = ctx.createLinearGradient(0, 0, 0, world.h);
-  seaG.addColorStop(0, '#071c2c');
-  seaG.addColorStop(0.5, '#0a2a3d');
-  seaG.addColorStop(1, '#061724');
-  ctx.fillStyle = seaG;
-  ctx.fillRect(0, 0, world.w, world.h);
-
-  /* Subtle animated shimmer: sparse dashes that only appear over water. */
-  if (!app.reduceMotion && world.map && world.map.staticBlock) {
-    const sb = world.map.staticBlock, nx = Math.ceil(world.w / 40), ny = Math.ceil(world.h / 40);
-    const drift = (performance.now() / 90) % 200;
-    ctx.strokeStyle = 'rgba(148, 210, 235, 0.055)';
-    ctx.lineWidth = 1.2;
-    for (let cy = 0; cy < ny; cy += 3) for (let cx = 0; cx < nx; cx += 3) {
-      if (!sb[cy * nx + cx]) continue;
-      const x = cx * 40 + ((cy * 37 + drift) % 40), y = cy * 40 + ((drift + cy * 19) % 34);
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 22, y + 3); ctx.stroke();
-    }
-  }
-
-  /* Graticule: the faintest possible survey grid. It gives open water scale
-     without reading as a playable tile board. */
-  ctx.strokeStyle = 'rgba(125,211,252,.045)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let gx = 176; gx < world.w; gx += 176) { ctx.moveTo(gx, 0); ctx.lineTo(gx, world.h); }
-  for (let gy = 176; gy < world.h; gy += 176) { ctx.moveTo(0, gy); ctx.lineTo(world.w, gy); }
-  ctx.stroke();
+  /* One blitted terrain plate replaces the sea, chart, relief and road passes. */
+  ctx.drawImage(terrainBaseLayer(), 0, 0, world.w, world.h);
 
   if (T && T.polys) {
     for (const P of T.polys) {
@@ -5705,36 +6161,57 @@ function drawWorld() {
       const rel = ownerPlayer && hp && ownerPlayer.idx !== hp.idx ? getRelation(hp.idx, ownerPlayer.idx) : 'ALLY';
       /* Fill: the owner's hue at cartographic strength, graded north-to-south
          so neighbouring states never merge into one flat silhouette. */
+      /* Base land: an atlas ground tone, not a political colour. Territory is a
+         translucent wash over it, so relief and terrain stay legible beneath
+         ownership while the border carries the hard claim. */
       const g = ctx.createLinearGradient(0, minY, 0, maxY);
-      if (ownerPlayer) {
-        g.addColorStop(0, tintHex(ownerPlayer.color, 0.62, '#26313b'));
-        g.addColorStop(1, tintHex(ownerPlayer.color, 0.42, '#1c252e'));
-      } else {
-        g.addColorStop(0, '#2b3641');
-        g.addColorStop(1, '#212a33');
-      }
+      g.addColorStop(0, '#4a4636');
+      g.addColorStop(0.55, '#3f3d31');
+      g.addColorStop(1, '#34352c');
       ctx.fillStyle = g;
       ctx.lineJoin = 'round';
       ctx.fill();
+      if (ownerPlayer) {
+        const og = ctx.createLinearGradient(0, minY, 0, maxY);
+        og.addColorStop(0, tintHex(ownerPlayer.color, 0.27, 'rgba(70,80,70,.16)'));
+        og.addColorStop(1, tintHex(ownerPlayer.color, 0.15, 'rgba(70,80,70,.10)'));
+        ctx.fillStyle = og;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = 'rgba(64,72,74,.22)';
+        ctx.fill();
+      }
+      /* Ground grain is applied once to the visible theatre below, after all
+         political fills: one pattern pass instead of a clipped fill per state. */
       /* The territory polygons follow raster cells. A slightly fat stroke in the
          same gradient rounds those single-pixel steps without altering shape. */
-      if (cam.z < 1.15) { ctx.strokeStyle = g; ctx.lineWidth = 3.4; ctx.stroke(); }
+      if (cam.z < 1.15) { ctx.strokeStyle = 'rgba(88,82,62,.5)'; ctx.lineWidth = 3.4; ctx.stroke(); }
 
-      // Coast halo, dark casing, then the diplomatic border on top.
+      // Coast shelf, dark casing, then the diplomatic border on top.
       ctx.lineJoin = 'round';
-      ctx.lineWidth = 7;
-      ctx.strokeStyle = 'rgba(125, 211, 252, 0.07)';
+      ctx.lineWidth = Math.max(10, 16 * cam.z);
+      ctx.strokeStyle = 'rgba(120, 180, 200, 0.045)';
       ctx.stroke();
-      ctx.lineWidth = 3.2;
-      ctx.strokeStyle = 'rgba(4, 9, 14, 0.8)';
+      ctx.lineWidth = Math.max(5, 8 * cam.z);
+      ctx.strokeStyle = 'rgba(88, 146, 168, 0.10)';
       ctx.stroke();
-      ctx.lineWidth = ownerPlayer ? 1.25 : 0.9;
-      ctx.strokeStyle = !ownerPlayer ? 'rgba(148, 163, 184, 0.28)'
-        : rel === 'WAR' ? 'rgba(248, 113, 113, 0.85)'
-        : rel === 'ALLY' ? 'rgba(74, 222, 128, 0.6)'
-        : rel === 'TRADE' ? 'rgba(56, 189, 248, 0.6)'
-        : 'rgba(148, 163, 184, 0.5)';
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = 'rgba(3, 8, 12, 0.92)';
       ctx.stroke();
+      ctx.lineWidth = ownerPlayer ? 1.35 : 0.9;
+      ctx.strokeStyle = !ownerPlayer ? 'rgba(176, 190, 200, 0.26)'
+        : rel === 'WAR' ? 'rgba(239, 122, 95, 0.88)'
+        : rel === 'ALLY' ? 'rgba(111, 197, 150, 0.62)'
+        : rel === 'TRADE' ? 'rgba(127, 192, 212, 0.62)'
+        : 'rgba(176, 190, 200, 0.46)';
+      ctx.stroke();
+      if (ownerPlayer) {
+        /* A hairline of the national hue inside the political border keeps the
+           state identifiable without washing the whole polygon in its colour. */
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = tintHex(ownerPlayer.color, 0.55, 'rgba(200,200,200,.4)');
+        ctx.stroke();
+      }
     }
   }
 
@@ -5790,110 +6267,22 @@ function drawWorld() {
     ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.stroke(); ctx.setLineDash([]);
   }
 
-  // Mountain ranges: ridgelines clipped to each range instead of grey slabs.
-  for (const o of world.obstacles) {
-    ctx.save();
-    /* Broken ridgelines in two overlapping rows, with heights tapering at the
-       edges so a range fades into the map instead of ending on a box. */
-    const step = 34;
-    for (let row = 0; row < 2; row++) {
-      const baseY = o.y + o.h * (0.46 + row * 0.26);
-      for (let x = o.x - 20 + row * 17; x < o.x + o.w + 20; x += step) {
-        const hSeed = Math.abs(Math.sin(x * 0.011 + o.y * 0.003 + row));
-        const edge = clamp(Math.min(x - o.x, o.x + o.w - x) / (o.w * 0.22), 0, 1);
-        const peak = o.h * (0.3 + 0.55 * hSeed) * (0.35 + 0.65 * edge);
-        ctx.beginPath();
-        ctx.moveTo(x - step * 0.8, baseY);
-        ctx.lineTo(x, baseY - peak);
-        ctx.lineTo(x + step * 0.8, baseY);
-        ctx.closePath();
-        ctx.fillStyle = row === 0 ? 'rgba(54,64,76,.78)' : 'rgba(38,47,58,.86)';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(x, baseY - peak);
-        ctx.lineTo(x + step * 0.8, baseY);
-        ctx.lineTo(x + step * 0.18, baseY);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(176,192,208,.11)';
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
+  ctx.drawImage(mountainBaseLayer(), 0, 0, world.w, world.h);
 
-
-
-  // Natural Resource Deposits
+  // Natural resource deposits: surveyed marks, subordinate to cities.
   for (const d of world.deposits) {
-    ctx.beginPath(); ctx.arc(d.x, d.y, 16, 0, TAU);
-    ctx.fillStyle = d.mineId ? 'rgba(251, 146, 60, 0.16)' : 'rgba(251, 146, 60, 0.32)';
-    ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fb923c'; ctx.stroke();
-    ctx.fillStyle = '#fdba74';
-    ctx.beginPath();
-    ctx.moveTo(d.x, d.y - 6);
-    ctx.bezierCurveTo(d.x + 6, d.y + 1, d.x + 4.5, d.y + 6, d.x, d.y + 6);
-    ctx.bezierCurveTo(d.x - 4.5, d.y + 6, d.x - 6, d.y + 1, d.x, d.y - 6);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(8,14,19,.75)';
-    ctx.beginPath(); ctx.arc(d.x - 1.2, d.y + 1.6, 1.2, 0, TAU); ctx.fill();
-    if (d.n && cam.z > 0.55) {
-      ctx.fillStyle = 'rgba(253,186,116,0.65)'; ctx.font = '600 9px system-ui';
-      ctx.fillText(d.n, d.x, d.y + 24);
+    const col = d.mineId ? 'rgba(224,169,91,.5)' : 'rgba(224,169,91,.62)';
+    ctx.beginPath(); ctx.arc(d.x, d.y, 8.5, 0, TAU);
+    ctx.fillStyle = d.mineId ? 'rgba(224,169,91,.10)' : 'rgba(224,169,91,.14)'; ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = col; ctx.fillRect(-2.4, -2.4, 4.8, 4.8); ctx.restore();
+    if (d.n && cam.z > 0.85) {
+      ctx.fillStyle = 'rgba(224,190,140,.66)';
+      ctx.font = '600 ' + (8.5 / clamp(cam.z, 0.8, 1.4)).toFixed(1) + 'px "Cascadia Mono", Consolas, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(d.n.toUpperCase(), d.x, d.y + 12);
     }
-  }
-
-  /* ---------- TERRAIN LAYER (Part I) ---------- */
-  if (world.terrainGrid && app.showTerrain) {
-    const TG = world.terrainGrid, sb = world.map ? world.map.staticBlock : null;
-    /* Cull to the visible world rect: at normal zoom this cuts the grid pass
-       by roughly four fifths. */
-    const halfW = vw / 2 / cam.z, halfH = vh / 2 / cam.z;
-    const gx0 = clamp(((cam.x - halfW) / TG.cs) | 0, 0, TG.nx - 1);
-    const gx1 = clamp(((cam.x + halfW) / TG.cs) | 0, 0, TG.nx - 1);
-    const gy0 = clamp(((cam.y - halfH) / TG.cs) | 0, 0, TG.ny - 1);
-    const gy1 = clamp(((cam.y + halfH) / TG.cs) | 0, 0, TG.ny - 1);
-    for (let cy = gy0; cy <= gy1; cy++) for (let cx = gx0; cx <= gx1; cx++) {
-      const code = TG.grid[cy * TG.nx + cx];
-      if (!code) continue;                       // desert reads from the base fill
-      if (sb && sb[cy * TG.nx + cx]) continue;   // never tint open water
-      ctx.fillStyle = TERRAIN_DEF[code].fill;
-      ctx.fillRect(cx * TG.cs, cy * TG.cs, TG.cs + 0.5, TG.cs + 0.5);
-    }
-    /* Relief shading from the baked elevation field. */
-    if (TG.hillshade) {
-      ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.globalCompositeOperation = 'soft-light';
-      ctx.globalAlpha = 0.85;
-      /* Only the visible cells are blended: a full-map soft-light pass cost
-         roughly six extra milliseconds a frame. */
-      ctx.drawImage(TG.hillshade,
-        gx0, gy0, gx1 - gx0 + 1, gy1 - gy0 + 1,
-        gx0 * TG.cs, gy0 * TG.cs, (gx1 - gx0 + 1) * TG.cs, (gy1 - gy0 + 1) * TG.cs);
-      ctx.restore();
-    }
-    /* Salt-pan crackle in the Kavir and Lut. */
-    ctx.strokeStyle = 'rgba(241,245,249,.10)';
-    ctx.lineWidth = 1;
-    for (let cy = 0; cy < TG.ny; cy += 2) for (let cx = 0; cx < TG.nx; cx += 2) {
-      if (TG.grid[cy * TG.nx + cx] !== TCODE.salt) continue;
-      const x = cx * TG.cs + 20, y = cy * TG.cs + 20;
-      ctx.beginPath(); ctx.moveTo(x - 9, y - 3); ctx.lineTo(x - 2, y + 4); ctx.lineTo(x + 5, y - 5); ctx.lineTo(x + 10, y + 2); ctx.stroke();
-    }
-    /* Primary road network. */
-    ctx.strokeStyle = 'rgba(214,196,160,.20)';
-    ctx.lineWidth = Math.max(1, 2.2 * cam.z);
-    ctx.setLineDash([9, 7]);
-    for (const path of ROAD_PATHS) {
-      ctx.beginPath();
-      for (let i = 0; i < path.length; i++) {
-        const q = meProj(path[i][0], path[i][1]);
-        if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
-      }
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
   }
 
   /* ---------- CITY LIGHTS ---------- */
@@ -5917,37 +6306,111 @@ function drawWorld() {
 
   /* ---------- CITIES (Part II) ---------- */
   if (world.cities) {
-    for (const c of world.cities) {
+    const z = cam.z;
+    const prio = c => c.capital ? 4 : (c.role ? 3 : (c.pop >= 2 ? 2 : 1));
+    const ordered = world.cities.slice().sort((a, b) => prio(b) - prio(a));
+    const star = (rr) => {
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const ang = -Math.PI / 2 + k * Math.PI / 5;
+        const rad = k % 2 ? rr * 0.42 : rr;
+        const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+    };
+    const roleMark = (c, x, y, col) => {
+      ctx.save(); ctx.translate(x, y); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
+      if (c.role === 'port') {
+        ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(0, 3); ctx.moveTo(-2.4, 1); ctx.quadraticCurveTo(0, 4, 2.4, 1); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -3, 0.9, 0, TAU); ctx.fill();
+      } else if (c.role === 'oil') {
+        ctx.beginPath(); ctx.moveTo(0, -3.4); ctx.bezierCurveTo(2.4, -0.6, 2, 2.8, 0, 2.8); ctx.bezierCurveTo(-2, 2.8, -2.4, -0.6, 0, -3.4); ctx.fill();
+      } else if (c.role === 'industrial') {
+        ctx.strokeRect(-2.8, -2.2, 5.6, 5.4); ctx.beginPath(); ctx.moveTo(-2.8, -2.2); ctx.lineTo(-0.8, -3.6); ctx.lineTo(1.2, -2.2); ctx.stroke();
+      } else if (c.role === 'holy') {
+        ctx.beginPath(); ctx.arc(0, 0, 3, Math.PI * 0.35, Math.PI * 1.65); ctx.stroke();
+      }
+      ctx.restore();
+    };
+    for (const c of ordered) {
       if (c.razed) {
-        ctx.strokeStyle = 'rgba(248,113,113,.55)'; ctx.lineWidth = 1.2;
+        ctx.strokeStyle = 'rgba(224,122,95,.7)'; ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.moveTo(c.x - 4, c.y - 4); ctx.lineTo(c.x + 4, c.y + 4);
         ctx.moveTo(c.x + 4, c.y - 4); ctx.lineTo(c.x - 4, c.y + 4); ctx.stroke();
         continue;
       }
-      const r = 1.9 + Math.sqrt(Math.max(0.05, c.pop)) * 1.25;
-      const col = c.owner >= 0 ? world.players[c.owner].color : '#94a3b8';
-      ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, TAU);
-      ctx.fillStyle = col; ctx.fill();
-      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(4,9,14,.9)'; ctx.stroke();
+      const pop = Math.max(0.05, c.pop || 0);
+      const rr = (2.1 + Math.sqrt(pop) * 1.3) * clamp(z, 0.78, 1.16);
+      const col = c.owner >= 0 ? world.players[c.owner].color : '#9aa8b4';
+      ctx.fillStyle = 'rgba(3,7,11,.42)';
+      ctx.beginPath(); ctx.ellipse(c.x + 1, c.y + 2, rr * 1.15, rr * 0.95, 0, 0, TAU); ctx.fill();
       if (c.capital) {
-        ctx.beginPath(); ctx.arc(c.x, c.y, r + 3.4, 0, TAU);
-        ctx.strokeStyle = 'rgba(250,250,250,.55)'; ctx.lineWidth = 1.1; ctx.stroke();
+        ctx.beginPath(); ctx.arc(c.x, c.y, rr + 4.5, 0, TAU);
+        ctx.strokeStyle = tintHex(col, 0.9, 'rgba(211,172,98,.9)'); ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(c.x, c.y, rr + 7.2, 0, TAU);
+        ctx.strokeStyle = 'rgba(237,243,248,.42)'; ctx.lineWidth = 0.8; ctx.stroke();
+        for (let k = 0; k < 4; k++) {
+          const ang = k * Math.PI / 2 + Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(c.x + Math.cos(ang) * (rr + 7.2), c.y + Math.sin(ang) * (rr + 7.2));
+          ctx.lineTo(c.x + Math.cos(ang) * (rr + 10.5), c.y + Math.sin(ang) * (rr + 10.5));
+          ctx.strokeStyle = 'rgba(237,243,248,.5)'; ctx.lineWidth = 1; ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(c.x, c.y, rr, 0, TAU); ctx.fillStyle = col; ctx.fill();
+        ctx.strokeStyle = 'rgba(6,10,14,.85)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.save(); ctx.translate(c.x, c.y); star(rr * 0.72);
+        ctx.fillStyle = 'rgba(248,241,222,.95)'; ctx.fill(); ctx.restore();
+      } else if (prio(c) >= 2) {
+        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(Math.PI / 4);
+        const q = rr * 1.05;
+        ctx.fillStyle = col; ctx.fillRect(-q * 0.72, -q * 0.72, q * 1.44, q * 1.44);
+        ctx.strokeStyle = 'rgba(237,243,248,.55)'; ctx.lineWidth = 0.9; ctx.strokeRect(-q * 0.72, -q * 0.72, q * 1.44, q * 1.44);
+        ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(c.x, c.y, rr, 0, TAU);
+        ctx.fillStyle = col; ctx.fill();
+        ctx.strokeStyle = 'rgba(5,9,13,.9)'; ctx.lineWidth = 1; ctx.stroke();
       }
+      if (c.role) roleMark(c, c.x + rr + 5.5, c.y - rr - 3.5, 'rgba(224,214,188,.85)');
       if (c.captureT > 0) {
-        ctx.beginPath(); ctx.arc(c.x, c.y, r + 6, -Math.PI / 2, -Math.PI / 2 + TAU * c.captureT);
-        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2.4; ctx.stroke();
+        ctx.beginPath(); ctx.arc(c.x, c.y, rr + 9, -Math.PI / 2, -Math.PI / 2 + TAU * c.captureT);
+        ctx.strokeStyle = '#e0a95b'; ctx.lineWidth = 2.4; ctx.stroke();
       }
-      const roleIcon = c.role === 'port' ? 'SEA' : c.role === 'oil' ? 'OIL' : c.role === 'holy' ? '☾' : c.role === 'industrial' ? '▣' : '';
-      if (cam.z > 0.62 && (c.pop >= 1.2 || c.capital || c.role === 'port' || c.role === 'oil')) {
-        ctx.font = '600 ' + (c.capital ? 10.5 : 9) + 'px Palatino, "Palatino Linotype", Georgia, serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        const txt = c.name + (roleIcon ? ' ' + roleIcon : '');
-        const w = ctx.measureText(txt).width;
-        ctx.fillStyle = 'rgba(5,10,16,.55)';
-        ctx.fillRect(c.x - w / 2 - 3, c.y - r - 14, w + 6, 12);
-        ctx.fillStyle = c.capital ? '#ffffff' : 'rgba(226,232,240,.86)';
-        ctx.fillText(txt, c.x, c.y - r - 8);
-      }
+    }
+    /* Labels are laid out after all markers, by strategic priority, with a hard
+       collision test: a capital name never loses to a village. */
+    const boxes = [];
+    for (const c of ordered) {
+      if (c.razed) continue;
+      const p = prio(c);
+      const minZ = p >= 4 ? 0.4 : (p === 3 ? 0.5 : (p === 2 ? 0.55 : 0.64));
+      if (z < minZ) continue;
+      const pop = Math.max(0.05, c.pop || 0);
+      const rr = (2.1 + Math.sqrt(pop) * 1.3) * clamp(z, 0.78, 1.16);
+      const fs = (c.capital ? 12 : 9) / clamp(z, 0.55, 1.15);
+      ctx.font = (c.capital ? '600 ' : '700 ') + fs.toFixed(1) + 'px Palatino, "Palatino Linotype", Georgia, serif';
+      try { ctx.letterSpacing = c.capital ? '0.4px' : '1.1px'; } catch (e) { /* older canvas */ }
+      const txt = c.capital ? c.name : c.name.toUpperCase();
+      const tw = ctx.measureText(txt).width;
+      const padX = fs * 0.45, h = fs * 1.5;
+      const bx = c.x - tw / 2 - padX, by = c.y - rr - h - 9 / clamp(z, 0.55, 1.2), bw = tw + padX * 2;
+      const clash = boxes.some(o => bx < o.x + o.w + 3 && bx + bw + 3 > o.x && by < o.y + o.h + 2 && by + h + 2 > o.y);
+      if (clash) { try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ } continue; }
+      boxes.push({ x: bx, y: by, w: bw, h });
+      ctx.fillStyle = 'rgba(5,10,14,.74)';
+      ctx.fillRect(bx, by, bw, h);
+      ctx.fillStyle = c.capital ? 'rgba(211,172,98,.9)' : (c.owner >= 0 ? tintHex(world.players[c.owner].color, 0.9, '#9aa8b4') : 'rgba(154,168,180,.7)');
+      ctx.fillRect(bx, by, Math.max(1, fs * 0.12), h);
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y - rr - 2);
+      ctx.lineTo(c.x, by + h);
+      ctx.strokeStyle = 'rgba(237,243,248,.18)'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.fillStyle = c.capital ? '#f3ead6' : 'rgba(226,234,241,.88)';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, bx + padX + fs * 0.1, by + h / 2 + 0.3);
+      if (c.role) roleMark(c, bx + bw + 7, by + h / 2, 'rgba(224,214,188,.9)');
+      try { ctx.letterSpacing = '0px'; } catch (e) { /* older canvas */ }
     }
   }
 
@@ -6065,7 +6528,10 @@ function drawWorld() {
     }
     drawBuildingGlyph(b);
 
-    if (b.city && (b.kind === 'camp' || b.kind === 'ncamp' || b.kind === 'outpost')) {
+    /* City seats are labelled by the cartographic city layer, which ranks and
+       declutters capitals against towns. Only standalone installations keep a
+       local label here. */
+    if (b.city && b.kind !== 'camp' && b.kind !== 'ncamp' && b.kind !== 'outpost') {
       /* Only label what is legible at this zoom, and never let two labels collide. */
       const show = b.kind === 'camp' || b.r > 20 || cam.z > 0.66;
       if (show) {
@@ -6093,6 +6559,27 @@ function drawWorld() {
       ctx.fillRect(b.x - bw / 2, b.y + b.r + 5, bw, 4);
       ctx.fillStyle = b.suppressed ? '#facc15' : '#22c55e';
       ctx.fillRect(b.x - bw / 2, b.y + b.r + 5, bw * clamp(b.hp / b.maxHp, 0, 1), 4);
+    }
+  }
+
+  /* Active sensor sweeps: a slow sector on radar, SAM and AA sites. It is the
+     only continuous overlay animation, and it is switched off with effects. */
+  if (app.fxQuality === 'high' && !app.reduceMotion) {
+    const now = performance.now() / 1000;
+    for (const b of world.buildings) {
+      if (b.dead || (b.kind !== 'radar' && b.kind !== 'sam' && b.kind !== 'aa')) continue;
+      if (!buildingVisibleToHuman(b)) continue;
+      const sweep = (now * 0.9 + (b.id % 7) * 0.7) % TAU;
+      const rad = (b.kind === 'radar' ? 95 : 58);
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(sweep);
+      const g = ctx.createLinearGradient(0, 0, rad, 0);
+      g.addColorStop(0, 'rgba(127,192,212,.10)');
+      g.addColorStop(1, 'rgba(127,192,212,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rad, -0.32, 0.02); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(127,192,212,.26)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(rad, 0); ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -6128,6 +6615,8 @@ function drawWorld() {
     }
   }
 
+  drawOrderRoutes(hp);
+
   // Missiles & SAM Interceptors
   for (const m of world.missiles) {
     if (app.fog && m.owner !== hp.idx && !fogVisibleAt(m.x, m.y)) continue;
@@ -6147,22 +6636,64 @@ function drawWorld() {
     ctx.fillStyle = '#38bdf8'; ctx.fill();
   }
 
-  // Effects
+  // Effects — restrained, layered, and budgeted by the quality setting.
+  const fxHigh = app.fxQuality === 'high' && !app.reduceMotion;
+  const fxMid = app.fxQuality !== 'off';
   for (const fx of world.effects) {
-    const a = clamp(fx.t / fx.maxT, 0, 1);
-    ctx.globalAlpha = a;
+    const a = clamp(fx.t / fx.maxT, 0, 1), age = 1 - a;
     if (fx.k === 'shot') {
-      ctx.strokeStyle = fx.color || '#fde047'; ctx.lineWidth = 1.6;
+      if (!fxMid) continue;
+      const grad = ctx.createLinearGradient(fx.x1, fx.y1, fx.x2, fx.y2);
+      grad.addColorStop(0, 'rgba(255,236,178,.05)');
+      grad.addColorStop(0.7, fx.color || 'rgba(253,224,71,.65)');
+      grad.addColorStop(1, 'rgba(255,255,255,.95)');
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = grad; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(fx.x1, fx.y1); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
     } else if (fx.k === 'boom') {
-      ctx.fillStyle = fx.color || '#fb923c';
-      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1.15 - a * 0.4), 0, TAU); ctx.fill();
+      const rr = fx.r * (0.55 + age * 0.85);
+      if (!fxMid) {
+        ctx.globalAlpha = a * 0.7; ctx.fillStyle = fx.color || '#e0a95b';
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, rr * 0.6, 0, TAU); ctx.fill();
+      } else {
+        const core = ctx.createRadialGradient(fx.x, fx.y, 0, fx.x, fx.y, rr);
+        core.addColorStop(0, 'rgba(255,246,214,' + (0.9 * a).toFixed(2) + ')');
+        core.addColorStop(0.28, 'rgba(244,184,96,' + (0.72 * a).toFixed(2) + ')');
+        core.addColorStop(0.7, 'rgba(190,92,54,' + (0.32 * a).toFixed(2) + ')');
+        core.addColorStop(1, 'rgba(90,40,26,0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = core;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, rr, 0, TAU); ctx.fill();
+        ctx.globalAlpha = a * 0.55;
+        ctx.strokeStyle = 'rgba(255,240,210,.8)'; ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.arc(fx.x, fx.y, rr * 1.08, 0, TAU); ctx.stroke();
+        if (fxHigh) {
+          for (let k = 0; k < 3; k++) {
+            const ang = (k / 3) * TAU + (fx.x + fx.y) * 0.01;
+            ctx.globalAlpha = a * 0.16;
+            ctx.fillStyle = '#39424a';
+            ctx.beginPath(); ctx.arc(fx.x + Math.cos(ang) * rr * (0.5 + age), fx.y + Math.sin(ang) * rr * (0.5 + age) - age * 8, rr * (0.28 + age * 0.2), 0, TAU); ctx.fill();
+          }
+        }
+      }
     } else if (fx.k === 'ring') {
-      ctx.strokeStyle = fx.color || '#38bdf8'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1.25 - a * 0.5), 0, TAU); ctx.stroke();
+      if (!fxMid) continue;
+      ctx.globalAlpha = a * 0.8;
+      ctx.strokeStyle = fx.color || '#7fc0d4'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1.25 - a * 0.55), 0, TAU); ctx.stroke();
+      ctx.globalAlpha = a * 0.25; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r * (1.25 - a * 0.55) + 3, 0, TAU); ctx.stroke();
     } else if (fx.k === 'tag') {
-      ctx.fillStyle = fx.color || '#fff'; ctx.font = '800 12px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(fx.txt, fx.x, fx.y - (1 - a) * 16);
+      ctx.globalAlpha = a;
+      ctx.font = '700 10px "Cascadia Mono", Consolas, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const txt = fx.txt, tw = ctx.measureText(txt).width;
+      const ty = fx.y - 8 - age * 18;
+      ctx.fillStyle = 'rgba(6,11,15,.72)';
+      ctx.fillRect(fx.x - tw / 2 - 5, ty - 8, tw + 10, 15);
+      ctx.fillStyle = fx.color || '#edf3f8';
+      ctx.fillText(txt, fx.x, ty);
     }
     ctx.globalAlpha = 1;
   }
@@ -6214,8 +6745,11 @@ function drawWorld() {
     const d = fogImg.data;
     for (let i = 0; i < nx * ny; i++) {
       const o = i * 4;
-      d[o] = 5; d[o + 1] = 13; d[o + 2] = 21;
-      d[o + 3] = FOG.vis[i] ? 0 : (FOG.seen[i] ? 84 : 182);
+      d[o] = 7; d[o + 1] = 14; d[o + 2] = 20;
+      /* Terrain is a public atlas: fog conceals forces, not geography. A light
+         ink wash over unexplored ground preserves mystery without blanking the
+         map the player came to read. */
+      d[o + 3] = FOG.vis[i] ? 0 : (FOG.seen[i] ? 0 : 92);
     }
     fg.putImageData(fogImg, 0, 0);
     ctx.save();
@@ -6237,6 +6771,7 @@ function drawWorld() {
       ctx.font = (lb.sz >= 2 ? '600 ' : '700 ') + fs + 'px Palatino, "Palatino Linotype", Georgia, serif';
       try { ctx.letterSpacing = (lb.sz >= 2 ? '2.4px' : '1.2px'); } catch (e) { /* older canvas */ }
       const txt = lb.n.toUpperCase();
+      if (world._cityNameSet && world._cityNameSet.has(txt)) continue; // the city layer labels these
       ctx.shadowColor = 'rgba(2,5,9,.95)';
       ctx.shadowBlur = 7;
       ctx.fillStyle = lb.sz >= 2 ? 'rgba(244,247,250,.7)' : 'rgba(206,216,227,.4)';
@@ -6264,7 +6799,7 @@ function drawWorld() {
   if (!vignetteCache || vignetteCache.w !== vw || vignetteCache.h !== vh) {
     const vg = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.32, vw / 2, vh / 2, Math.max(vw, vh) * 0.78);
     vg.addColorStop(0, 'rgba(3,7,11,0)');
-    vg.addColorStop(1, 'rgba(3,7,11,.62)');
+    vg.addColorStop(1, 'rgba(3,7,11,.46)');
     vignetteCache = { g: vg, w: vw, h: vh };
   }
   ctx.fillStyle = vignetteCache.g;
@@ -6301,6 +6836,109 @@ let miniTerrain = null, miniStamp = '';
 let vignetteCache = null;
 let fogCv = null, fogImg = null;
 let grainPat = null;
+let terrainCv = null, terrainStamp = '';
+let contourCv = null, contourStamp = '';
+
+/* Terrain palette: muted atlas tones rather than raw biome colours. Every cell
+   is one pixel; smoothing at draw time turns the raster into natural boards. */
+const TERRAIN_INK = {
+  0: [205, 172, 116, 44],   // desert
+  1: [150, 162, 172, 58],   // mountain
+  2: [232, 234, 222, 48],   // salt pan
+  3: [116, 142, 92, 58],    // river valley
+  4: [158, 164, 126, 34],   // coastal plain
+  5: [206, 210, 214, 54],   // urban
+  6: [74, 134, 134, 66],    // marsh
+  7: [140, 140, 120, 20]    // open plain
+};
+/* Smooth value noise for coherent terrain relief. */
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const h = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
+/* Topographic contours baked once from the same elevation field as the
+   hillshade. Hairline strokes at low contrast: relief detail without competing
+   with borders or units. */
+function terrainContours(TG) {
+  if (!TG.elev) return null;
+  const stamp = world.w + 'x' + world.h + ':' + TG.nx + 'x' + TG.ny;
+  if (contourCv && contourStamp === stamp) return contourCv;
+  contourStamp = stamp;
+  const sc = 3;
+  if (!contourCv) contourCv = document.createElement('canvas');
+  contourCv.width = TG.nx * sc; contourCv.height = TG.ny * sc;
+  const g = contourCv.getContext('2d');
+  g.clearRect(0, 0, contourCv.width, contourCv.height);
+  g.strokeStyle = 'rgba(226,214,184,.55)';
+  g.lineWidth = 0.75;
+  g.beginPath();
+  const E = TG.elev, nx = TG.nx, ny = TG.ny;
+  const at = (x, y) => E[y * nx + x];
+  const sb = world.map ? world.map.staticBlock : null;
+  for (let y = 0; y < ny - 1; y++) for (let x = 0; x < nx - 1; x++) {
+    if (sb && (sb[y * nx + x] || sb[y * nx + x + 1] || sb[(y + 1) * nx + x] || sb[(y + 1) * nx + x + 1])) continue;
+    const c00 = at(x, y), c10 = at(x + 1, y), c01 = at(x, y + 1), c11 = at(x + 1, y + 1);
+    const lo = Math.min(c00, c10, c01, c11), hi = Math.max(c00, c10, c01, c11);
+    for (let lv = 0.16; lv < 1; lv += 0.11) {
+      if (lo > lv || hi < lv) continue;
+      const pts = [];
+      if ((c00 < lv) !== (c10 < lv)) pts.push([x + (lv - c00) / (c10 - c00 || 1), y]);
+      if ((c10 < lv) !== (c11 < lv)) pts.push([x + 1, y + (lv - c10) / (c11 - c10 || 1)]);
+      if ((c11 < lv) !== (c01 < lv)) pts.push([x + 1 - (lv - c11) / (c01 - c11 || 1), y + 1]);
+      if ((c01 < lv) !== (c00 < lv)) pts.push([x, y + 1 - (lv - c01) / (c00 - c01 || 1)]);
+      if (pts.length >= 2) {
+        g.moveTo(pts[0][0] * sc, pts[0][1] * sc);
+        g.lineTo(pts[1][0] * sc, pts[1][1] * sc);
+      }
+    }
+  }
+  g.stroke();
+  return contourCv;
+}
+function terrainPlate(TG) {
+  const stamp = world.w + 'x' + world.h + ':' + TG.nx + 'x' + TG.ny;
+  if (terrainCv && terrainStamp === stamp) return terrainCv;
+  terrainStamp = stamp;
+  if (!terrainCv) terrainCv = document.createElement('canvas');
+  terrainCv.width = TG.nx; terrainCv.height = TG.ny;
+  const g = terrainCv.getContext('2d');
+  const img = g.createImageData(TG.nx, TG.ny);
+  const d = img.data, sb = world.map ? world.map.staticBlock : null;
+  for (let i = 0; i < TG.nx * TG.ny; i++) {
+    const code = TG.grid[i];
+    const o = i * 4;
+    if (sb && sb[i]) continue; // never tint open water
+    const c = TERRAIN_INK[code] || TERRAIN_INK[0];
+    d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = c[3];
+  }
+  g.putImageData(img, 0, 0);
+  return terrainCv;
+}
+let landPat = null;
+function landTexture() {
+  if (landPat) return landPat;
+  const size = 384;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const n = vnoise(x * 0.018, y * 0.018) * 0.55 +
+      vnoise(x * 0.055 + 23, y * 0.055 + 7) * 0.3 +
+      vnoise(x * 0.16 + 51, y * 0.16 + 31) * 0.15;
+    /* Long, shallow dune banding across the noise field. */
+    const dune = Math.sin(y * 0.045 + n * 7 + x * 0.006) * 4;
+    const v = clamp(126 + (n - 0.5) * 72 + dune, 0, 255);
+    const o = (y * size + x) * 4;
+    img.data[o] = v * 1.02; img.data[o + 1] = v; img.data[o + 2] = v * 0.93; img.data[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  landPat = ctx.createPattern(c, 'repeat');
+  return landPat;
+}
 function grainPattern() {
   const c = document.createElement('canvas');
   c.width = c.height = 96;
@@ -6419,6 +7057,125 @@ function unitLabel(t, c) {
 }
 function buildingLabel(k) { return BUILDING_LABELS[k] || k; }
 
+/* ------------------------------------------------------------------
+   Selection iconography: one 24px stroke grid for every unit and
+   installation, so the panel reads like a recognised order of battle.
+   ------------------------------------------------------------------ */
+function unitIconSVG(t) {
+  const U = CFG.UNITS[t] || {};
+  const open = '<svg viewBox="0 0 24 24" aria-hidden="true">';
+  if (t === 'worker') return open + '<rect x="7" y="7" width="10" height="10"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4l-1.4 1.4"/></svg>';
+  if (U.fly) {
+    if (U.kamikaze) return open + '<path d="M21 12 6 6.5 9.4 12 6 17.5Z"/><path d="M9.4 12h-4"/><circle cx="11" cy="12" r="1" class="fill"/></svg>';
+    if (t === 'b2' || t === 'b1' || t === 'bomber' || t === 'h6k') return open + '<path d="M12 3 14 9l6.5 2.2v1.6L14 12v4l3 2.2v1.4L12 18l-5 1.6v-1.4l3-2.2v-4L3.5 12.8v-1.6L10 9Z"/><path d="M12 5v5"/></svg>';
+    return open + '<path d="M21.5 12 13 9.4V4.8L10.8 4v5.4L3 12l7.8 2.6V20l2.2-.8v-4.6Z"/><path d="M13 12h5"/></svg>';
+  }
+  if (t === 'tank' || t === 't90') return open + '<rect x="3.5" y="8" width="16" height="8" rx="1"/><circle cx="14" cy="12" r="2.6"/><path d="M14 12h7M6 8v8"/><path d="M3.5 16v2M6.5 16v2M16 16v2M19 16v2"/></svg>';
+  if (t === 'spaag') return open + '<rect x="3" y="9" width="12" height="7" rx="1"/><path d="M15 11h6M15 14h6"/><circle cx="7" cy="12" r="1.4"/><path d="M3 16v1.5M17 16v1.5"/></svg>';
+  if (t === 'atgm') return open + '<path d="M3 17h18"/><path d="M6 17V11l6-3 6 3v6"/><path d="M12 8V4M9.6 6.2 12 4l2.4 2.2"/></svg>';
+  if (t === 'manpads') return open + '<path d="M4 18 14 6l3 2.5L7.5 20Z"/><path d="M13 5l4 3.2"/><path d="M4 18l-1.5 2.5"/></svg>';
+  return open + '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 4l16 16M20 4 4 20"/></svg>';
+}
+function buildingIconSVG(k) {
+  const open = '<svg viewBox="0 0 24 24" aria-hidden="true">';
+  if (k === 'camp') return open + '<path d="M12 3.5 18.8 7.4v8L12 20l-6.8-4.6v-8Z"/><path d="m12 7.2 1.5 3 3.3.4-2.4 2.3.6 3.2-3-1.6-3 1.6.6-3.2L7.2 10.6l3.3-.4Z"/></svg>';
+  if (k === 'tower') return open + '<path d="M4 8h16v11H4Z"/><path d="M7 8V5h10v3M8 12h8M8 15h5"/></svg>';
+  if (k === 'sam') return open + '<path d="M3 19h18"/><path d="M6 19V13h7l5-7 2 1.4-4.6 7.6V19"/><path d="m14 8 3 2"/></svg>';
+  if (k === 'aa') return open + '<circle cx="9" cy="15" r="4"/><path d="M9 15 20 6M9 15l6 1M3.5 20h17"/></svg>';
+  if (k === 'airbase') return open + '<path d="M3 14h18v5H3Z"/><path d="M3 14 9 8h6l4 6M7 17h4M15 17h3"/></svg>';
+  if (k === 'mine') return open + '<path d="M4 20 9 6h6l5 14Z"/><path d="m9 20 3-9 3 9M7 14h10"/></svg>';
+  if (k === 'radar') return open + '<path d="M5 20h14M12 20v-5"/><path d="M5.5 11a7 7 0 0 1 13-3"/><path d="m12 10 7-5M4 8l6 4"/></svg>';
+  if (k === 'depot') return open + '<path d="M3 9 12 4l9 5v11H3Z"/><path d="M8 20v-6h8v6M8 11h8"/></svg>';
+  if (k === 'outpost') return open + '<path d="M6 20V5M6 6h11l-2.5 3L17 12H6"/><path d="M3 20h8"/></svg>';
+  return open + '<rect x="4" y="4" width="16" height="16"/><path d="M8 12h8M12 8v8"/></svg>';
+}
+function selStat(label, value, hot) {
+  return '<div class="si-cell"><small>' + label + '</small><b' + (hot ? ' class="hot"' : '') + '>' + value + '</b></div>';
+}
+function hpBar(hp, max) {
+  const f = clamp(hp / Math.max(1, max), 0, 1);
+  const cls = f <= 0.25 ? 'low' : (f <= 0.55 ? 'mid' : '');
+  return '<div class="si-hp"><div class="hp-top"><span>Structural integrity</span><b>' + Math.ceil(hp) + ' / ' + Math.round(max) + '</b></div>' +
+    '<div class="hp-bar"><i class="' + cls + '" style="width:' + (f * 100).toFixed(1) + '%"></i></div></div>';
+}
+function orderLine(u) {
+  if (!u || !u.order) return 'Holding position';
+  const o = u.order;
+  if (o.k === 'attack') {
+    const t = ent(o.target);
+    return t && !t.dead ? 'Engaging ' + (t.city || unitLabel(t.type) || buildingLabel(t.kind)) : 'Seeking target';
+  }
+  if (o.k === 'move' || o.k === 'amove') {
+    const d = Math.hypot((o.x || u.x) - u.x, (o.y || u.y) - u.y);
+    const eta = u.speed ? Math.max(0, Math.round(d / u.speed)) : 0;
+    return (o.k === 'amove' ? 'Attack-moving' : 'Moving') + ' · ' + (d < 12 ? 'arriving' : eta + 's to destination');
+  }
+  if (o.k === 'guard') return 'Holding position';
+  return String(o.k);
+}
+
+function selInfoHTML() {
+  const hp = humanPlayer();
+  if (!hp) return '';
+  let e = null, kind = 'unit';
+  if (sel.inspect) e = ent(sel.inspect.id);
+  else if (sel.bId) { e = ent(sel.bId); kind = 'building'; }
+  if (e && !e.dead) {
+    const isUnit = (e.kind === 'unit');
+    const owner = e.owner >= 0 && world.players[e.owner] ? world.players[e.owner] : null;
+    const name = isUnit ? unitLabel(e.type, owner ? countryOf(owner) : null) : (e.city || buildingLabel(e.kind));
+    const ownerName = owner ? (owner.country + ' · ' + owner.name) : 'Neutral / unclaimed';
+    const enemy = owner && owner.idx !== hp.idx;
+    const icon = isUnit ? unitIconSVG(e.type) : buildingIconSVG(e.kind);
+    const stance = isUnit ? orderLine(e) : (e.suppressed ? 'Suppressed — open to capture' : (e.capturable ? 'Capturable installation' : 'Military structure'));
+    const cells = isUnit
+      ? selStat('Strength', Math.ceil(e.hp) + ' HP') +
+        selStat('Damage', (e.dmg || 0) + ' / shot') +
+        selStat('Range', Math.round(e.range || 0) + ' m')
+      : selStat('Condition', e.suppressed ? 'SUPPRESSED' : 'ACTIVE', !!e.suppressed) +
+        selStat('Armour', e.capturable ? 'FIELD' : 'STRUCTURE') +
+        selStat('Status', e.owner === hp.idx ? 'FRIENDLY' : (owner ? 'HOSTILE' : 'NEUTRAL'), enemy);
+    const note = isUnit
+      ? stance + (e.overrideT > 0 ? ' · <b>ORDERS OVERRIDDEN</b>' : '')
+      : (e.captureProg > 0 ? 'Capture in progress · ' + Math.round(e.captureProg * 100) + '%' : stance);
+    return '<div class="si-head"><div class="si-icon"' + (enemy ? ' style="color:#e0795f"' : '') + '>' + icon + '</div>' +
+      '<div><div class="si-name">' + name + '</div><div class="si-sub">' + ownerName + '</div></div>' +
+      '<div class="si-side">' + (isUnit ? 'ORDER OF BATTLE' : 'INSTALLATION') + '<b>' + (isUnit ? (e.type || '').toUpperCase() : (e.kind || '').toUpperCase()) + '</b></div></div>' +
+      hpBar(e.hp, e.maxHp) +
+      '<div class="si-grid">' + cells + '</div>' +
+      '<div class="si-note">' + note + '</div>';
+  }
+  if (sel.units.length) {
+    const units = sel.units.map(id => ent(id)).filter(u => u && !u.dead);
+    if (!units.length) { sel.units = []; return ''; }
+    if (units.length === 1) {
+      const u = units[0];
+      return '<div class="si-head"><div class="si-icon">' + unitIconSVG(u.type) + '</div>' +
+        '<div><div class="si-name">' + unitLabel(u.type, countryOf(hp)) + '</div><div class="si-sub">' + hp.country + ' · ' + hp.name + '</div></div>' +
+        '<div class="si-side">FIRST ARMY<b>' + (u.isWorker ? 'ENGINEER' : 'COMBAT') + '</b></div></div>' +
+        hpBar(u.hp, u.maxHp) +
+        '<div class="si-grid">' + selStat('Mission', u.order ? String(u.order.k).toUpperCase() : 'HOLD') + selStat('Damage', (u.dmg || 0) + ' / shot') + selStat('Range', Math.round(u.range || 0) + ' m') + '</div>' +
+        '<div class="si-note">' + orderLine(u) + (u.overrideT > 0 ? ' · <b>ORDERS OVERRIDDEN</b>' : '') + '</div>';
+    }
+    const totalHp = units.reduce((a, u) => a + u.hp, 0), totalMax = units.reduce((a, u) => a + u.maxHp, 0);
+    const counts = {};
+    units.forEach(u => { counts[u.type] = (counts[u.type] || 0) + 1; });
+    const comps = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5)
+      .map(t => '<span>' + counts[t] + '× ' + unitLabel(t, countryOf(hp)) + '</span>').join('');
+    return '<div class="si-head"><div class="si-icon">' + unitIconSVG(units[0].type) + '</div>' +
+      '<div><div class="si-name">' + units.length + '-unit formation</div><div class="si-sub">' + hp.country + ' · combined force</div></div>' +
+      '<div class="si-side">SELECTED<b>' + units.length + ' UNITS</b></div></div>' +
+      hpBar(totalHp, totalMax) +
+      '<div class="si-comps">' + comps + '</div>' +
+      '<div class="si-note">Right-click ground to attack-move · shift-click to add units</div>';
+  }
+  return '<div class="si-head"><div class="si-icon">' + buildingIconSVG('camp') + '</div>' +
+    '<div><div class="si-name">' + hp.name + '</div><div class="si-sub">' + hp.country + ' · ' + (world.mode === 'real' ? 'Real mode' : 'Skirmish') + '</div></div>' +
+    '<div class="si-side">COMMAND<b>' + cityCount(hp) + ' CITIES</b></div></div>' +
+    '<div class="si-grid">' + selStat('Treasury', Math.floor(hp.cents / 100) + ' cr') + selStat('Army', armyCount(hp.idx) + ' units') + selStat('Fields', (hp.resourceN || 0) + ' held') + '</div>' +
+    '<div class="si-note">Select a formation or installation to inspect it · drag to box-select</div>';
+}
+
 function rebuildChips() {
   const box = $('chips');
   box.innerHTML = '';
@@ -6492,6 +7249,16 @@ function updateHud() {
   const netEl = $('hudNet');
   netEl.textContent = (net >= 0 ? '+' : '') + net.toFixed(1) + '/min';
   netEl.classList.toggle('neg', net < 0);
+  if ($('tbArmy')) $('tbArmy').textContent = armyCount(hp.idx);
+  if ($('tbCities')) $('tbCities').textContent = cityCount(hp);
+  /* Treasury history for the economy chart. Presentation only: sampled from the
+     same balance the HUD already reads, never used by the simulation. */
+  if (!hp.treasuryHist) hp.treasuryHist = [];
+  const sampleT = Math.floor(world.time);
+  if (!hp.treasuryHist.length || sampleT - hp.treasuryHist[hp.treasuryHist.length - 1].t >= 2) {
+    hp.treasuryHist.push({ t: sampleT, v: coins });
+    if (hp.treasuryHist.length > 120) hp.treasuryHist.shift();
+  }
 
   world.players.forEach((p, i) => {
     const el = chipEls[i];
@@ -6510,44 +7277,19 @@ function updateHud() {
 
   const ctxBtn = $('ctxBtn');
   ctxBtn.classList.add('hidden');
-  const c = countryOf(hp);
-  if (sel.inspect) {
-    const e = ent(sel.inspect.id);
-    if (!e || e.dead) { sel.inspect = null; }
-    else if (e.kind === 'unit') {
-      const owner = e.owner >= 0 ? world.players[e.owner].name : 'Neutral garrison';
-      const ownerC = e.owner >= 0 ? countryOf(world.players[e.owner]) : null;
-      const stance = e.order ? (e.order.k === 'amove' ? 'Attacking / moving' : (e.order.k === 'move' ? 'Moving' : e.order.k)) : 'Holding';
-      $('selinfo').innerHTML = `<b>${unitLabel(e.type, ownerC)}</b> · ${owner}<br>
-        HP <b>${Math.ceil(e.hp)}/${e.maxHp}</b> · ${stance} · DMG ${e.dmg || 0} · RNG ${Math.round(e.range || 0)}`;
-    } else {
-      const owner = e.owner >= 0 ? world.players[e.owner].name : 'Neutral';
-      $('selinfo').innerHTML = `${owner} · <b>${e.city || buildingLabel(e.kind)}</b><br>
-        HP <b>${Math.ceil(e.hp)}/${e.maxHp}</b> · ${e.capturable ? 'capturable — suppress, then hold with infantry' : 'military structure'}`;
-    }
-  } else if (sel.bId) {
+  /* Selection hygiene belongs here: dead ids must never leak into the panel. */
+  if (sel.inspect) { const ie = ent(sel.inspect.id); if (!ie || ie.dead) sel.inspect = null; }
+  if (sel.bId) { const sb = ent(sel.bId); if (!sb || sb.dead || !buildingVisibleToHuman(sb)) sel.bId = 0; }
+  if (sel.units.length) sel.units = sel.units.filter(id => { const su = ent(id); return su && !su.dead; });
+  $('selinfo').innerHTML = selInfoHTML();
+  $('selinfo').classList.toggle('idle', !sel.inspect && !sel.bId && !sel.units.length);
+  if (sel.bId) {
     const b = ent(sel.bId);
-    if (b && !b.dead && buildingVisibleToHuman(b)) {
-      $('selinfo').innerHTML = `<b>${b.city || buildingLabel(b.kind)}</b> · HP ${Math.ceil(b.hp)}/${b.maxHp}` + (b.suppressed ? ' <span style="color:#facc15">(SUPPRESSED — SEND INFANTRY TO CAPTURE)</span>' : '');
-      if (b.owner === hp.idx && b.hp < b.maxHp) {
-        ctxBtn.textContent = 'Repair Structure';
-        ctxBtn.classList.remove('hidden');
-      }
-    } else sel.bId = 0;
-  } else if (sel.units.length) {
-    const units = sel.units.map(id => ent(id)).filter(u => u && !u.dead);
-    if (!units.length) { sel.units = []; }
-    else if (units.length === 1) {
-      const u = units[0];
-      $('selinfo').innerHTML = `<b>${unitLabel(u.type)}</b> · HP <b>${Math.ceil(u.hp)}/${u.maxHp}</b> · ${u.isWorker ? 'Engineer' : 'Combat unit'}<br>
-        ${u.order && u.order.k === 'attack' ? 'Attacking target' : (u.order && u.order.k === 'amove' ? 'Attack-moving' : (u.order && u.order.k === 'move' ? 'Moving' : 'Holding'))} · right-click ground to attack-move${u.overrideT > 0 ? ' · <b style="color:#facc15">ORDERS OVERRIDDEN</b>' : ''}`;
-    } else {
-      $('selinfo').innerHTML = `<b>${units.length}</b> units selected · right-click or long-press ground to attack-move`;
+    if (b && !b.dead && b.owner === hp.idx && b.hp < b.maxHp) {
+      ctxBtn.textContent = 'Repair structure';
+      ctxBtn.classList.remove('hidden');
     }
-  } else {
-    $('selinfo').innerHTML = `<span class="dflag">${flagImg(hp.country)}</span> <b>${hp.name}</b> <span class="dim">${world.mode === 'real' ? 'REAL MODE' : 'SKIRMISH'}</span><br>${hp.resourceN || 0} fields · ${cityCount(hp)} cities · SAM: ${c.military.samName}`;
   }
-
   refreshBuildButtons();
 }
 
@@ -6873,6 +7615,31 @@ function openEconomyModal() {
   const reserve = reserveFloorFor(hp);
   const fmt = n => (n >= 0 ? '+' : '') + n.toFixed(1);
   const row = (label, val, cls) => `<div class="erow"><span>${label}</span><b class="${cls || ''}">${val}</b></div>`;
+  /* Treasury trend and source composition. Both read only state the simulation
+     already owns; the chart makes the direction of the war economy explicit. */
+  const hist = (hp.treasuryHist || []).slice(-90);
+  let chart = '';
+  if (hist.length >= 2) {
+    const w = 360, h = 46, t0 = hist[0].t, t1 = hist[hist.length - 1].t || t0 + 1;
+    const vmax = Math.max(...hist.map(p => p.v), reserve, 1);
+    const pts = hist.map(p => [( (p.t - t0) / Math.max(1, t1 - t0)) * w, h - (p.v / vmax) * (h - 4) - 2]);
+    const line = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const area = '0,' + h + ' ' + line + ' ' + w + ',' + h;
+    const reserveY = (h - (reserve / vmax) * (h - 4) - 2).toFixed(1);
+    chart = `<div class="eco-chart"><div class="ec-top"><span>Treasury trend · ${hist.length} samples</span><b>${Math.floor(hist[0].v)} → ${Math.floor(hist[hist.length - 1].v)} cr</b></div>` +
+      `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Treasury over time">` +
+      `<polygon points="${area}" fill="rgba(211,172,98,.10)"/>` +
+      `<polyline points="${line}" fill="none" stroke="#d3ac62" stroke-width="1.4" stroke-linejoin="round"/>` +
+      `<line x1="0" y1="${reserveY}" x2="${w}" y2="${reserveY}" stroke="rgba(224,122,95,.45)" stroke-width="1" stroke-dasharray="3 4"/>` +
+      `</svg><div class="ec-top" style="margin-top:2px"><span>Dashed line · operating reserve</span><span>latest ${Math.floor(coins)} cr</span></div></div>`;
+  }
+  const streams = [
+    ['Base economy', eco.base], ['Held cities', eco.out], ['Foreign aid', eco.aid],
+    ['Trade pacts', eco.trade], ['Resource fields', eco.res], ['Mines & engineers', eco.mine + eco.workers]
+  ].filter(s => s[1] > 0);
+  const sMax = Math.max(1, ...streams.map(s => s[1]));
+  const bars = streams.length ? `<div class="eco-bars">${streams.map(s =>
+    `<div class="eb"><span>${s[0]}</span><div class="track"><i style="width:${(s[1] / sMax * 100).toFixed(1)}%"></i></div><b>${s[1] >= 0 ? '+' : ''}${s[1].toFixed(1)}</b></div>`).join('')}</div>` : '';
   let warn = '';
   if (net < -1) warn = '! You are spending more than you earn. Production, repairs and strikes will drain the treasury — pause purchases or capture more resource fields.';
   else if (coins < reserve) warn = '! Treasury is below the operating reserve. A single expensive purchase now leaves no cushion for repairs or a missile strike.';
@@ -6882,6 +7649,8 @@ function openEconomyModal() {
     <div class="erow"><span>Treasury</span><b class="${coins < reserve ? 'neg' : 'pos'}">${Math.floor(coins)}${CICO}</b></div>
     <div class="erow"><span>Net income</span><b class="${net < 0 ? 'neg' : 'pos'}">${fmt(net)}${CICO}/min</b></div>
     <div class="erow"><span>Operating reserve</span><b>${Math.round(reserve)}${CICO}</b></div>
+    ${chart}
+    ${bars}
     <div class="ehead">Income sources (coins/minute)</div>
     ${row('Base national economy', fmt(eco.base) + CICO + '/min', 'pos')}
     ${row('Held cities (' + cityCount(hp) + ')', fmt(eco.out) + CICO + '/min', 'pos')}
@@ -6954,13 +7723,20 @@ const dragBox = { on: false, x0: 0, y0: 0, x1: 0, y1: 0 };
 let panState = { on: false, sx: 0, sy: 0, cx: 0, cy: 0, moved: false };
 let lpTimer = null;
 
+const TOAST_CATEGORY = { crit: 'ALERT · COMMAND', err: 'WARNING', aid: 'DIPLOMACY', hint: 'OPERATION' };
 function toast(msg, cls) {
   const box = $('toasts');
   const d = document.createElement('div');
   d.className = 'toast' + (cls ? ' ' + cls : '');
-  d.textContent = msg;
+  const cat = TOAST_CATEGORY[cls] || 'FIELD REPORT';
+  const catEl = document.createElement('span'); catEl.className = 'tcat'; catEl.textContent = cat;
+  const timeEl = document.createElement('span'); timeEl.className = 'ttime';
+  timeEl.textContent = world ? fmtTime(world.time) : '';
+  const body = document.createElement('span'); body.textContent = msg;
+  d.appendChild(catEl); d.appendChild(body); d.appendChild(timeEl);
   box.appendChild(d);
-  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, 3800);
+  while (box.children.length > 4) box.removeChild(box.firstChild);
+  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, 4200);
 }
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -7531,11 +8307,15 @@ function applyPrefs() {
   $('setSound').setAttribute('aria-pressed', String(SFX.enabled));
   $('setFog').classList.toggle('on', !!app.fog);
   $('setFog').setAttribute('aria-pressed', String(!!app.fog));
+  for (const id of ['setFx', 'pauseFx']) {
+    const fx = $(id);
+    if (fx) fx.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.fx === app.fxQuality));
+  }
 }
 
 function savePrefs() {
   try {
-    localStorage.setItem('geodots.prefs', JSON.stringify({ reduceMotion: !!app.reduceMotion, sound: SFX.enabled, fog: !!app.fog }));
+    localStorage.setItem('geodots.prefs', JSON.stringify({ reduceMotion: !!app.reduceMotion, sound: SFX.enabled, fog: !!app.fog, fx: app.fxQuality }));
   } catch (e) { /* storage can be unavailable in private mode */ }
 }
 
@@ -7544,6 +8324,7 @@ try {
   if (stored) {
     app.reduceMotion = !!stored.reduceMotion;
     if (stored.fog === false) app.fog = false;
+    if (stored.fx === 'reduced' || stored.fx === 'off' || stored.fx === 'high') app.fxQuality = stored.fx;
     if (stored.sound === false && SFX.enabled) SFX.toggle();
   }
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) app.reduceMotion = true;
@@ -7551,6 +8332,7 @@ try {
 
 $('menuNew').onclick = () => { showScreen('titleScr'); setupStep = 1; onModeChange(); };
 $('menuQuickStart').onclick = () => { showScreen('titleScr'); setupStep = 1; onModeChange(); };
+$('menuFieldManual').onclick = () => { overlayReturn = 'menuScr'; showScreen('howtoScr'); };
 $('menuBrief').onclick = () => { overlayReturn = 'menuScr'; showScreen('howtoScr'); };
 $('menuSettings').onclick = () => showScreen('settingsScr');
 $('menuCredits').onclick = () => showScreen('creditsScr');
@@ -7568,6 +8350,8 @@ $('creditsClose').onclick = () => showScreen('menuScr');
 $('setMotion').onclick = () => { app.reduceMotion = !app.reduceMotion; applyPrefs(); savePrefs(); };
 $('setSound').onclick = () => { SFX.toggle(); applyPrefs(); savePrefs(); };
 $('setFog').onclick = () => { app.fog = !app.fog; syncFogButtons(); applyPrefs(); savePrefs(); };
+$('setFx').querySelectorAll('button').forEach(b => b.onclick = () => { app.fxQuality = b.dataset.fx; applyPrefs(); savePrefs(); });
+$('pauseFx').querySelectorAll('button').forEach(b => b.onclick = () => { app.fxQuality = b.dataset.fx; applyPrefs(); savePrefs(); });
 
 $('howBtn').onclick = () => { overlayReturn = 'titleScr'; showScreen('howtoScr'); };
 $('howClose').onclick = () => showScreen(overlayReturn);
@@ -8152,16 +8936,21 @@ function bakeTerrain(map) {
     if (!g) return null;
     const img = g.createImageData(nx, ny);
     const elev = new Float32Array(nx * ny);
-    const hash2 = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
     for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
       const i = y * nx + x;
       const base = TERRAIN_DEF[grid[i]].elev;
-      /* Sub-region roughness: without it the elevation field is flat inside a
-         region and only the borders ever shade. Mountains get the most. */
-      elev[i] = base + (hash2(x, y) - 0.5) * (0.10 + 0.34 * base);
+      /* Coherent multi-octave relief, not per-cell noise: broad landforms with
+         dune and ridge detail. This is what makes the hillshade read as terrain
+         rather than as a blurred stain. */
+      const macro = vnoise(x * 0.045, y * 0.045) * 0.62 +
+        vnoise(x * 0.11 + 17, y * 0.11 + 9) * 0.27 +
+        vnoise(x * 0.27 + 41, y * 0.27 + 3) * 0.11;
+      elev[i] = base + (macro - 0.5) * (0.16 + 0.55 * base);
     }
+    const wet = map.staticBlock || null;
     for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
       const i = y * nx + x;
+      if (wet && wet[i]) continue; // the seabed is not terrain relief
       const xl = elev[i - (x > 0 ? 1 : 0)], xr = elev[i + (x < nx - 1 ? 1 : 0)];
       const yu = elev[i - (y > 0 ? nx : 0)], yd = elev[i + (y < ny - 1 ? nx : 0)];
       const dzdx = (xr - xl) * 0.5, dzdy = (yd - yu) * 0.5;
@@ -8170,12 +8959,13 @@ function bakeTerrain(map) {
       const white = lit >= 0.5;
       const p4 = i * 4;
       img.data[p4] = img.data[p4 + 1] = img.data[p4 + 2] = white ? 255 : 0;
-      img.data[p4 + 3] = Math.round(slope * 190 * Math.min(1, Math.abs(lit - 0.5) * 2.6));
+      img.data[p4 + 3] = Math.round(slope * 58 * Math.min(1, Math.abs(lit - 0.5) * 3.1));
     }
     g.putImageData(img, 0, 0);
+    cv._elev = elev;
     return cv;
   })();
-  return { grid, road, nx, ny, cs: CS, hillshade };
+  return { grid, road, nx, ny, cs: CS, hillshade, elev: hillshade ? hillshade._elev : null };
 }
 function terrainCellAt(x, y) {
   const T = world && world.terrainGrid;

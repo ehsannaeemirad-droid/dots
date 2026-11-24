@@ -19,10 +19,11 @@ module.exports = {
         out[k] = { hp: CFG.BUILDINGS[k].hp, armor: CFG.BUILDINGS[k].armor
           || ((k === 'camp' || k === 'airbase') ? 'fortified' : 'structure') };
       }
-      return out;
+      return { ...out, towerDmg: CFG.BUILDINGS.tower.dmg };
     })()`);
     check.eq(hp.camp.hp, 1100, 'field HQ has 1100 HP');
-    check.eq(hp.tower.hp, 200, 'bunker has 200 HP');
+    check.eq(hp.tower.hp, 400, 'bunker has 400 HP (2x the original)');
+    check.eq(hp.towerDmg, 8, 'bunker firepower is 2x the original');
     check.eq(hp.airbase.hp, 600, 'airbase has 600 HP');
     check.eq(hp.tower.armor, 'structure', 'bunker uses structure armour');
     check.eq(hp.camp.armor, 'fortified', 'field HQ uses fortified armour');

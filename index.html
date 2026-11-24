@@ -1139,6 +1139,7 @@ body.map-focus #minimapWrap{opacity:.9}
   <button id="rosterBtn" class="hudbtn" title="Country overview" aria-label="Countries"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M2 7h10M2 10h6"/></svg><span class="hudlbl">States</span></button>
   <button id="objHudBtn" class="hudbtn" title="Objectives and victory conditions" aria-label="Objectives"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4.4"/><circle cx="7" cy="7" r="1.5"/></svg><span class="hudlbl">Goals</span></button>
   <button id="diploHudBtn" class="hidden hudbtn" title="Diplomacy and relations" aria-label="Diplomacy"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4.4"/><path d="M2.6 7h8.8M7 2.6c2.1 2.6 2.1 6.2 0 8.8M7 2.6c-2.1 2.6-2.1 6.2 0 8.8"/></svg><span class="hudlbl">Diplo</span></button>
+  <button id="advisorHudBtn" class="hidden hudbtn" title="National advisors" aria-label="National advisors"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11V5.2L7 3l4 2.2V11M5.4 11V8.3h3.2V11"/></svg><span class="hudlbl">Advisors</span></button>
   <button id="mpHudBtn" class="hidden hudbtn" title="USA / Russia / China" aria-label="Major powers"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11V5.2L7 3l4 2.2V11M5.4 11V8.3h3.2V11"/></svg><span class="hudlbl">Powers</span></button>
   <button id="fogHudBtn" class="hudbtn on" title="Toggle fog of war" aria-label="Fog of war" aria-pressed="true"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.7 7s2-3.3 5.3-3.3S12.3 7 12.3 7s-2 3.3-5.3 3.3S1.7 7 1.7 7z"/><circle cx="7" cy="7" r="1.4"/></svg></button>
   <button id="sndBtn" title="Sound" aria-label="Sound"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5.4h2L7.3 3v8L5 8.6H3z"/><path d="M9.3 5.2c.9.9.9 2.6 0 3.5"/></svg></button>
@@ -1158,6 +1159,13 @@ body.map-focus #minimapWrap{opacity:.9}
 <div id="buildbar" class="hidden"><div id="bbTabs"></div><div id="bbRow"></div></div>
 <div id="placeBtns" class="hidden"><button id="placeOk">✓</button><button id="placeNo">✕</button></div>
 <button id="ctxBtn" class="hidden">Repair / Action</button>
+<div id="salvoScr" class="overlay hidden"><div class="panel" style="width:min(92vw,430px)">
+  <h2>Missile salvo</h2>
+  <p class="dim">Choose a missile and salvo size, then click that many target points. All missiles launch together.</p>
+  <div class="row"><span class="lbl">MISSILE</span><select id="salvoKind" class="amtin" style="width:auto;min-width:180px"></select></div>
+  <div class="row"><span class="lbl">SALVO</span><input id="salvoCount" class="amtin" type="number" min="1" max="1" value="1"><span id="salvoStock" class="dim"></span></div>
+  <div class="btnrow"><button class="btn primary" id="salvoArm">Arm salvo</button><button class="btn" id="salvoClose">Cancel</button></div>
+</div></div>
 <div id="toasts"></div>
 <div id="countScr" class="overlay hidden"><div class="count-wrap"><div class="count-label">Operation begins</div><div id="countNum">3</div></div></div>
 
@@ -1207,6 +1215,17 @@ body.map-focus #minimapWrap{opacity:.9}
     </div>
     <p class="dim">Manage treaties, trade pacts, ceasefires, sanctions, or war declarations. Relationships dynamically evolve from combat, Strait of Hormuz disruption, and superpower intervention.</p>
     <div style="overflow-x:auto"><table class="dtable" id="diploTable"></table></div>
+  </div>
+</div>
+
+<div id="advisorScr" class="overlay hidden">
+  <div class="panel" style="width:min(96vw,760px);max-height:88vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><h2 style="margin:0">National advisors</h2><p class="dim" style="margin:3px 0 0">Delegate routine work. Off / Suggest / Auto; budgets and the cash reserve are enforced by the simulation.</p></div>
+      <button class="btn" id="advisorClose" style="margin:0;padding:6px 12px">✕ Close</button>
+    </div>
+    <div id="advisorDoctrine" style="margin:10px 0 6px;padding:9px 10px;border:1px solid var(--line);background:var(--surface-2)"></div>
+    <div id="advisorList"></div>
   </div>
 </div>
 
@@ -1307,6 +1326,9 @@ body.map-focus #minimapWrap{opacity:.9}
         <div class="step-head"><h3>Set the scenario</h3><p>Scenario, doctrine and difficulty. Difficulty changes AI reaction speed, attack cadence and its production ceiling — not just unit strength.</p></div>
         <div class="row" id="agendaRow" data-only="real"><span class="lbl">Doctrine</span><div class="seg" id="segAgenda"><button data-v="standard" class="on">Standard national doctrine</button><button data-v="maximalist">Hardline / maximalist</button></div></div>
         <p class="agnote" id="agendaNote" data-only="real"></p>
+        <div class="row" id="doctrineRow" data-only="classic"><span class="lbl">Doctrine</span><div class="seg" id="segDoctrine" style="flex-wrap:wrap">
+          <button data-v="balanced" class="on">Balanced</button><button data-v="air">Air</button><button data-v="ground">Ground</button><button data-v="missile">Missile</button><button data-v="defense">Defence</button><button data-v="economy">Economy</button>
+        </div></div>
         <div class="row" data-only="real"><span class="lbl">Scenario</span><div class="seg" id="segRealScenario"><button data-v="nov2026" class="on">November 2026 crisis · 16 nations</button><button data-v="levant_gulf">Levant &amp; Gulf flashpoint · 8 powers</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="Easy">Easy</button><button data-v="Medium" class="on">Medium</button><button data-v="Hard">Hard</button></div></div>
       </section>
@@ -1411,6 +1433,18 @@ const CONFIG = {
     RESERVE_SECONDS: 8,
     MIN_RESERVE: 40
   },
+  /* Skirmish-only balance layer. Real mode keeps the values above and the
+     Real economy fully untouched; everything here is read behind
+     `world.mode === 'classic'`. */
+  SKIRMISH: {
+    ECONOMY_COST: 1400,
+    ECONOMY_BUILD_SEC: 360,
+    ECONOMY_INCOME_CPM: 35,
+    MIN_FIELD_YIELD: 24,
+    MAX_FIELD_YIELD: 40,
+    DOCTRINE_SWITCH_COST: 250,
+    AGREEMENT_DAYS: { NAP: 480, DEFENSIVE: 600, MILITARY: 600, TRADE: 420, CEASEFIRE: 240, MUTUAL_ENEMY: 420 }
+  },
   GOLD: {
     WORKER_RATE_CPT: 50,
     MINE_TICK: 10,
@@ -1424,11 +1458,12 @@ const CONFIG = {
          only taken after suppression, so a 0.03 multiplier made the whole
          skirmish capture loop unreachable (measured 11-34 min of uninterrupted
          rifle fire). Bunkers are 'structure' (0.08), so they still need armour. */
-      smallArms:  { infantry: 1.00, light: 0.35, armor: 0.05, air: 0.00, structure: 0.08, fortified: 0.28 },
-      autocannon: { infantry: 0.90, light: 1.00, armor: 0.28, air: 0.85, structure: 0.30, fortified: 0.18 },
-      tankGun:    { infantry: 0.45, light: 1.00, armor: 1.00, air: 0.00, structure: 0.70, fortified: 0.40 },
-      he:         { infantry: 1.00, light: 1.00, armor: 0.50, air: 0.00, structure: 1.25, fortified: 0.90 },
-      atgm:       { infantry: 0.30, light: 1.05, armor: 1.35, air: 0.00, structure: 0.45, fortified: 0.35 },
+      smallArms:  { infantry: 1.00, light: 0.35, armor: 0.05, heavy: 0.02, air: 0.00, structure: 0.08, fortified: 0.28 },
+      autocannon: { infantry: 0.90, light: 1.00, armor: 0.28, heavy: 0.14, air: 0.85, structure: 0.30, fortified: 0.18 },
+      tankGun:    { infantry: 0.45, light: 1.00, armor: 1.00, heavy: 0.72, air: 0.00, structure: 0.70, fortified: 0.40 },
+      td:         { infantry: 0.18, light: 0.70, armor: 1.55, heavy: 1.30, air: 0.00, structure: 0.35, fortified: 0.25 },
+      he:         { infantry: 1.00, light: 1.00, armor: 0.50, heavy: 0.34, air: 0.00, structure: 1.25, fortified: 0.90 },
+      atgm:       { infantry: 0.30, light: 1.05, armor: 1.35, heavy: 1.50, air: 0.00, structure: 0.45, fortified: 0.35 },
       manpads:    { infantry: 0.00, light: 0.00, armor: 0.00, air: 1.55, structure: 0.00, fortified: 0.00 },
       sam:        { infantry: 0.00, light: 0.00, armor: 0.00, air: 1.90, structure: 0.00, fortified: 0.00 },
       bomb:       { infantry: 0.85, light: 1.00, armor: 0.95, air: 0.00, structure: 1.90, fortified: 1.40 },
@@ -1438,20 +1473,27 @@ const CONFIG = {
   },
   COSTS: {
     worker: 15, soldier: 10, manpads: 25, atgm: 45, spaag: 85,
-    tank: 100, air: 120, drone: 20, bomber: 190,
-    t90: 120, su34: 125, f35: 175, b1: 265, b2: 430, j20: 195, h6k: 245,
+    /* Main battle tanks are 40% cheaper than the original 100/120 price. */
+    tank: 60, air: 120, drone: 20, bomber: 190,
+    heavyTank: 140, tankDestroyer: 95, ifv: 85, apc: 50,
+    t90: 72, su34: 125, f35: 175, b1: 265, b2: 430, j20: 195, h6k: 245,
     /* Real-mode airframes (legacy `air` and the superpower types above are kept for skirmish). */
     mig29: 90, f16: 110, mirage: 105, fa18: 115, rafale: 160, typhoon: 160,
     f15: 150, f35i: 185, su24: 105, tornado: 125, a29: 55,
     tb2: 45, hermes: 40, wingloong: 42, quad: 8, ababil: 14,
     missile: 320, nuke: 720,
     tower: 75, aa: 115, sam: 210, mine: 45, airbase: 160, radar: 85, depot: 90,
+    missileFactory: 500, antiMissile: 500, economy: 400, interceptor: 100,
     rearm_air: 8, resupply_tank: 12, repair_hp: 0.12
   },
   UNITS: {
     worker:  { hp: 15, speed: 52,  dmg: 0,  atk: 0,   range: 0,   r: 5,  dmgType: 'smallArms', armor: 'infantry', aa: false, fly: false, siege: false, worker: true },
     soldier: { hp: 14, speed: 46,  dmg: 2.2,atk: 0.5, range: 28,  r: 6,  dmgType: 'smallArms', armor: 'infantry', aa: false, fly: false, siege: false, capture: true },
     tank:    { hp: 80, speed: 56,  dmg: 14, atk: 1.15,range: 135, r: 9,  dmgType: 'tankGun',   armor: 'armor',    aa: false, fly: false, siege: true, ammo: 14 },
+    heavyTank: { hp: 150, speed: 42, dmg: 24, atk: 1.45, range: 150, r: 10, dmgType: 'tankGun', armor: 'heavy', aa: false, fly: false, siege: true, ammo: 16 },
+    tankDestroyer: { hp: 55, speed: 44, dmg: 32, atk: 2.35, range: 215, r: 8, dmgType: 'td', armor: 'armor', aa: false, fly: false, siege: true, ammo: 12 },
+    ifv:     { hp: 70, speed: 60,  dmg: 9,  atk: 0.60,range: 100, r: 8,  dmgType: 'autocannon', armor: 'light', aa: false, fly: false, siege: false, ammo: 12, capacity: 3, transport: true },
+    apc:     { hp: 55, speed: 72,  dmg: 4,  atk: 0.80,range: 70,  r: 8,  dmgType: 'autocannon', armor: 'light', aa: false, fly: false, siege: false, ammo: 8, capacity: 4, transport: true },
     air:     { hp: 28, speed: 300, dmg: 5,  atk: 0.55,range: 80,  r: 8,  dmgType: 'autocannon',armor: 'air',      aa: true,  fly: true,  siege: true, ammo: 6 },
     drone:   { hp: 11, speed: 72,  dmg: 28, atk: 0.5, range: 24,  r: 6,  dmgType: 'bomb',      armor: 'air',      aa: false, fly: true,  siege: true, kamikaze: true, splash: 38, real: 'Shahed-136 · 185 km/h · 20-50 kg warhead' },
     bomber:  { hp: 50, speed: 210, dmg: 48, atk: 3.6, range: 42,  r: 11, dmgType: 'bomb',      armor: 'air',      aa: false, fly: true,  siege: true, splash: 55, ammo: 3 },
@@ -1491,23 +1533,43 @@ const CONFIG = {
     /* A field headquarters, not a fortress: 1100 HP keeps the capture loop
        (suppress, then hold with infantry) inside one tactical push. */
     camp:    { hp: 1100, r: 40, armor: 'fortified', capturable: true },
-    /* A bunker should stop infantry cold but still need armour or ATGM fire to
-       crack: 200 HP, 6.5 dps vs infantry, negligible damage from rifles. */
-    tower:   { hp: 200, r: 14, dmg: 4,  atk: 0.55,range: 150, hitsGround: true,  hitsAir: false, dmgType: 'autocannon', armor: 'structure' },
-    aa:      { hp: 200, r: 14, dmg: 15, atk: 0.45,range: 230, hitsGround: false, hitsAir: true,  dmgType: 'sam',       armor: 'structure' },
-    mine:    { hp: 150, r: 16, armor: 'structure' },
-    outpost: { hp: 320, r: 22, dmg: 5,  atk: 0.5, range: 160, hitsGround: true,  hitsAir: false, dmgType: 'autocannon', armor: 'structure' },
-    depot:   { hp: 260, r: 14, armor: 'structure', vision: 300 },
-    airbase: { hp: 600, r: 30, armor: 'fortified', capacity: 3 },
-    sam:     { hp: 320, r: 15, dmg: 16, atk: 0.55, range: 310, hitsGround: false, hitsAir: true, dmgType: 'sam', armor: 'structure', vision: 260, ammo: 6 },
-    radar:   { hp: 220, r: 14, armor: 'structure', vision: 700 }
+    /* Bunkers are twice the original 200 HP / 4 damage: 400 HP, 8 firepower. */
+    tower:   { hp: 400, r: 14, dmg: 8,  atk: 0.55,range: 150, hitsGround: true,  hitsAir: false, dmgType: 'autocannon', armor: 'structure', capturable: true },
+    aa:      { hp: 200, r: 14, dmg: 15, atk: 0.45,range: 230, hitsGround: false, hitsAir: true,  dmgType: 'sam',       armor: 'structure', capturable: true },
+    mine:    { hp: 150, r: 16, armor: 'structure', capturable: true },
+    outpost: { hp: 320, r: 22, dmg: 5,  atk: 0.5, range: 160, hitsGround: true,  hitsAir: false, dmgType: 'autocannon', armor: 'structure', capturable: true },
+    depot:   { hp: 260, r: 14, armor: 'structure', vision: 300, capturable: true },
+    airbase: { hp: 600, r: 30, armor: 'fortified', capacity: 3, capturable: true },
+    sam:     { hp: 320, r: 15, dmg: 16, atk: 0.55, range: 310, hitsGround: false, hitsAir: true, dmgType: 'sam', armor: 'structure', vision: 260, ammo: 6, capturable: true },
+    radar:   { hp: 220, r: 14, armor: 'structure', vision: 700, capturable: true },
+    /* Strategic production and defence. Missile factories hold a four-minute
+       production queue; anti-missile batteries are the only system allowed to
+       fire at a ballistic missile, and every shot costs 100 cr. */
+    missileFactory: { hp: 900, r: 26, armor: 'fortified', capturable: true, buildTime: 0 },
+    antiMissile:    { hp: 650, r: 18, armor: 'fortified', capturable: true, range: 520, intercept: true },
+    /* Economy complexes take three minutes to commission, have four times the
+       durability of an airbase, and deploy an AA gun and a bunker. */
+    economy:        { hp: 2400, r: 30, armor: 'fortified', capturable: true, buildTime: 180, incomeCpm: 18 }
   },
   CAPTURE: {
-    RADIUS: 75,
+    /* 110 px, not 75: a formation ordered onto a city marker naturally halts in
+       a ring 80-100 px out, so a 75 px ring left soldiers visibly "in" the city
+       while the capture clock stayed at zero. */
+    RADIUS: 110,
     RATE: 0.045,
     MAX_FOE: 8,
     DIMINISH: 0.72,
     CONTEST_MULT: 0.4,
+    /* City warfare is measured in minutes, not seconds. Capitals 10 minutes,
+       all other cities roughly 7 minutes; the required infantry company only
+       gates progress, it no longer shortens the clock. */
+    CITY_CAPITAL_SEC: 600,
+    CITY_SEC: 420,
+    BUILDING_CAPITAL_SEC: 600,
+    BUILDING_SEC: 420,
+    BUILDING_OTHER_SEC: 180,
+    INTERCEPT_COST: 100,
+    INTERCEPT_RANGE: 520,
     /* Suppression is the gate that makes capture a two-phase operation. At 30%
        a field HQ needed eleven minutes of rifle fire before the hold could even
        start, so the first phase was effectively unreachable; 45% keeps the
@@ -1702,7 +1764,7 @@ const REAL_COUNTRY_DB = {
       agendaMaximalist: 'Greater Israel — Territorial Maximalism: annex contested areas & establish regional buffer hegemony (high diplomatic cost)',
       source: 'CRS / INSS (2026)', confidence: 'High'
     },
-    startUnits: ['f35i', 'f35i', 'f15', 'tank', 'tank', 'atgm', 'manpads', 'worker'],
+    startUnits: ['tank', 'tank', 'atgm', 'manpads', 'worker'],
     startSam: true,
     build: { army: ['soldier', 'atgm', 'manpads', 'tank', 'f35i', 'f15', 'f16', 'hermes'], def: ['tower', 'aa', 'sam', 'radar'], msl: ['jericho'], eco: ['worker', 'mine', 'depot'] },
     armorName: 'Merkava Mk.4M',
@@ -2666,7 +2728,10 @@ const ME_RIVER_PATHS = {
   "Tigris": [42.38,37.06,42.43,36.99,42.47,36.97,42.49,36.96,42.51,36.94,42.51,36.88,42.56,36.83,42.71,36.78,42.76,36.76,42.77,36.73,42.76,36.72,42.86,36.71,42.9,36.69,42.9,36.66,42.89,36.65,42.85,36.64,42.81,36.61,42.77,36.54,42.84,36.48,43.03,36.42,43.17,36.33,43.26,36.21,43.32,36.08,43.35,35.95,43.34,35.86,43.31,35.81,43.3,35.77,43.31,35.72,43.3,35.68,43.26,35.66,43.25,35.59,43.26,35.47,43.35,35.32,43.51,35.13,43.57,35.01,43.54,34.96,43.58,34.83,43.71,34.63,43.78,34.45,43.81,34.3,43.85,34.19,43.9,34.14,43.96,34.1,44.05,34.08,44.23,34.05,44.33,34.02,44.4,33.97,44.43,33.91,44.4,33.83,44.4,33.77,44.42,33.74,44.4,33.7,44.35,33.64,44.32,33.59,44.31,33.53,44.32,33.45,44.36,33.35,44.4,33.29,44.43,33.29,44.48,33.24,44.54,33.13,44.67,33.02,44.87,32.93,44.98,32.89,45.03,32.89,45.04,32.88,45.04,32.86,45.04,32.83,45.08,32.8,45.14,32.79,45.23,32.78,45.26,32.75,45.26,32.71,45.3,32.66,45.38,32.6,45.52,32.56,45.81,32.5,46.03,32.62,46.14,32.63,46.2,32.59,46.34,32.54,46.56,32.49,46.69,32.44,46.73,32.39,46.73,32.32,46.71,32.25,46.7,32.19,46.71,32.15,46.76,32.11,46.83,32.08,46.89,32.01,46.94,31.92,47.01,31.87,47.09,31.87,47.14,31.83,47.15,31.75,47.22,31.63,47.36,31.46,47.43,31.29,47.44,31.0]
 };
 
-const ME_LON0 = 24.5, ME_LAT1 = 42.5, ME_LONPX = 104, ME_LATPX = 116;
+/* Longitude scale is matched to the mid-theatre latitude (33°): one degree of
+   longitude is cos(33°) of a degree of latitude. The old 104 vs 116 px made the
+   east-west axis ~10% too wide, visibly inflating every country. */
+const ME_LON0 = 24.5, ME_LAT1 = 42.5, ME_LONPX = 97.3, ME_LATPX = 116;
 const ME_W = Math.round((64.5 - ME_LON0) * ME_LONPX);
 const ME_H = Math.round((ME_LAT1 - 11.5) * ME_LATPX);
 function meProj(lon, lat) { return { x: (lon - ME_LON0) * ME_LONPX, y: (ME_LAT1 - lat) * ME_LATPX }; }
@@ -2880,15 +2945,19 @@ function genMiddleEastMap(lobby, seed) {
   /* River blockers used to be rebuilt inside inWater on every call, which is
      once per moving unit per tick: 30+ microseconds each and the single largest
      cost of a large battle. They depend only on static geometry. */
-  const riverBlockers = {};
-  for (const rn in riverSegs) riverBlockers[rn] = riverBlocker(riverSegs[rn], fordPts[rn], ME_FORD_R, ME_RIVER_R + 3);
+  /* Rivers are no longer hard walls. They remain identifiable geometry for the
+     movement multiplier, but only open sea and lakes block pathfinding. */
+  const riverDetect = {};
+  for (const rn in riverSegs) riverDetect[rn] = riverBlocker(riverSegs[rn], [], 0, ME_RIVER_R + 3);
 
   function inWater(x, y) {
     if (!landAt(x, y)) return true;
     for (const L of inlandLakes) { const dx = (x - L.x) / L.rx, dy = (y - L.y) / L.ry; if (dx * dx + dy * dy < 1) return true; }
-    for (const rn in riverBlockers) {
-      if (riverBlockers[rn](x, y)) return true;
-    }
+    return false;
+  }
+  function riverAt(x, y) {
+    if (inWater(x, y)) return false;
+    for (const rn in riverDetect) if (riverDetect[rn](x, y)) return true;
     return false;
   }
   function losWater(ax, ay, bx, by) {
@@ -2988,7 +3057,7 @@ function genMiddleEastMap(lobby, seed) {
     terrain: {
       polys: polys, riverPts: riverPts, lakes: inlandLakes, deserts: deserts,
       labels: labels, seaLabels: seas,
-      blockedAt: inWater, losBlocked: losWater, countryAt: countryAt
+      blockedAt: inWater, riverAt: riverAt, losBlocked: losWater, countryAt: countryAt
     }
   };
 }
@@ -3011,8 +3080,10 @@ const app = {
   speedIdx: 1, // default 2x: ground movement is now one third of the old pace
   paused: false,
   uimode: 'none', placeKind: '', launchKind: '',
+  salvo: { kind: '', count: 1, targets: [] },
   myCountry: 'IRN',
   agenda: 'standard', // 'standard' | 'maximalist'
+  doctrine: 'balanced', // skirmish national doctrine
   realScenario: 'nov2026',
   classicPreset: 'ffa',
   fog: true,
@@ -3047,7 +3118,10 @@ function getRelation(idxA, idxB) {
 function setRelation(idxA, idxB, status, silent) {
   if (idxA === idxB || idxA < 0 || idxB < 0 || !world) return;
   const key = idxA < idxB ? idxA + ':' + idxB : idxB + ':' + idxA;
-  const prev = world.relations[key] || 'NEUTRAL';
+  const pa0 = world.players[idxA], pb0 = world.players[idxB];
+  const prev = world.relations[key] || (world.mode !== 'real'
+    ? ((pa0 && pb0 && pa0.team === pb0.team) ? 'ALLY' : 'WAR')
+    : 'NEUTRAL');
   if (prev === status) return;
   world.relations[key] = status;
   const pa = world.players[idxA], pb = world.players[idxB];
@@ -3155,13 +3229,137 @@ function atWar(p) {
   return false;
 }
 
-function seedClassicRelations() {
-  for (const a of world.players) {
-    for (const b of world.players) {
-      if (b.idx <= a.idx) continue;
-      setRelation(a.idx, b.idx, a.team === b.team ? 'ALLY' : 'WAR', true);
+/* ===================== SKIRMISH COMMAND LAYER ===================== */
+const ADVISOR_DEFS = [
+  { id: 'eco', name: 'Economic Advisor', icon: 'ECO', role: 'Oil fields, economic complexes, income and reserve discipline.' },
+  { id: 'military', name: 'Military Advisor', icon: 'MIL', role: 'Border defence, bunkers, AA and threatened cities.' },
+  { id: 'air', name: 'Air Force Advisor', icon: 'AIR', role: 'Airbase capacity, aircraft mix, readiness and repairs.' },
+  { id: 'diplomacy', name: 'Diplomatic Advisor', icon: 'DIP', role: 'Pacts, trade, ceasefires and isolation warnings.' },
+  { id: 'intel', name: 'Intelligence Advisor', icon: 'INT', role: 'Visible enemy concentrations, missile sites and warnings.' }
+];
+const FIELD_YIELD = {
+  'Ghawar Oil': 40, 'Shaybah Oil': 38, 'Rumaila Oil': 38, 'Kirkuk Oil': 34, 'Burgan Oil': 38,
+  'Ahvaz Oil': 36, 'South Pars Gas': 34, 'Kerman Copper/Gas': 30, 'North Field LNG': 38,
+  'Zakum Oil': 35, 'Marib Oil': 26, 'Deir ez-Zor Oil': 26, 'Western Desert Oil': 28,
+  'Zohr Gas': 30, 'Leviathan Gas': 27, 'Batman Oil': 24, 'Shidiyah Phosphates': 24,
+  'Fahud Oil': 30, 'Awali Oil': 28, 'Bekaa Agro-Energy': 24, 'Gaza Marine Gas': 24
+};
+function initSkirmishSystems() {
+  if (world.mode !== 'classic') return;
+  const codeByGeo = {};
+  for (const key of REAL_KEYS) { const c = REAL_COUNTRY_DB[key]; if (c) codeByGeo[c.geoName] = key; }
+  world.oilFields = world.deposits.map((d, i) => {
+    const code = codeByGeo[d.geoName] || null;
+    const yieldCpm = FIELD_YIELD[d.n] || clamp(CFG.SKIRMISH.MIN_FIELD_YIELD + ((i * 7 + d.n.length * 3) % 17), CFG.SKIRMISH.MIN_FIELD_YIELD, CFG.SKIRMISH.MAX_FIELD_YIELD);
+    /* Some surveyed fields sit under a city marker. Shift the field footprint
+       to the first clear ring so a complex can actually be founded there. */
+    const crowded = world.buildings.some(b => !b.dead && dist2(d.x, d.y, b.x, b.y) < 96 * 96);
+    if (crowded) {
+      let placed = false;
+      for (let rad = 100; rad <= 170 && !placed; rad += 18) {
+        for (let k = 0; k < 20 && !placed; k++) {
+          const cx = clamp(d.x + Math.cos(k / 20 * TAU) * rad, 40, world.w - 40);
+          const cy = clamp(d.y + Math.sin(k / 20 * TAU) * rad, 40, world.h - 40);
+          if (world.terrainBlocked && world.terrainBlocked(cx, cy)) continue;
+          if (world.buildings.some(b => !b.dead && dist2(cx, cy, b.x, b.y) < 88 * 88)) continue;
+          d.x = cx; d.y = cy; placed = true;
+        }
+      }
     }
+    d.fieldId = i + 1; d.code = code; d.yieldCpm = yieldCpm; d.econId = 0;
+    return d;
+  });
+  const hp = humanPlayer();
+  world.advisors = {
+    eco:       { mode: 'suggest', cap: 900, reserve: 150, maxInvestments: 4, recs: [], log: [], spent: 0 },
+    military:  { mode: 'suggest', cap: 600, reserve: 100, maxInvestments: 4, recs: [], log: [], spent: 0 },
+    air:       { mode: 'suggest', cap: 700, reserve: 120, maxInvestments: 3, recs: [], log: [], spent: 0 },
+    diplomacy: { mode: 'suggest', cap: 240, reserve: 80, maxInvestments: 4, recs: [], log: [], spent: 0 },
+    intel:     { mode: 'suggest', cap: 0, reserve: 0, maxInvestments: 0, recs: [], log: [], spent: 0 }
+  };
+  world.agreements = {};
+  world.advisorTick = 0;
+  world.diploTick = 0;
+  world.skirmish = { started: world.time, doctrineSwitches: 0 };
+  if (hp) hp.doctrine = doctrineOf(hp);
+  for (const p of world.players) if (!p.isHuman) {
+    const per = AI_PERSONALITY[p.country] || 'opportunistic';
+    p.aiCtl.personality = per;
+    /* Personality is an actual tempo/budget bias, not a label. */
+    if (per === 'aggressive') p.aiCtl.pushT *= 0.7;
+    else if (per === 'expansionist') p.aiCtl.pushT *= 0.9;
+    else if (per === 'defensive') p.aiCtl.pushT *= 1.45;
+    else if (per === 'economic') p.aiCtl.pushT *= 1.6;
   }
+}
+const AI_PERSONALITY = {
+  IRN: 'aggressive', ISR: 'defensive', SAU: 'economic', TUR: 'expansionist', EGY: 'expansionist',
+  UAE: 'economic', QAT: 'economic', KWT: 'economic', OMN: 'defensive', BHR: 'defensive',
+  IRQ: 'expansionist', SYR: 'defensive', JOR: 'defensive', LBN: 'defensive', YEM: 'aggressive',
+  PSE: 'aggressive', HMS: 'aggressive', HZB: 'aggressive', HOU: 'aggressive'
+};
+const CLASSIC_RIVALS = [['ISR','IRN'],['ISR','PSE'],['ISR','HZB'],['IRN','SAU'],['TUR','SYR'],['EGY','ISR'],['SAU','YEM'],['SYR','ISR']];
+function seedClassicRelations() {
+  const oneVsOne = world.players.length === 2;
+  for (const a of world.players) for (const b of world.players) {
+    if (b.idx <= a.idx) continue;
+    const allied = a.team === b.team;
+    const rival = CLASSIC_RIVALS.some(([x, y]) => (x === a.country && y === b.country) || (x === b.country && y === a.country));
+    /* A duel is a declared war. A multi-country skirmish starts mostly tense
+       and neutral: diplomacy, not an automatic world war, decides the map. */
+    setRelation(a.idx, b.idx, allied ? 'ALLY' : ((oneVsOne || rival) ? 'WAR' : 'NEUTRAL'), true);
+  }
+  /* Credible opening pacts: small states shelter with a stronger neighbour. */
+  const byCode = {}; world.players.forEach(p => { byCode[p.country] = p; });
+  const pact = (a, b, type) => { if (byCode[a] && byCode[b]) setAgreement(byCode[a].idx, byCode[b].idx, type, true); };
+  pact('JOR', 'SAU', 'NAP'); pact('KWT', 'SAU', 'DEFENSIVE'); pact('QAT', 'TUR', 'TRADE');
+  pact('PSE', 'EGY', 'NAP'); pact('LBN', 'SYR', 'NAP'); pact('OMN', 'UAE', 'TRADE');
+}
+
+function agreementKey(a, b) { return a < b ? a + ':' + b : b + ':' + a; }
+function getAgreement(a, b) {
+  if (!world || !world.agreements) return null;
+  const ag = world.agreements[agreementKey(a, b)];
+  if (!ag) return null;
+  if (ag.until > 0 && world.time >= ag.until) { delete world.agreements[agreementKey(a, b)]; return null; }
+  return ag;
+}
+function setAgreement(a, b, type, silent) {
+  if (a === b || a < 0 || b < 0 || !world) return false;
+  const dur = (CFG.SKIRMISH.AGREEMENT_DAYS[type] || 300);
+  world.agreements[agreementKey(a, b)] = { type, started: world.time, until: world.time + dur, a, b };
+  const status = (type === 'DEFENSIVE' || type === 'MILITARY' || type === 'MUTUAL_ENEMY') ? 'ALLY' : (type === 'TRADE' ? 'TRADE' : 'NEUTRAL');
+  setRelation(a, b, status, silent);
+  return true;
+}
+function breakAgreement(a, b, reason) {
+  const ag = getAgreement(a, b);
+  if (!ag) return false;
+  delete world.agreements[agreementKey(a, b)];
+  const pa = world.players[a], pb = world.players[b];
+  if (pa) pa.credibility = Math.max(0, (pa.credibility == null ? 100 : pa.credibility) - 22);
+  setScore(a, b, scoreBetween(a, b) - 30, 'betrayal');
+  logEvent((pa ? pa.country : a) + ' broke a ' + ag.type + ' with ' + (pb ? pb.country : b) + (reason ? ' — ' + reason : ''), 'crit');
+  return true;
+}
+function proposeAgreement(a, b, type) {
+  if (a === b || a < 0 || b < 0) return { ok: false, why: 'invalid' };
+  const A = world.players[a], B = world.players[b];
+  if (!A || !B || !A.alive || !B.alive) return { ok: false, why: 'unavailable' };
+  if (getRelation(a, b) === 'WAR' && type !== 'CEASEFIRE') return { ok: false, why: 'at war' };
+  const score = scoreBetween(a, b);
+  const powerA = armyPower(a), powerB = armyPower(b);
+  const weakSeeking = type === 'DEFENSIVE' && powerB > powerA * 1.25;
+  const chance = clamp(0.45 + score / 220 + (type === 'TRADE' ? 0.18 : 0) + (weakSeeking ? 0.18 : 0) - (B.credibility != null && B.credibility < 60 ? 0.15 : 0), 0.08, 0.95);
+  if (Math.random() > chance) return { ok: false, why: 'refused' };
+  setAgreement(a, b, type, false);
+  return { ok: true, type };
+}
+function armyPower(idx) {
+  let n = 0;
+  for (const u of world.units) if (!u.dead && u.owner === idx) n += (u.hp || 0) + (u.dmg || 0) * 3;
+  for (const b of world.buildings) if (!b.dead && b.owner === idx && (b.kind === 'camp' || b.kind === 'outpost')) n += 40;
+  return n;
 }
 
 function initNov2026Diplomacy() {
@@ -3330,9 +3528,50 @@ function insideObstacle(x, y, inf) {
 function costOf(p, key) {
   const c = countryOf(p);
   const agendaMul = (p && p.agenda === 'maximalist') ? 0.94 : 1;
+  if (world && world.mode === 'classic' && key === 'economy') return Math.round(CFG.SKIRMISH.ECONOMY_COST * agendaMul);
   if (CFG.MSL[key]) return Math.round(CFG.MSL[key].price * ((c.mul && c.mul[key]) || 1) * agendaMul);
-  return Math.round(CFG.COSTS[key] * ((c.mul && c.mul[key]) || 1) * agendaMul);
+  return Math.round(CFG.COSTS[key] * ((c.mul && c.mul[key]) || 1) * agendaMul * doctrineCostMul(p, key));
 }
+
+/* ===================== SKIRMISH DOCTRINE ===================== */
+const DOCTRINES = {
+  air:      { name: 'Air Superiority', short: 'AIR', blurb: 'Fighters, airbases, radar and readiness first.' },
+  ground:   { name: 'Ground Offensive', short: 'GND', blurb: 'Armour and mechanised pressure win the map.' },
+  missile:  { name: 'Missile Strategy', short: 'MSL', blurb: 'Factories, stockpiles and long-range strikes.' },
+  defense:  { name: 'Defensive Warfare', short: 'DEF', blurb: 'Bunkers, SAMs and layered air defence.' },
+  economy:  { name: 'Economic Development', short: 'ECO', blurb: 'Oil fields, complexes and a deep reserve.' },
+  balanced: { name: 'Balanced Strategy', short: 'BAL', blurb: 'No extreme; shift money to where it is needed.' }
+};
+const AIR_TYPES = ['air', 'f35', 'mig29', 'f16', 'mirage', 'fa18', 'rafale', 'typhoon', 'f15', 'f35i', 'su34', 'tornado', 'a29', 'tb2', 'hermes', 'wingloong', 'j20', 'su34', 'bomber', 'b1', 'b2', 'h6k'];
+const GROUND_VEHICLE_TYPES = ['tank', 't90', 'heavyTank', 'tankDestroyer', 'ifv', 'apc'];
+function doctrineOf(p) { return (p && DOCTRINES[p.doctrine]) ? p.doctrine : 'balanced'; }
+function doctrineCostMul(p, key) {
+  if (!world || world.mode !== 'classic') return 1;
+  const d = doctrineOf(p);
+  if (d === 'air' && (AIR_TYPES.includes(key) || key === 'airbase' || key === 'radar')) return 0.85;
+  if (d === 'ground' && GROUND_VEHICLE_TYPES.includes(key)) return 0.88;
+  if (d === 'missile' && (CFG.MSL[key] || key === 'missileFactory')) return 0.88;
+  if (d === 'defense' && ['tower', 'aa', 'sam', 'antiMissile', 'radar'].includes(key)) return 0.85;
+  if (d === 'economy' && (key === 'economy' || key === 'mine' || key === 'depot')) return 0.85;
+  return 1;
+}
+function doctrineMix(p, base) {
+  if (!world || world.mode !== 'classic') return base;
+  const d = doctrineOf(p);
+  const out = Object.assign({}, base);
+  const push = (k, mul) => { if (CFG.UNITS[k]) out[k] = (out[k] || 0.02) * mul; };
+  if (d === 'air') { for (const k of AIR_TYPES) if (CFG.UNITS[k] && !out[k]) out[k] = 0.04; push('air', 3); push('tb2', 2); push('soldier', 0.7); }
+  if (d === 'ground') { push('tank', 3); push('heavyTank', 2.5); push('ifv', 2); push('soldier', 1.2); push('air', 0.5); }
+  if (d === 'missile') { push('tank', 0.7); push('drone', 2); push('soldier', 0.9); }
+  if (d === 'defense') { push('atgm', 2); push('manpads', 2); push('spaag', 1.8); push('tank', 1.1); push('soldier', 1.3); }
+  if (d === 'economy') { push('soldier', 0.8); push('tank', 0.8); }
+  return out;
+}
+const DOCTRINE_BY_COUNTRY = {
+  ISR: 'air', IRN: 'missile', SAU: 'air', TUR: 'ground', EGY: 'ground', UAE: 'air', QAT: 'economy',
+  KWT: 'economy', OMN: 'economy', BHR: 'defense', IRQ: 'ground', SYR: 'defense', JOR: 'defense',
+  LBN: 'defense', YEM: 'missile', PSE: 'defense', HMS: 'defense', HZB: 'missile', HOU: 'missile'
+};
 
 /* Keeps a per-player spending rate so the HUD and the AI both reason about
    "coins per second out" instead of only the balance. */
@@ -3448,13 +3687,17 @@ function createWorld(lobby, map, diff, mode) {
       capitalHeld: true, citiesLost: 0,
       warExhaustion: 0,
       agenda: slot.human ? app.agenda : 'standard',
+      doctrine: slot.human ? (app.doctrine || 'balanced') : (DOCTRINE_BY_COUNTRY[c.code] || 'balanced'),
+      advisorSpend: { eco: 0, military: 0, air: 0, diplomacy: 0, intel: 0 },
       spawnQ: [], spawnT: 0, spawnN: 0, outpostN: 0, resourceN: 0, tradeN: 0, mslCd: {},
       aidCd: { USA: 65, RUS: 65, CHN: 65 },
       rallyX: 0, rallyY: 0,
       campId: 0, startX: pos.x, startY: pos.y,
       aiCtl: slot.human ? null : makeAI(i, diff),
-      stats: { earned: 0, spent: 0, built: {}, lost: {}, towers: 0, mines: 0, missiles: 0, aidReceived: 0, aidCoins: 0 }
+      mslStock: {}, missileFactoryN: 0,
+      stats: { earned: 0, spent: 0, built: {}, lost: {}, towers: 0, mines: 0, missiles: 0, intercepted: 0, aidReceived: 0, aidCoins: 0 }
     };
+    for (const mk of ((c.build && c.build.msl) || [])) p.mslStock[mk] = 1;
     const bd = CFG.BUILDINGS.camp;
     const camp = {
       id: world.nextId++, kind: 'camp', owner: i, team: slot.team,
@@ -3469,13 +3712,35 @@ function createWorld(lobby, map, diff, mode) {
 
     const startList = c.startUnits || ['soldier', 'soldier', 'tank', 'worker'];
     const needsAirbase = startList.some(t => CFG.UNITS[t] && CFG.UNITS[t].fly && !CFG.UNITS[t].kamikaze);
-    if (needsAirbase) {
-      const abPos = nudgeFree(pos.x + 62, pos.y - 44);
-      world.buildings.push({
-        id: world.nextId++, kind: 'airbase', owner: i, team: slot.team,
-        x: abPos.x, y: abPos.y, hp: 600, maxHp: 600, r: 28,
-        cd: 0, target: 0, face: 0, dead: false, color: c.color, armor: 'fortified'
-      });
+    const isrAirWing = c.code === 'ISR';
+    if (needsAirbase || isrAirWing) {
+      const bases = isrAirWing
+        ? [nudgeFree(pos.x + 62, pos.y - 44), nudgeFree(pos.x - 62, pos.y + 44)]
+        : [nudgeFree(pos.x + 62, pos.y - 44)];
+      for (const abPos of bases) {
+        world.buildings.push({
+          id: world.nextId++, kind: 'airbase', owner: i, team: slot.team,
+          x: abPos.x, y: abPos.y, hp: 600, maxHp: 600, r: 28,
+          cd: 0, target: 0, face: 0, dead: false, color: c.color, armor: 'fortified',
+          capturable: true, capacity: CFG.BUILDINGS.airbase.capacity
+        });
+      }
+    }
+    if (isrAirWing) {
+      /* Two full Israeli airbases: three F-35I Adirs in each hangar. */
+      let made = 0;
+      for (const ab of world.buildings.filter(b => b.owner === i && b.kind === 'airbase')) {
+        for (let k = 0; k < CFG.BUILDINGS.airbase.capacity; k++) {
+          const sp = nudgeFree(ab.x + (k - 1) * 18, ab.y + 22);
+          const jet = newUnit(i, 'f35i', sp.x, sp.y);
+          if (!jet) continue;
+          jet.airbaseId = ab.id;
+          jet.ammo = jet.maxAmmo;
+          world.units.push(jet);
+          made++;
+        }
+      }
+      p.stats.startAirframes = made;
     }
     if (c.startSam) {
       const samPos = nudgeFree(pos.x - 56, pos.y - 40);
@@ -3498,6 +3763,8 @@ function createWorld(lobby, map, diff, mode) {
         if (soldiersSpawned >= infCap) return;
         soldiersSpawned++;
       }
+      /* Israel's fixed-wing opening is the two full F-35I hangars above. */
+      if (isrAirWing && CFG.UNITS[ut] && CFG.UNITS[ut].fly) return;
       const a = (uIdx / Math.max(1, startList.length)) * TAU;
       const sp = nudgeFree(pos.x + Math.cos(a) * 52, pos.y + Math.sin(a) * 52);
       const u = newUnit(i, ut, sp.x, sp.y);
@@ -3539,13 +3806,19 @@ function createWorld(lobby, map, diff, mode) {
     }
   }
 
+  /* No installation on the map is immune to capture. Legacy object literals
+     below predate the flag; treat any unspecified structure as capturable. */
+  for (const b of world.buildings) if (b.capturable === undefined) b.capturable = true;
   world.terrainGrid = bakeTerrain(map);
   buildCities();
+  ensureCitySeats();
   if (mode === 'real') {
     buildBases();
     buildChokes();
     applyCityCaps();
     initNov2026Diplomacy();
+  } else {
+    initSkirmishSystems();
   }
   for (const p of world.players) {
     p.startArmyN = world.units.filter(u => !u.dead && u.owner === p.idx && !u.isWorker).length;
@@ -3589,6 +3862,7 @@ function newUnit(owner, type, x, y) {
     splash: st.splash || 0, stealth: st.stealth || 1,
     isWorker: !!st.worker, mineId: 0, fleeT: 0,
     ammo: st.ammo || 0, maxAmmo: st.ammo || 0, airbaseId: 0, rearmT: 0,
+    maxCargo: st.capacity || 0, cargo: [], readiness: st.fly ? 'READY' : null, repairT: 0,
     cd: 0, target: 0, face: 0, stance: 'agg', order: null,
     path: null, pi: 0, stuck: 0, px: x, py: y, dead: false, color: p.color
   };
@@ -3598,6 +3872,54 @@ function indexAll() {
   world.ents.clear();
   for (const u of world.units) if (!u.dead) world.ents.set(u.id, u);
   for (const b of world.buildings) if (!b.dead) world.ents.set(b.id, b);
+}
+
+/* IFV/APC transport: LOAD embeds nearby friendly infantry, UNLOAD puts them
+   back on the ground. Loaded squads are removed from the unit list while
+   embarked, so they cannot fight, capture or be shot until deployed. */
+function loadTransports() {
+  const hp = humanPlayer(); if (!hp) return 0;
+  let loaded = 0;
+  for (const id of sel.units) {
+    const tr = ent(id);
+    if (!tr || tr.dead || !tr.maxCargo || tr.owner !== hp.idx) continue;
+    while (tr.cargo.length < tr.maxCargo) {
+      let best = null, bd = 170 * 170;
+      for (const u of world.units) {
+        if (u.dead || u.owner !== hp.idx || u.type !== 'soldier') continue;
+        const d = dist2(tr.x, tr.y, u.x, u.y);
+        if (d < bd) { bd = d; best = u; }
+      }
+      if (!best) break;
+      tr.cargo.push({ type: best.type, hp: best.hp, maxHp: best.maxHp });
+      best.dead = true; best.loaded = true; world.ents.delete(best.id);
+      loaded++;
+    }
+  }
+  if (loaded) toast(loaded + ' infantry embarked — select the transport and UNLOAD at the objective', 'hint');
+  else toast('Select an IFV/APC near friendly infantry', 'err');
+  return loaded;
+}
+function unloadTransports() {
+  const hp = humanPlayer(); if (!hp) return 0;
+  let out = 0;
+  for (const id of sel.units) {
+    const tr = ent(id);
+    if (!tr || tr.dead || tr.owner !== hp.idx || !tr.cargo || !tr.cargo.length) continue;
+    const n = tr.cargo.length;
+    tr.cargo.forEach((snap, k) => {
+      const a = (k / n) * TAU;
+      const sp = nudgeFree(tr.x + Math.cos(a) * 26, tr.y + Math.sin(a) * 26);
+      const u = newUnit(tr.owner, snap.type, sp.x, sp.y);
+      if (!u) return;
+      u.hp = Math.min(u.maxHp, snap.hp || u.maxHp);
+      world.units.push(u); world.ents.set(u.id, u); out++;
+    });
+    tr.cargo = [];
+  }
+  if (out) toast(out + ' infantry deployed', 'hint');
+  else toast('No loaded transport is selected', 'err');
+  return out;
 }
 
 /* ===================== REAL-MODE SPECIAL MECHANICS ===================== */
@@ -3921,8 +4243,20 @@ function canPlaceBuilding(owner, kind, x, y) {
   if (x < r + 20 || x > world.w - r - 20 || y < r + 20 || y > world.h - r - 20) return 'Out of bounds';
   if (insideObstacle(x, y, r + 6)) return 'Blocked by mountains';
   if (world.terrainBlocked && world.terrainBlocked(x, y)) return 'Cannot build on water';
+  if (world.map && world.map.terrain && world.map.terrain.riverAt && world.map.terrain.riverAt(x, y)) return 'Cannot build in a river';
   const homeOwner = geoOwnerAt(x, y);
   const inSovereignLand = homeOwner && homeOwner.idx === owner;
+
+  if (kind === 'economy' && world.mode === 'classic') {
+    let field = null;
+    for (const d of world.oilFields || []) if (dist2(x, y, d.x, d.y) < 78 * 78) { field = d; break; }
+    if (!field) return 'Economic Complex must be built on an oil field';
+    if (field.code && field.code !== p.country) return 'Oil field belongs to another country';
+    if (field.econId) { const eb = ent(field.econId); if (eb && !eb.dead) return 'This oil field already has an Economic Complex'; }
+    const depOwner = geoOwnerAt(field.x, field.y);
+    if (!(depOwner && depOwner.idx === owner)) return 'Oil field outside controlled territory';
+    x = field.x; y = field.y;
+  }
 
   if (kind === 'mine') {
     let dep = null;
@@ -3951,8 +4285,11 @@ function canPlaceBuilding(owner, kind, x, y) {
     if (dist2(x, y, b.x, b.y) < min * min) return 'Too close to structure';
   }
   if (!near) return 'Build inside your country or near an outpost';
-  for (const d of world.deposits) {
-    if (dist2(x, y, d.x, d.y) < (r + CFG.GOLD.DEPOSIT_R + CFG.PLACE.DEPOSIT_GAP) ** 2) return 'Keep resource field clear';
+  const onOwnOilField = kind === 'economy' && (world.oilFields || []).some(d => dist2(x, y, d.x, d.y) < 4);
+  if (!onOwnOilField) {
+    for (const d of world.deposits) {
+      if (dist2(x, y, d.x, d.y) < (r + CFG.GOLD.DEPOSIT_R + CFG.PLACE.DEPOSIT_GAP) ** 2) return 'Keep resource field clear';
+    }
   }
   return '';
 }
@@ -3962,6 +4299,23 @@ function placeBuilding(owner, kind, x, y) {
   if (kind === 'mine') {
     for (const d of world.deposits) if (!d.mineId && dist2(x, y, d.x, d.y) < CFG.GOLD.MINE_SNAP_R * CFG.GOLD.MINE_SNAP_R) { x = d.x; y = d.y; break; }
   }
+  let fieldId = 0;
+  if (kind === 'economy' && world.mode === 'classic') {
+    let field = null;
+    for (const d of world.oilFields || []) if (dist2(x, y, d.x, d.y) < 100 * 100) { field = d; x = d.x; y = d.y; fieldId = d.fieldId; break; }
+    if (field && canPlaceBuilding(owner, kind, x, y)) {
+      /* Oil infrastructure or a nearby outpost can occupy the exact field
+         centre. Search a short ring for a legal footprint on the same field. */
+      let found = false;
+      for (let rad = 24; rad <= 72 && !found; rad += 16) {
+        for (let k = 0; k < 16 && !found; k++) {
+          const cx = clamp(field.x + Math.cos(k / 16 * TAU) * rad, 40, world.w - 40);
+          const cy = clamp(field.y + Math.sin(k / 16 * TAU) * rad, 40, world.h - 40);
+          if (!canPlaceBuilding(owner, kind, cx, cy)) { x = cx; y = cy; found = true; }
+        }
+      }
+    }
+  }
   if (canPlaceBuilding(owner, kind, x, y)) return null;
   const cost = costOf(p, kind);
   p.cents -= cost * 100; noteSpend(p, cost * 100);
@@ -3969,9 +4323,20 @@ function placeBuilding(owner, kind, x, y) {
   const b = {
     id: world.nextId++, kind: kind, owner: owner, team: p.team,
     x: x, y: y, hp: bd.hp, maxHp: bd.hp, r: bd.r,
-    cd: 0, target: 0, face: 0, dead: false, color: p.color, armor: bd.armor || 'structure'
+    cd: 0, target: 0, face: 0, dead: false, color: p.color, armor: bd.armor || 'structure',
+    capturable: !!bd.capturable, captureProg: 0, suppressed: false, captureBy: -1,
+    buildT: (world.mode === 'classic' && kind === 'economy') ? CFG.SKIRMISH.ECONOMY_BUILD_SEC : (bd.buildTime || 0),
+    buildMax: (world.mode === 'classic' && kind === 'economy') ? CFG.SKIRMISH.ECONOMY_BUILD_SEC : (bd.buildTime || 0),
+    fieldId: fieldId
   };
   if (kind === 'sam') { b.ammo = bd.ammo || 6; b.maxAmmo = bd.ammo || 6; b.reloadT = 0; }
+  if (kind === 'missileFactory') { b.prodQ = []; b.prodT = 0; }
+  if (kind === 'economy') {
+    b.buildT = (world.mode === 'classic') ? CFG.SKIRMISH.ECONOMY_BUILD_SEC : bd.buildTime;
+    b.buildMax = b.buildT;
+    b.hp = Math.max(1, Math.round(bd.hp * 0.35));
+    if (fieldId) { const f = (world.oilFields || []).find(d => d.fieldId === fieldId); if (f) f.econId = b.id; }
+  }
   world.buildings.push(b);
   world.ents.set(b.id, b);
   PF.dirty = true;
@@ -3979,6 +4344,8 @@ function placeBuilding(owner, kind, x, y) {
     p.stats.mines++;
     for (const d of world.deposits) if (!d.mineId && dist2(x, y, d.x, d.y) < 6) { d.mineId = b.id; break; }
   } else p.stats.towers++;
+  if (kind === 'missileFactory') { p.missileFactoryN = (p.missileFactoryN || 0) + 1; p.stats.missileFactories = (p.stats.missileFactories || 0) + 1; }
+  if (kind === 'economy') p.stats.economy = (p.stats.economy || 0) + 1;
   return b;
 }
 
@@ -4010,11 +4377,12 @@ function updateEconomy() {
 
   /* One pass over entities, then index by owner. The old code scanned every
      building and unit once per player, which is O(players x entities) per tick. */
-  const mineCount = {}, outpostCount = {}, minerCount = {};
+  const mineCount = {}, outpostCount = {}, econCount = {}, minerCount = {};
   for (const b of world.buildings) {
     if (b.dead) continue;
     if (b.kind === 'mine') mineCount[b.owner] = (mineCount[b.owner] || 0) + 1;
     else if (b.kind === 'outpost') outpostCount[b.owner] = (outpostCount[b.owner] || 0) + 1;
+    else if (b.kind === 'economy' && (b.buildT || 0) <= 0) econCount[b.owner] = (econCount[b.owner] || 0) + 1;
   }
   for (const u of world.units) {
     if (u.dead || !u.mining) continue;
@@ -4074,6 +4442,15 @@ function updateEconomy() {
        price in about five minutes instead of twenty-five. */
     const fromMines = minesOwned * MINE_CPM;
     const fromWorkers = miners * WORKER_CPM;
+    let fromEconomy = (econCount[p.idx] || 0) * (CFG.BUILDINGS.economy.incomeCpm || 0);
+    if (world.mode === 'classic') {
+      fromEconomy = 0;
+      for (const b of world.buildings) {
+        if (b.dead || b.owner !== p.idx || b.kind !== 'economy' || (b.buildT || 0) > 0) continue;
+        const field = (world.oilFields || []).find(d => d.fieldId === b.fieldId);
+        fromEconomy += field ? field.yieldCpm : CFG.SKIRMISH.ECONOMY_INCOME_CPM;
+      }
+    }
     let choke = 0;
     if (world.mode === 'real' && world.chokes) {
       for (const ck in world.chokes) { const ch = world.chokes[ck]; if (ch.controller === p.idx && !ch.closed) choke += 1 / 60; }
@@ -4088,11 +4465,11 @@ function updateEconomy() {
     const iranPenalty = (hs && hs.closed && p.country === 'IRN') ? 0.25 : 0;
     /* Coins per minute is the single authored unit; one conversion here. */
     const cpm = (baseCpm + fieldsCpm) * (1 - gulf) * (1 - iranPenalty)
-      + citiesCpm + fromTradeCpm + fromMines + fromWorkers + choke + fromAid;
+      + citiesCpm + fromTradeCpm + fromMines + fromWorkers + fromEconomy + choke + fromAid;
     const cpt = cpm * 100 / 60;                 // coins/min -> cents/second
     p.eco = {
       base: baseCpm, res: fieldsCpm, out: citiesCpm, trade: fromTradeCpm,
-      mine: fromMines, workers: fromWorkers, aid: fromAid, choke: choke,
+      mine: fromMines, workers: fromWorkers, industry: fromEconomy, aid: fromAid, choke: choke,
       gulf: gulf, cpt: cpm
     };
     p.incomeCpt = cpt;
@@ -4302,14 +4679,14 @@ function launchMissile(owner, kind, tx, ty) {
   const p = world.players[owner];
   const m = CFG.MSL[kind];
   if (!p || !p.alive || !m) return false;
-  if ((p.mslCd[kind] || 0) > 0) return false;
-  const cost = costOf(p, kind);
-  if (p.cents < cost * 100) return false;
+  if ((p.mslStock[kind] || 0) <= 0) {
+    if (p.isHuman) toast('No ' + m.name + ' in stock — queue one at a missile factory (4 min)', 'err');
+    return false;
+  }
   const camp = ent(p.campId);
   if (!camp || camp.dead) return false;
 
-  p.cents -= cost * 100; p.stats.spent += cost * 100;
-  p.mslCd[kind] = m.cd;
+  p.mslStock[kind]--;
   p.stats.missiles++;
 
   const d = Math.hypot(tx - camp.x, ty - camp.y);
@@ -4330,45 +4707,52 @@ function launchMissile(owner, kind, tx, ty) {
   return true;
 }
 
-function updateMissiles() {
-  for (const b of world.buildings) {
-    if (b.dead || (b.kind !== 'sam' && b.kind !== 'aa')) continue;
-    if (b.kind === 'sam') {
-      if (b.ammo < b.maxAmmo) {
-        b.reloadT += CFG.DT;
-        if (b.reloadT >= 4.0) { b.ammo++; b.reloadT = 0; }
-      }
-      if (b.ammo <= 0) continue;
-    }
-    const baseRange = b.kind === 'sam' ? 320 : 210;
-    let hasRadar = false;
-    for (const r of world.buildings) {
-      if (!r.dead && r.owner === b.owner && r.kind === 'radar' && dist2(b.x, b.y, r.x, r.y) < 550 * 550) { hasRadar = true; break; }
-    }
-    let ruBase = false;
-    for (const rb of (world.bases || [])) if (rb.kind === 'ru' && rb.owner === b.owner) { ruBase = true; break; }
-    const effRange = (hasRadar ? baseRange * 1.25 : baseRange) * (ruBase ? 1.15 : 1);
+/* Missiles are manufactured, not bought at the trigger. Every factory has its
+   own serial queue; the player may queue any number, each costing the missile
+   price and four minutes of factory time. */
+function queueMissileProduction(p, kind) {
+  if (!p || !p.alive || !CFG.MSL[kind]) return false;
+  const factories = world.buildings.filter(b => !b.dead && b.owner === p.idx && b.kind === 'missileFactory' && (b.buildT || 0) <= 0);
+  if (!factories.length) { toast('Build a Missile Factory first (STRIKE tab)', 'err'); return false; }
+  const cost = costOf(p, kind);
+  if (p.cents < cost * 100) { toast('Need ' + cost + ' cr to start a ' + CFG.MSL[kind].name, 'err'); return false; }
+  factories.sort((a, b) => (a.prodQ ? a.prodQ.length : 0) - (b.prodQ ? b.prodQ.length : 0));
+  const f = factories[0];
+  if (!f.prodQ) f.prodQ = [];
+  p.cents -= cost * 100; noteSpend(p, cost * 100);
+  f.prodQ.push(kind);
+  toast('Queued ' + CFG.MSL[kind].name + ' · 4:00 · ' + f.prodQ.length + ' in factory queue', 'hint');
+  return true;
+}
 
+function updateMissiles() {
+  /* Only a dedicated anti-missile battery may engage a ballistic missile. SAM,
+     flak and interceptors have no anti-ballistic role in this ruleset. Each
+     launch costs 100 cr; with less than that the battery holds fire. */
+  for (const b of world.buildings) {
+    if (b.dead || b.kind !== 'antiMissile' || (b.buildT || 0) > 0 || b.cd > 0) continue;
+    const p = world.players[b.owner];
+    if (!p || !p.alive || p.cents < CFG.CAPTURE.INTERCEPT_COST * 100) continue;
+    let targetMsl = null;
     for (const m of world.missiles) {
       if (m.dead || !hostile(b, m)) continue;
       if (m.engagedBy[b.id]) continue;
-      const detectR = m.low ? effRange * 0.65 : effRange;
-      if (dist2(b.x, b.y, m.x, m.y) <= detectR * detectR) {
-        m.engagedBy[b.id] = true;
-        if (b.kind === 'sam') b.ammo--;
-        const md = mdSystemFor(world.players[b.owner].country);
-        /* Missile-defence probability (Part V): the country's best system sets
-           the ceiling; the missile's own penetration multiplies it. */
-        const pk = clamp(m.pk * (md.pk / 0.75), 0.05, 0.95);
-        if (world.mode === 'real') logEvent('SAM ENGAGEMENT — ' + md.name + ' vs ' + (m.name || 'missile') + ': ' + Math.round(pk * 100) + '% intercept');
-        world.interceptors.push({
-          x: b.x, y: b.y, targetMsl: m, speed: 360,
-          pk: pk,
-          color: '#38bdf8', dead: false
-        });
-        break;
+      if (dist2(b.x, b.y, m.x, m.y) <= CFG.CAPTURE.INTERCEPT_RANGE * CFG.CAPTURE.INTERCEPT_RANGE) {
+        targetMsl = m; break;
       }
     }
+    if (!targetMsl) continue;
+    p.cents -= CFG.CAPTURE.INTERCEPT_COST * 100;
+    noteSpend(p, CFG.CAPTURE.INTERCEPT_COST * 100);
+    p.stats.intercepted = (p.stats.intercepted || 0) + 1;
+    b.cd = 1.0;
+    targetMsl.engagedBy[b.id] = true;
+    const pk = clamp(targetMsl.pk * 1.15, 0.15, 0.95);
+    logEvent('ANTI-MISSILE ENGAGEMENT — ' + (targetMsl.name || 'missile') + ': ' + Math.round(pk * 100) + '% intercept, 100 cr expended');
+    world.interceptors.push({
+      x: b.x, y: b.y, targetMsl: targetMsl, speed: 420,
+      pk, color: '#38bdf8', dead: false
+    });
   }
 
   for (const ic of world.interceptors) {
@@ -4444,6 +4828,46 @@ function updateUnits() {
     /* Movement model (Part V): ground x1/3, air x1/2, terrain and roads on top. */
     const spd = u.speed * unitSpeedFactor(u);
 
+    /* Aircraft operational state is derived, not micromanaged. A destroyed
+       airbase relocates its wing; if nowhere can take it, the airframe is lost
+       with a visible reason instead of silently hovering forever. */
+    if (u.fly && !u.kamikaze) {
+      let ab = ent(u.airbaseId);
+      if (!ab || ab.dead || ab.owner !== u.owner) {
+        let best = null, bd = 1e18;
+        const used = new Map();
+        for (const v of world.units) if (!v.dead && v.fly && !v.kamikaze && v.airbaseId) used.set(v.airbaseId, (used.get(v.airbaseId) || 0) + 1);
+        for (const b of world.buildings) {
+          if (b.dead || b.owner !== u.owner || b.kind !== 'airbase') continue;
+          if ((used.get(b.id) || 0) >= CFG.AIR.MAX_PER_AIRBASE) continue;
+          const d = dist2(u.x, u.y, b.x, b.y);
+          if (d < bd) { bd = d; best = b; }
+        }
+        if (best) {
+          u.airbaseId = best.id; u.abLostT = 0;
+          if (!u.relocated) { u.relocated = true; logEvent(world.players[u.owner].country + ' aircraft relocated to a surviving airbase', 'hint'); }
+        } else {
+          u.abLostT = (u.abLostT || 0) + CFG.DT;
+          u.readiness = 'DAMAGED';
+          if (u.abLostT >= 30) {
+            u.dead = true; world.ents.delete(u.id);
+            const p = world.players[u.owner];
+            if (p) { p.stats.lost[u.type] = (p.stats.lost[u.type] || 0) + 1; logEvent(p.country + ' lost a ' + (CFG.UNITS[u.type] && CFG.UNITS[u.type].real || u.type) + ' — no airbase available', 'crit'); }
+          }
+          continue;
+        }
+      }
+      if (u.ammo <= 0) u.readiness = 'REARMING';
+      else if (u.hp <= u.maxHp * 0.55) u.readiness = 'DAMAGED';
+      else if (u.order || u.target) u.readiness = 'ON MISSION';
+      else u.readiness = 'READY';
+      if (ab && !ab.dead && dist2(u.x, u.y, ab.x, ab.y) < 60 * 60 && u.hp < u.maxHp) {
+        u.hp = Math.min(u.maxHp, u.hp + u.maxHp * 0.08 * CFG.DT);
+        if (u.hp < u.maxHp * 0.999) u.readiness = 'REPAIRING';
+        if (u.ammo >= u.maxAmmo && u.hp >= u.maxHp * 0.999) u.readiness = 'READY';
+      }
+    }
+
     if (u.fly && !u.kamikaze && u.maxAmmo > 0 && u.ammo <= 0) {
       const ab = ent(u.airbaseId);
       if (ab && !ab.dead) {
@@ -4453,6 +4877,9 @@ function updateUnits() {
           u.face = Math.atan2(dy, dx);
         } else {
           u.rearmT += CFG.DT;
+          /* Automatic repair alongside rearming: damaged aircraft recover at a
+             friendly base without a manual maintenance queue. */
+          if (u.hp < u.maxHp) u.hp = Math.min(u.maxHp, u.hp + (u.maxHp * 0.055) * CFG.DT);
           if (u.rearmT >= CFG.AIR.REARM_TIME) {
             const p = world.players[u.owner];
             if (p && p.cents >= CFG.COSTS.rearm_air * 100) {
@@ -4635,6 +5062,44 @@ function updateBuildings() {
     if (b.flash > 0) b.flash = Math.max(0, b.flash - CFG.DT);
     if (b.cd > 0) b.cd = Math.max(0, b.cd - CFG.DT);
 
+    if (b.buildT > 0) {
+      b.buildT = Math.max(0, b.buildT - CFG.DT);
+      b.hp = Math.min(b.maxHp, b.hp + (b.maxHp * 0.65 / Math.max(1, b.buildMax)) * CFG.DT);
+      if (b.buildT === 0) {
+        b.hp = b.maxHp;
+        const p = world.players[b.owner];
+        const addDef = kind => {
+          const sp = nudgeFree(b.x + (kind === 'aa' ? -44 : 44), b.y + 38);
+          if (world.terrainBlocked && world.terrainBlocked(sp.x, sp.y)) return null;
+          const bd = CFG.BUILDINGS[kind];
+          const def = {
+            id: world.nextId++, kind, owner: b.owner, team: b.team, x: sp.x, y: sp.y,
+            hp: bd.hp, maxHp: bd.hp, r: bd.r, cd: 0, target: 0, face: 0, dead: false,
+            color: b.color, armor: bd.armor, capturable: true, captureProg: 0, suppressed: false
+          };
+          world.buildings.push(def); world.ents.set(def.id, def);
+          return def;
+        };
+        addDef('aa'); addDef('tower');
+        if (p) logEvent(p.country + ' economic complex commissioned with integral AA and bunker');
+      }
+      continue;
+    }
+
+    if (b.kind === 'missileFactory' && b.prodQ && b.prodQ.length) {
+      b.prodT += CFG.DT;
+      if (b.prodT >= 240) {
+        const mk = b.prodQ.shift();
+        b.prodT = 0;
+        const p = world.players[b.owner];
+        if (p) {
+          p.mslStock[mk] = (p.mslStock[mk] || 0) + 1;
+          logEvent(p.country + ' missile factory completed 1x ' + ((CFG.MSL[mk] && CFG.MSL[mk].name) || mk));
+          if (p.isHuman) toast('Missile factory: 1x ' + ((CFG.MSL[mk] && CFG.MSL[mk].name) || mk) + ' ready (' + (p.mslStock[mk] || 0) + ' in stock)', 'hint');
+        }
+      }
+    }
+
     if (b.kind === 'ncamp') {
       let gCount = 0;
       for (const u of world.units) {
@@ -4709,15 +5174,14 @@ function updateBuildings() {
           if (capOwner >= 0) {
             if (b.captureBy !== captureKey) { b.captureBy = captureKey; b.captureProg = 0; }
             const cnt = Math.min(CFG.CAPTURE.MAX_FOE, attackers[captureKey]);
-            let rate;
-            if (world.mode === 'real') {
-              // Diminishing returns keep large infantry groups useful without instant captures.
-              rate = CFG.CAPTURE.RATE * Math.pow(cnt, CFG.CAPTURE.DIMINISH) * (defenders > 0 ? 0.5 : 1);
-              if (defenders > 1) rate = 0;
-            } else {
-              // Preserve Classic's original linear capture and contest multiplier.
-              rate = CFG.CAPTURE.RATE * cnt * (defenders > 0 ? CFG.CAPTURE.CONTEST_MULT : 1);
-            }
+            /* The force only gates whether the siege can start; the clock is tied
+               to the installation. A capital is a ten-minute operation and any
+               other city/base is roughly seven minutes. */
+            const baseSec = b.kind === 'camp' ? CFG.CAPTURE.BUILDING_CAPITAL_SEC
+              : (b.kind === 'outpost' ? CFG.CAPTURE.BUILDING_SEC : CFG.CAPTURE.BUILDING_OTHER_SEC);
+            let rate = 1 / baseSec;
+            if (defenders > 0) rate *= (world.mode === 'real' ? 0.5 : CFG.CAPTURE.CONTEST_MULT);
+            if (world.mode === 'real' && defenders > 1) rate = 0;
             b.captureProg = Math.min(1, b.captureProg + rate * CFG.DT);
             if (b.captureProg >= 1) convertBuildingOwner(b, capOwner);
           }
@@ -4754,17 +5218,17 @@ function convertBuildingOwner(b, newOwner) {
   world.effects.push({ k: 'ring', x: b.x, y: b.y, r: b.r + 26, t: 0.55, maxT: 0.55, color: np.color });
   world.effects.push({ k: 'tag', x: b.x, y: b.y, txt: np.name + ' SECURED', t: 1.1, maxT: 1.1, color: np.color });
 
-  if (b.kind === 'ncamp' || b.kind === 'outpost') {
-    const rawCity = (b.city || 'Strategic City').split(' (')[0];
-    b.kind = 'outpost';
-    b.maxHp = CFG.BUILDINGS.outpost.hp;
-    b.hp = b.maxHp;
-    b.city = rawCity + ' (' + np.name + ')';
-    for (const u of world.units) {
-      if (!u.dead && u.homeCampId === b.id && u.team === -1) {
-        u.owner = newOwner; u.team = np.team; u.color = np.color; u.garrison = false;
+      if (b.kind === 'ncamp' || b.kind === 'outpost') {
+      const rawCity = (b.city || 'Strategic City').split(' (')[0];
+      b.kind = 'outpost';
+      b.maxHp = CFG.BUILDINGS.outpost.hp;
+      b.hp = b.maxHp;
+      b.city = rawCity + ' (' + np.name + ')';
+      for (const u of world.units) {
+        if (!u.dead && u.homeCampId === b.id && u.team === -1) {
+          u.owner = newOwner; u.team = np.team; u.color = np.color; u.garrison = false;
+        }
       }
-    }
     toast(np.country + ' ' + np.name + ' occupied ' + rawCity, (oldOwner >= 0 && world.players[oldOwner] && world.players[oldOwner].isHuman) ? 'crit' : 'hint');
     if (np.isHuman) SFX.play('capture');
     return;
@@ -5016,12 +5480,16 @@ function aiEconomyAndBuild(p, ai, c) {
   if (ai.cfg.repair && camp.hp < camp.maxHp * 0.7 && coins > reserve * 0.6) repairBuilding(p.idx, camp);
 
   let myMines = 0, myWorkers = 0, myAirbases = 0, mySams = 0, myTowers = 0;
+  let myFactories = 0, myABM = 0, myEconomy = 0;
   for (const b of world.buildings) {
     if (b.dead || b.owner !== p.idx) continue;
     if (b.kind === 'mine') myMines++;
     if (b.kind === 'airbase') myAirbases++;
     if (b.kind === 'sam') mySams++;
     if (b.kind === 'tower') myTowers++;
+    if (b.kind === 'missileFactory') myFactories++;
+    if (b.kind === 'antiMissile') myABM++;
+    if (b.kind === 'economy' && (b.buildT || 0) <= 0) myEconomy++;
   }
   for (const u of world.units) if (!u.dead && u.owner === p.idx && u.isWorker) myWorkers++;
 
@@ -5041,6 +5509,7 @@ function aiEconomyAndBuild(p, ai, c) {
 
   const rules = archetypeRules(p);
   const wantMines = rules.budget.econ >= 0.40 ? 4 : 2;
+  const doctrine = doctrineOf(p);
   const wantSams = rules.budget.def >= 0.45 ? 3 : 2;
   if (!needsAirbase && !isNonState(p.country) && myMines < wantMines && freeBuild >= costOf(p, 'mine')) {
     for (const d of world.deposits) {
@@ -5078,9 +5547,37 @@ function aiEconomyAndBuild(p, ai, c) {
   }
 
   const cMsl = (c.build && c.build.msl) || [];
+  if (cMsl.length && myFactories === 0 && freeBuild >= CFG.COSTS.missileFactory + 60 && world.time > 80) {
+    const sp = freeSpotLocal(camp.x + (Math.random() - 0.5) * 190, camp.y + (Math.random() - 0.5) * 190, world.w, world.h, world.obstacles, world.terrainBlocked);
+    if (!canPlaceBuilding(p.idx, 'missileFactory', sp.x, sp.y)) { placeBuilding(p.idx, 'missileFactory', sp.x, sp.y); aiLog(p, 'built missile factory'); return; }
+  }
+  if (cMsl.length && myFactories > 0) {
+    const stock = cMsl.reduce((n, k) => n + (p.mslStock[k] || 0), 0);
+    if (stock < 2 && freeBuild >= costOf(p, cMsl[0]) + 20) {
+      queueMissileProduction(p, cMsl[(Math.random() * cMsl.length) | 0]);
+    }
+  }
+  if (!isNonState(p.country) && myABM < 1 && freeBuild >= CFG.COSTS.antiMissile + 80 && world.time > 110) {
+    const sp = freeSpotLocal(camp.x + (Math.random() - 0.5) * 190, camp.y + (Math.random() - 0.5) * 190, world.w, world.h, world.obstacles, world.terrainBlocked);
+    if (!canPlaceBuilding(p.idx, 'antiMissile', sp.x, sp.y)) { placeBuilding(p.idx, 'antiMissile', sp.x, sp.y); aiLog(p, 'built anti-missile battery'); return; }
+  }
+  if (!isNonState(p.country) && myEconomy < (doctrine === 'economy' ? 3 : 1) && world.time > 120) {
+    const ecoCost = costOf(p, 'economy');
+    if (freeBuild >= ecoCost + 80) {
+      if (world.mode === 'classic') {
+        const site = economicSites(p)[0];
+        if (site && !canPlaceBuilding(p.idx, 'economy', site.x, site.y)) {
+          placeBuilding(p.idx, 'economy', site.x, site.y); aiLog(p, 'built economic complex on ' + site.n); return;
+        }
+      } else {
+        const sp = freeSpotLocal(camp.x + (Math.random() - 0.5) * 190, camp.y + (Math.random() - 0.5) * 190, world.w, world.h, world.obstacles, world.terrainBlocked);
+        if (!canPlaceBuilding(p.idx, 'economy', sp.x, sp.y)) { placeBuilding(p.idx, 'economy', sp.x, sp.y); aiLog(p, 'built economic complex'); return; }
+      }
+    }
+  }
   if (ai.cfg.missile !== 'none' && cMsl.length && world.time > 50) {
     const mKey = cMsl[(Math.random() * cMsl.length) | 0];
-    if ((p.mslCd[mKey] || 0) <= 0 && free >= costOf(p, mKey) + reserve * 0.5) {
+    if ((p.mslStock[mKey] || 0) > 0) {
       const targetCamp = pickEnemyTargetFor(p);
       if (targetCamp) { if (launchMissile(p.idx, mKey, targetCamp.x, targetCamp.y)) aiLog(p, 'struck with ' + mKey); return; }
     }
@@ -5093,7 +5590,7 @@ function aiEconomyAndBuild(p, ai, c) {
        the economy to catch up unless the capital is actually threatened. */
     if (!underThreat && (p.spendCpt || 0) > Math.max(5, income) * 1.15) return;
 
-    const mix = c.mix || { soldier: 0.4, tank: 0.3, atgm: 0.3 };
+    const mix = doctrineMix(p, c.mix || { soldier: 0.4, tank: 0.3, atgm: 0.3 });
     /* Composition control: one shared chooser, so an AI only buys what it can
        pay for and never lets one class dominate the army. */
     const chosen = pickBuildType(p, mix, free);
@@ -5724,6 +6221,270 @@ function checkWin() {
   /* No clock: a match ends only by objectives, conquest or annihilation. */
 }
 
+/* ===================== NATIONAL ADVISORS ===================== */
+function advisorState(id) { return world.advisors && world.advisors[id]; }
+function advisorCanSpend(id, cost) {
+  const a = advisorState(id), hp = humanPlayer();
+  if (!a || !hp || !hp.alive) return false;
+  if (a.spent + cost > a.cap) return false;
+  return hp.cents / 100 - cost >= a.reserve;
+}
+function advisorCharge(id, cost) {
+  const a = advisorState(id), hp = humanPlayer();
+  if (!a || !hp) return false;
+  a.spent += cost; hp.advisorSpend[id] = (hp.advisorSpend[id] || 0) + cost;
+  return true;
+}
+function addAdvisorRec(id, rec) {
+  const a = advisorState(id);
+  if (!a) return;
+  rec.id = id + ':' + Math.round(world.time) + ':' + a.recs.length;
+  rec.execute = rec.execute || null;
+  a.recs.push(rec);
+  if (a.recs.length > 6) a.recs.shift();
+}
+function advisorLog(id, text) {
+  const a = advisorState(id); if (!a) return;
+  a.log.unshift({ t: Math.round(world.time), text });
+  if (a.log.length > 10) a.log.pop();
+}
+function executeAdvisorRec(id, recId) {
+  const a = advisorState(id); if (!a) return false;
+  const rec = a.recs.find(r => r.id === recId);
+  if (!rec || !rec.execute) return false;
+  const ok = rec.execute();
+  if (ok) { advisorLog(id, (rec.short || rec.text) + ' — approved'); a.recs = a.recs.filter(r => r !== rec); renderAdvisorPanel(); }
+  return !!ok;
+}
+
+function renderAdvisorPanel() {
+  if (!world || world.mode !== 'classic' || !world.advisors) return;
+  const box = $('advisorList'); if (!box) return;
+  const hp = humanPlayer();
+  const doc = $('advisorDoctrine');
+  if (doc) {
+    doc.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
+      '<div><b>National doctrine</b><div class="dim" style="font-size:11px">' + DOCTRINES[doctrineOf(hp)].name + ' — ' + DOCTRINES[doctrineOf(hp)].blurb + '</div></div>' +
+      '<div style="display:flex;gap:3px;flex-wrap:wrap">' + Object.keys(DOCTRINES).map(k =>
+        '<button class="btn docPick" data-doc="' + k + '" style="margin:0;padding:4px 7px;font-size:9px;' + (k === doctrineOf(hp) ? 'border-color:var(--cyan);color:var(--cyan)' : '') + '">' + DOCTRINES[k].short + '</button>').join('') + '</div></div>';
+  }
+  box.innerHTML = ADVISOR_DEFS.map(d => {
+    const a = world.advisors[d.id];
+    const modeBtn = m => '<button class="btn advMode" data-adv="' + d.id + '" data-mode="' + m + '" style="margin:0;padding:3px 7px;font-size:9px;' + (a.mode === m ? 'border-color:var(--cyan);color:var(--cyan)' : '') + '">' + m.toUpperCase() + '</button>';
+    const recs = a.recs.length ? a.recs.map(r => '<div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px"><span style="flex:1;color:' + (r.priority === 'danger' ? '#f87171' : r.priority === 'warn' ? '#fbbf24' : 'var(--text-2)') + '">' + r.text + '</span>' +
+      (r.execute ? '<button class="btn advApprove" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Approve</button>' : '') + '</div>').join('') : '<div class="dim" style="margin-top:4px">No recommendation.</div>';
+    const log = a.log.slice(0, 2).map(x => '<div class="dim" style="font-size:10px">' + fmtTime(x.t) + ' — ' + x.text + '</div>').join('');
+    return '<div style="border-top:1px solid var(--line);padding:9px 0">' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="min-width:150px">' + d.icon + ' · ' + d.name + '</b>' + modeBtn('off') + modeBtn('suggest') + modeBtn('auto') +
+      '<span class="dim" style="font-size:10px">spent ' + Math.round(a.spent) + ' / ' + Math.round(a.cap) + ' cr</span>' +
+      (d.id !== 'intel' ? '<label class="dim" style="font-size:10px">budget <input class="amtin advCap" data-adv="' + d.id + '" type="number" min="0" step="50" value="' + a.cap + '" style="width:70px;padding:2px 4px"></label><label class="dim" style="font-size:10px">reserve <input class="amtin advReserve" data-adv="' + d.id + '" type="number" min="0" step="25" value="' + a.reserve + '" style="width:60px;padding:2px 4px"></label>' : '') + '</div>' +
+      '<div class="dim" style="font-size:10px;margin-top:2px">' + d.role + '</div>' + recs + log + '</div>';
+  }).join('');
+  box.querySelectorAll('.advMode').forEach(b => b.onclick = () => {
+    world.advisors[b.dataset.adv].mode = b.dataset.mode; renderAdvisorPanel();
+  });
+  box.querySelectorAll('.advApprove').forEach(b => b.onclick = () => executeAdvisorRec(b.dataset.adv, b.dataset.rec));
+  box.querySelectorAll('.advCap').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].cap = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
+  box.querySelectorAll('.advReserve').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].reserve = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
+  if (doc) doc.querySelectorAll('.docPick').forEach(b => b.onclick = () => switchDoctrine(b.dataset.doc));
+}
+function openAdvisorPanel() {
+  if (!world || world.mode !== 'classic') return;
+  world.advisorTick = 99; updateAdvisors();
+  renderAdvisorPanel(); $('advisorScr').classList.remove('hidden');
+}
+function switchDoctrine(next) {
+  const hp = humanPlayer();
+  if (!hp || !DOCTRINES[next] || next === doctrineOf(hp)) return false;
+  const cost = CFG.SKIRMISH.DOCTRINE_SWITCH_COST;
+  if (hp.cents < cost * 100) { toast('Doctrine transition needs ' + cost + ' cr', 'err'); return false; }
+  hp.cents -= cost * 100; noteSpend(hp, cost * 100); hp.doctrine = next; world.skirmish.doctrineSwitches++;
+  logEvent(hp.country + ' adopted ' + DOCTRINES[next].name + ' doctrine');
+  renderAdvisorPanel(); renderBrief();
+  return true;
+}
+
+function economicSites(p) {
+  const out = [];
+  for (const f of world.oilFields || []) {
+    if (f.code && f.code !== p.country) continue;
+    const owner = geoOwnerAt(f.x, f.y);
+    if (!owner || owner.idx !== p.idx) continue;
+    const eb = f.econId ? ent(f.econId) : null;
+    if (eb && !eb.dead) continue;
+    out.push(f);
+  }
+  return out.sort((a, b) => b.yieldCpm - a.yieldCpm);
+}
+function advisorDefenceGaps(p) {
+  const gaps = [];
+  for (const c of world.cities || []) {
+    if (c.razed || c.owner !== p.idx) continue;
+    let def = 0, aa = 0;
+    forNear(c.x, c.y, 190, e => {
+      if (e.dead || e.kind === 'unit' || e.owner !== p.idx) return false;
+      if (e.kind === 'tower') def++;
+      if (e.kind === 'aa' || e.kind === 'sam') aa++;
+      return false;
+    });
+    if (def === 0) gaps.push({ x: c.x, y: c.y, name: c.name, need: 'bunker', capital: !!c.capital });
+    else if (aa === 0) gaps.push({ x: c.x, y: c.y, name: c.name, need: 'aa', capital: !!c.capital });
+  }
+  return gaps.sort((a, b) => (b.capital ? 1 : 0) - (a.capital ? 1 : 0)).slice(0, 6);
+}
+function advisorAirTypes(p) {
+  const c = countryOf(p);
+  return ((c.build && c.build.army) || []).filter(k => CFG.UNITS[k] && CFG.UNITS[k].fly && !CFG.UNITS[k].kamikaze);
+}
+function updateAdvisors() {
+  if (world.mode !== 'classic' || !world.advisors || !humanPlayer()) return;
+  world.advisorTick = (world.advisorTick || 0) + CFG.DT;
+  if (world.advisorTick < 2.5) return;
+  world.advisorTick = 0;
+  const hp = humanPlayer(), a = world.advisors;
+  if (!hp.alive) return;
+  for (const k in a) a[k].recs = [];
+
+  /* Economic vulnerability is an explicit warning, not a silent HP bar. */
+  for (const b of world.buildings) {
+    if (b.dead || b.owner !== hp.idx || b.kind !== 'economy') continue;
+    let threat = 0;
+    forNear(b.x, b.y, 260, e => { if (!e.dead && e.kind === 'unit' && hostile(hp, e)) threat++; return false; });
+    if (threat) addAdvisorRec('eco', { short: 'Economic Complex under threat', priority: 'danger',
+      text: 'Economic Complex under attack: ' + threat + ' hostile units within 260 m. Defend the site or it will stop paying.' });
+  }
+
+  /* Economic Advisor: highest-yield owned field without a complex. */
+  const sites = economicSites(hp);
+  const ownedEconomy = world.buildings.filter(b => !b.dead && b.owner === hp.idx && b.kind === 'economy').length;
+  if (sites.length && ownedEconomy < a.eco.maxInvestments) {
+    const f = sites[0], cost = costOf(hp, 'economy');
+    const canPay = hp.cents / 100 - cost >= a.eco.reserve;
+    addAdvisorRec('eco', { short: 'Develop ' + f.n, priority: canPay ? 'normal' : 'warn',
+      text: f.n + ' is undeveloped: Economic Complex adds ~' + f.yieldCpm + ' cr/min. Cost ' + cost + ' cr' + (canPay ? '.' : '; treasury below the ' + a.eco.reserve + ' cr reserve, postponed.'),
+      cost, execute: () => {
+        if (!advisorCanSpend('eco', cost)) return false;
+        const b = placeBuilding(hp.idx, 'economy', f.x, f.y);
+        if (!b) return false; advisorCharge('eco', cost); advisorLog('eco', 'Built Economic Complex on ' + f.n); return b.id;
+      } });
+    if (a.eco.mode === 'auto' && canPay && a.eco.spent + cost <= a.eco.cap) {
+      const b = placeBuilding(hp.idx, 'economy', f.x, f.y);
+      if (b) { advisorCharge('eco', cost); advisorLog('eco', 'AUTO: Economic Complex on ' + f.n + ' (+' + f.yieldCpm + ' cr/min)'); a.eco.recs = []; }
+    }
+  } else addAdvisorRec('eco', { short: 'Economy developed', priority: 'ok', text: ownedEconomy >= a.eco.maxInvestments ? 'Investment portfolio is at its ' + a.eco.maxInvestments + '-complex limit.' : 'No undeveloped owned oil field remains. Protect existing complexes.' });
+
+  /* Military Advisor: exposed city without a bunker or AA. */
+  const gaps = advisorDefenceGaps(hp);
+  if (gaps.length) {
+    const g = gaps[0], kind = g.need, cost = costOf(hp, kind);
+    addAdvisorRec('military', { short: (kind === 'tower' ? 'Bunker ' : 'AA ') + g.name, priority: g.capital ? 'danger' : 'warn',
+      text: g.name + (g.capital ? ' (capital)' : '') + ' has no ' + (kind === 'tower' ? 'bunker' : 'air defence') + '. Recommended: ' + (kind === 'tower' ? 'bunker' : 'AA gun') + ' (' + cost + ' cr).',
+      cost, execute: () => {
+        if (!advisorCanSpend('military', cost)) return false;
+        const sp = freeSpotLocal(g.x + 46, g.y + 34, world.w, world.h, world.obstacles, world.terrainBlocked);
+        const b = placeBuilding(hp.idx, kind, sp.x, sp.y);
+        if (!b) return false; advisorCharge('military', cost); advisorLog('military', 'Fortified ' + g.name); return b.id;
+      } });
+    if (a.military.mode === 'auto' && advisorCanSpend('military', cost)) {
+      const sp = freeSpotLocal(g.x + 46, g.y + 34, world.w, world.h, world.obstacles, world.terrainBlocked);
+      const b = placeBuilding(hp.idx, kind, sp.x, sp.y);
+      if (b) { advisorCharge('military', cost); advisorLog('military', 'AUTO: fortified ' + g.name); a.military.recs = []; }
+    }
+  } else addAdvisorRec('military', { short: 'Defences adequate', priority: 'ok', text: 'All held cities have a bunker and air-defence coverage.' });
+
+  /* Air Force Advisor: capacity, readiness, repairs. */
+  const airTypes = advisorAirTypes(hp);
+  const slots = airSlots(hp.idx);
+  const planes = world.units.filter(u => !u.dead && u.owner === hp.idx && u.fly && !u.kamikaze);
+  const rearming = planes.filter(u => u.readiness === 'REARMING' || u.readiness === 'REPAIRING').length;
+  if (!airTypes.length) addAdvisorRec('air', { short: 'No fixed-wing force', priority: 'warn', text: 'This country fields no fixed-wing aircraft; invest in air defence instead.' });
+  else if (!slots.bases) addAdvisorRec('air', { short: 'Build an airbase', priority: 'warn', text: 'No airbase: aircraft production is blocked. Airbase costs ' + costOf(hp, 'airbase') + ' cr.', cost: costOf(hp, 'airbase'), execute: () => { const cost = costOf(hp,'airbase'); if (!advisorCanSpend('air', cost)) return false; const camp = ent(hp.campId); const sp = freeSpotLocal(camp.x + 90, camp.y - 70, world.w, world.h, world.obstacles, world.terrainBlocked); const b = placeBuilding(hp.idx, 'airbase', sp.x, sp.y); if (!b) return false; advisorCharge('air', cost); advisorLog('air', 'Built forward airbase'); return b.id; } });
+  else if (slots.used >= slots.cap) addAdvisorRec('air', { short: 'Hangars full', priority: 'warn', text: 'Airbases are at capacity (' + slots.used + '/' + slots.cap + '). Another airbase would add 3 slots.' });
+  else {
+    const pick = airTypes.find(k => canBuildType(hp, k)) || airTypes[0];
+    const cost = costOf(hp, pick);
+    addAdvisorRec('air', { short: 'Order ' + unitLabel(pick, countryOf(hp)), priority: rearming ? 'warn' : 'normal',
+      text: (rearming ? rearming + ' aircraft rearming/repairing. ' : '') + 'Hangar space ' + slots.used + '/' + slots.cap + ': order ' + unitLabel(pick, countryOf(hp)) + ' for ' + cost + ' cr.',
+      cost, execute: () => { if (!advisorCanSpend('air', cost)) return false; const ok = queueUnit(hp.idx, pick); if (ok) { advisorCharge('air', cost); advisorLog('air', 'Ordered ' + pick); } return ok; } });
+    if (a.air.mode === 'auto' && !rearming && advisorCanSpend('air', cost)) { if (queueUnit(hp.idx, pick)) { advisorCharge('air', cost); advisorLog('air', 'AUTO: ordered ' + pick); a.air.recs = []; } }
+  }
+
+  /* Diplomatic Advisor: pick a neutral neighbour with no pact. */
+  let dipTarget = null;
+  for (const o of world.players) {
+    if (!o.alive || o.idx === hp.idx) continue;
+    if (getAgreement(hp.idx, o.idx)) continue;
+    const rel = getRelation(hp.idx, o.idx);
+    if (rel === 'NEUTRAL' || rel === 'TRADE') { dipTarget = o; break; }
+  }
+  if (dipTarget) {
+    const type = scoreBetween(hp.idx, dipTarget.idx) >= 30 ? 'TRADE' : 'NAP';
+    addAdvisorRec('diplomacy', { short: type + ' with ' + dipTarget.country, priority: 'normal',
+      text: 'Propose a ' + (type === 'NAP' ? 'non-aggression pact' : 'trade agreement') + ' with ' + dipTarget.name + ' (relations ' + scoreBetween(hp.idx, dipTarget.idx) + '/100).',
+      cost: type === 'TRADE' ? 40 : 0, execute: () => {
+        const cost = type === 'TRADE' ? 40 : 0;
+        if (!advisorCanSpend('diplomacy', cost)) return false;
+        const r = proposeAgreement(hp.idx, dipTarget.idx, type);
+        if (!r.ok) { toast(dipTarget.name + ' refused the ' + type + ' offer', 'err'); return false; }
+        if (cost) { hp.cents -= cost * 100; noteSpend(hp, cost * 100); advisorCharge('diplomacy', cost); }
+        advisorLog('diplomacy', type + ' agreed with ' + dipTarget.country); return true;
+      } });
+    if (a.diplomacy.mode === 'auto' && advisorCanSpend('diplomacy', type === 'TRADE' ? 40 : 0)) {
+      const r = proposeAgreement(hp.idx, dipTarget.idx, type);
+      if (r.ok) { if (type === 'TRADE') { hp.cents -= 4000; noteSpend(hp, 4000); advisorCharge('diplomacy', 40); } advisorLog('diplomacy', 'AUTO: ' + type + ' with ' + dipTarget.country); a.diplomacy.recs = []; }
+    }
+  } else addAdvisorRec('diplomacy', { short: 'No neutral partner', priority: 'warn', text: 'No uncommitted neighbour remains. Avoid fighting more than one great power at once.' });
+
+  /* Intelligence Advisor: only fog-visible contacts, explicitly confirmed. */
+  const seen = [];
+  for (const u of world.units) {
+    if (u.dead || u.owner < 0 || u.owner === hp.idx) continue;
+    if (!hostile(hp, u)) continue;
+    if (app.fog && !fogVisibleAt(u.x, u.y)) continue;
+    seen.push(u);
+  }
+  const armour = seen.filter(u => u.armor === 'armor' || u.armor === 'heavy').length;
+  const factories = world.buildings.filter(b => !b.dead && b.owner >= 0 && b.owner !== hp.idx && b.kind === 'missileFactory' && (!app.fog || fogVisibleAt(b.x, b.y))).length;
+  if (seen.length) addAdvisorRec('intel', { short: 'Contact: ' + seen.length + ' enemy units', priority: armour >= 6 ? 'danger' : 'warn',
+    text: 'Confirmed: ' + seen.length + ' enemy units visible' + (armour ? ', including ' + armour + ' armoured vehicles' : '') + '.' + (factories ? ' Confirmed: ' + factories + ' enemy missile factory site(s).' : '') + ' Estimated intent: local pressure, not a confirmed offensive.' });
+  else addAdvisorRec('intel', { short: 'No contacts', priority: 'ok', text: 'No enemy formation is currently visible inside friendly sensor range. Exact enemy missile stocks remain unknown.' });
+  if ($('advisorScr') && !$('advisorScr').classList.contains('hidden')) renderAdvisorPanel();
+}
+
+/* AI diplomacy and agreement life-cycle. */
+function updateSkirmishDiplomacy() {
+  if (!world.agreements) return;
+  world.diploTick = (world.diploTick || 0) + CFG.DT;
+  if (world.diploTick < 8) return;
+  world.diploTick = 0;
+  for (const key of Object.keys(world.agreements)) {
+    const ag = world.agreements[key];
+    if (ag.until > 0 && world.time >= ag.until) {
+      delete world.agreements[key];
+      logEvent('Agreement expired between ' + world.players[ag.a].country + ' and ' + world.players[ag.b].country, 'hint');
+    }
+  }
+  for (const p of world.players) {
+    if (!p.alive || p.isHuman || !p.aiCtl) continue;
+    const wars = world.players.filter(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) === 'WAR');
+    const personality = p.aiCtl.personality || 'opportunistic';
+    /* A state losing a war seeks a ceasefire; a weak state seeks shelter. */
+    if (wars.length && (p.warExhaustion > 0.35 || armyPower(p.idx) < 0.55 * Math.max(...wars.map(o => armyPower(o.idx))))) {
+      const foe = wars[0];
+      if (Math.random() < 0.35) {
+        if (proposeAgreement(p.idx, foe.idx, 'CEASEFIRE').ok) aiLog(p, 'ceasefire with ' + foe.country);
+      }
+      continue;
+    }
+    if (wars.length >= (personality === 'aggressive' ? 3 : 2)) continue;
+    const partner = world.players.find(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) !== 'WAR' && !getAgreement(p.idx, o.idx) && scoreBetween(p.idx, o.idx) > 5);
+    if (partner && Math.random() < (personality === 'economic' || personality === 'defensive' ? 0.30 : 0.12)) {
+      const type = personality === 'economic' ? 'TRADE' : (personality === 'defensive' ? 'NAP' : 'DEFENSIVE');
+      if (proposeAgreement(p.idx, partner.idx, type).ok) aiLog(p, type + ' with ' + partner.country);
+    }
+  }
+}
+
 function stepSim() {
   if (world.over) return;
   world.time += CFG.DT;
@@ -5738,6 +6499,10 @@ function stepSim() {
     syncCityOwnersToGround();
   }
   updateEconomy();
+  if (world.mode === 'classic') {
+    updateAdvisors();
+    updateSkirmishDiplomacy();
+  }
   if (world.mode === 'real') {
     updateAidFlows();
     updateSupply();
@@ -5807,9 +6572,27 @@ function drawUnitGlyph(u, ringColor) {
     }
     ctx.closePath();
     ctx.fillStyle = body; ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = 'rgba(238,244,249,.34)'; ctx.lineWidth = 0.7; ctx.stroke();
-    ctx.fillStyle = 'rgba(244,249,252,.92)';
-    ctx.beginPath(); ctx.arc(r * 0.4, 0, 1.1, 0, TAU); ctx.fill();
+    /* Panel lines, canopy and engines give the silhouette an aircraft read at
+       normal zoom instead of a coloured chevron. */
+    ctx.strokeStyle = 'rgba(238,244,249,.42)'; ctx.lineWidth = 0.75;
+    ctx.beginPath(); ctx.moveTo(r * 1.28, 0); ctx.lineTo(-r * 0.72, 0); ctx.stroke();
+    if (u.kamikaze || u.type === 'drone' || u.type === 'quad' || u.type === 'ababil') {
+      ctx.beginPath(); ctx.moveTo(r * 0.2, -r * 0.28); ctx.lineTo(r * 0.2, r * 0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r * 0.52, -r * 0.2); ctx.lineTo(r * 0.52, r * 0.2); ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(174,223,240,.9)';
+      ctx.beginPath(); ctx.ellipse(r * 0.34, 0, r * 0.3, r * 0.16, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(8,14,20,.75)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(-r * 0.48, -r * 0.62); ctx.lineTo(-r * 0.78, -r * 1.15);
+      ctx.moveTo(-r * 0.48, r * 0.62); ctx.lineTo(-r * 0.78, r * 1.15); ctx.stroke();
+      if (u.type === 'bomber' || u.type === 'b1' || u.type === 'h6k') {
+        ctx.fillStyle = 'rgba(10,16,22,.9)';
+        for (const sy of [-1, 1]) {
+          ctx.beginPath(); ctx.ellipse(-r * 0.18, sy * r * 0.52, r * 0.24, r * 0.11, 0, 0, TAU); ctx.fill();
+          ctx.strokeStyle = 'rgba(238,244,249,.35)'; ctx.stroke();
+        }
+      }
+    }
     if (app.fxQuality === 'high' && !app.reduceMotion && !(CFG.UNITS[u.type] && CFG.UNITS[u.type].stealth)) {
       ctx.strokeStyle = 'rgba(127,192,212,.5)'; ctx.lineWidth = 0.9;
       ctx.beginPath(); ctx.moveTo(-r * 0.95, 0); ctx.lineTo(-r * 1.5, 0); ctx.stroke();
@@ -5839,9 +6622,17 @@ function drawUnitGlyph(u, ringColor) {
     if (u.isWorker) {
       ctx.strokeRect(-r * 0.3, -r * 0.3, r * 0.6, r * 0.6);
       ctx.beginPath(); ctx.moveTo(r * 0.3, -r * 0.3); ctx.lineTo(r * 0.62, -r * 0.6); ctx.stroke();
-    } else if (u.type === 'tank' || u.type === 't90') {
+    } else if (u.type === 'tank' || u.type === 't90' || u.type === 'heavyTank') {
       ctx.beginPath(); ctx.ellipse(0, 0, r * 0.55, r * 0.34, 0, 0, TAU); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(r * 0.4, 0); ctx.lineTo(r * 0.98, 0); ctx.stroke();
+      if (u.type === 'heavyTank') { ctx.strokeRect(-r * 0.72, -r * 0.52, r * 1.44, r * 1.04); }
+    } else if (u.type === 'tankDestroyer') {
+      ctx.beginPath(); ctx.moveTo(-r * 0.72, r * 0.45); ctx.lineTo(r * 0.2, 0); ctx.lineTo(-r * 0.72, -r * 0.45); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r * 0.15, 0); ctx.lineTo(r * 1.02, 0); ctx.stroke();
+    } else if (u.type === 'ifv' || u.type === 'apc') {
+      ctx.strokeRect(-r * 0.72, -r * 0.36, r * 1.4, r * 0.72);
+      ctx.beginPath(); ctx.moveTo(r * 0.55, -r * 0.36); ctx.lineTo(r * 0.9, -r * 0.05); ctx.stroke();
+      for (const wx of [-0.45, 0.3]) { ctx.beginPath(); ctx.arc(wx * r, r * 0.48, r * 0.18, 0, TAU); ctx.stroke(); }
     } else if (u.type === 'spaag') {
       ctx.beginPath();
       ctx.moveTo(-r * 0.45, r * 0.3); ctx.lineTo(r * 0.32, -r * 0.38);
@@ -6018,6 +6809,32 @@ function drawBuildingGlyph(b, px, py) {
     }
     ctx.strokeStyle = 'rgba(125,211,252,.45)'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.arc(0, 0, r * 1.1, -Math.PI * 0.9, -Math.PI * 0.1); ctx.stroke();
+  } else if (k === 'missileFactory') {
+    ctx.fillStyle = 'rgba(20,28,38,.95)';
+    ctx.beginPath(); ctx.roundRect(-r * 0.95, -r * 0.55, r * 1.9, r * 1.1, 3); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(-r * 0.75, r * 0.45); ctx.lineTo(-r * 0.75, -r * 0.22);
+    ctx.lineTo(-r * 0.28, -r * 0.42); ctx.lineTo(-r * 0.28, r * 0.45);
+    ctx.moveTo(-r * 0.1, r * 0.45); ctx.lineTo(-r * 0.1, -r * 0.12);
+    ctx.lineTo(r * 0.4, -r * 0.32); ctx.lineTo(r * 0.4, r * 0.45); ctx.stroke();
+    ctx.strokeStyle = '#f0abfc'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(r * 0.58, r * 0.15); ctx.lineTo(r * 0.92, -r * 0.55); ctx.stroke();
+    ctx.beginPath(); ctx.arc(r * 0.92, -r * 0.58, 1.6, 0, TAU); ctx.fillStyle = '#f0abfc'; ctx.fill();
+  } else if (k === 'antiMissile') {
+    ctx.fillStyle = 'rgba(15,26,36,.96)';
+    ctx.beginPath(); ctx.roundRect(-r * 0.8, -r * 0.28, r * 1.6, r * 0.82, 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#67e8f9'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(-r * 0.45, r * 0.2); ctx.lineTo(0, -r * 0.8); ctx.lineTo(r * 0.45, r * 0.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, r * 0.05, r * 0.34, -Math.PI * 0.95, -Math.PI * 0.05); ctx.stroke();
+  } else if (k === 'economy') {
+    ctx.fillStyle = 'rgba(16,27,31,.95)';
+    ctx.beginPath(); ctx.roundRect(-r * 0.92, -r * 0.3, r * 1.84, r * 1.02, 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = body; ctx.lineWidth = 1.2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath(); ctx.rect(i * r * 0.5 - r * 0.15, -r * 0.1, r * 0.3, r * 0.55); ctx.stroke();
+    }
+    ctx.strokeStyle = '#86efac'; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(-r * 0.55, -r * 0.55); ctx.lineTo(r * 0.55, -r * 0.55); ctx.stroke();
   } else if (k === 'radar') {
     ctx.fillStyle = body;
     ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.fill(); ctx.stroke();
@@ -6643,8 +7460,10 @@ function drawWorld() {
   const poseLayout = buildingPoseLayout(visibleBuildings);
   const viewHalfW = vw / (2 * cam.z) + 120, viewHalfH = vh / (2 * cam.z) + 120;
   const structureLabel = { camp: 'COMMAND', ncamp: 'NEUTRAL', outpost: 'OUTPOST', airbase: 'AIRBASE',
-    sam: 'LONG SAM', radar: 'RADAR', aa: 'FLAK', tower: 'BUNKER', depot: 'DEPOT', mine: 'RESOURCE' };
-  const structurePrio = { airbase: 94, camp: 92, outpost: 90, sam: 88, radar: 86, aa: 84, tower: 80, depot: 78, mine: 76 };
+    sam: 'LONG SAM', radar: 'RADAR', aa: 'FLAK', tower: 'BUNKER', depot: 'DEPOT', mine: 'RESOURCE',
+    missileFactory: 'MISSILE FACTORY', antiMissile: 'ANTI-MISSILE', economy: 'ECONOMY' };
+  const structurePrio = { airbase: 94, camp: 92, outpost: 90, missileFactory: 90, antiMissile: 89, economy: 87,
+    sam: 88, radar: 86, aa: 84, tower: 80, depot: 78, mine: 76 };
   for (const b of visibleBuildings) {
     const pose = poseLayout.poses.get(b.id) || { x: b.x, y: b.y, ax: b.x, ay: b.y };
     b._px = pose.x; b._py = pose.y;
@@ -6697,6 +7516,18 @@ function drawWorld() {
       ctx.globalAlpha = 1;
     }
     drawBuildingGlyph(b, pose.x, pose.y);
+    if (b.buildT > 0 && b.buildMax > 0) {
+      const frac = 1 - b.buildT / b.buildMax;
+      const bw = b.r * 2.2;
+      ctx.fillStyle = 'rgba(4,10,14,.85)';
+      ctx.fillRect(pose.x - bw / 2, pose.y + b.r + 8, bw, 4);
+      ctx.fillStyle = '#d3ac62';
+      ctx.fillRect(pose.x - bw / 2, pose.y + b.r + 8, bw * frac, 4);
+      ctx.fillStyle = 'rgba(238,243,248,.9)';
+      ctx.font = '600 ' + (8 / clamp(cam.z, 0.6, 1.2)).toFixed(1) + 'px "Cascadia Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('BUILDING ' + Math.round(frac * 100) + '%', pose.x, pose.y + b.r + 19);
+    }
 
     mapLabelObstacles.push({ own: 'b:' + b.id, x: pose.x - b.r * 1.08, y: pose.y - b.r * 1.08, w: b.r * 2.16, h: b.r * 2.16 });
     const grouped = (poseLayout.groupSize.get(b.id) || 1) > 1;
@@ -6894,6 +7725,18 @@ function drawWorld() {
     ctx.beginPath(); ctx.arc(app.mouseW.x, app.mouseW.y, rad, 0, TAU);
     ctx.fillStyle = 'rgba(239, 68, 68, 0.22)'; ctx.fill();
     ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  if (app.uimode === 'salvo') {
+    const m = CFG.MSL[app.salvo.kind] || { radius: 80 };
+    for (const t of app.salvo.targets) {
+      ctx.beginPath(); ctx.arc(t.x, t.y, m.radius, 0, TAU);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.18)'; ctx.fill();
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    if (app.mouseW) {
+      ctx.beginPath(); ctx.arc(app.mouseW.x, app.mouseW.y, m.radius, 0, TAU);
+      ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+    }
   }
 
   // Fog of War overlay (only rendered when app.fog is true!)
@@ -7226,6 +8069,7 @@ function drawMinimap() {
 const UNIT_LABELS = {
   worker: 'Engineer', soldier: 'Infantry', atgm: 'Tank Hunter', manpads: 'Missile Team',
   spaag: 'AA Gun', tank: 'Main Tank', t90: 'Heavy Tank', air: 'Fighter',
+  heavyTank: 'Heavy Tank', tankDestroyer: 'Tank Destroyer', ifv: 'IFV', apc: 'APC',
   f35: 'F-35', su34: 'Su-34', j20: 'J-20', bomber: 'Bomber', b1: 'B-1B', b2: 'B-2',
   h6k: 'H-6K', drone: 'Shahed-136',
   mig29: 'MiG-29', f16: 'F-16', mirage: 'Mirage 2000', fa18: 'F/A-18 Hornet',
@@ -7237,7 +8081,8 @@ const UNIT_LABELS = {
 const BUILDING_LABELS = {
   camp: 'Capital command', ncamp: 'Neutral city', outpost: 'City outpost', mine: 'Resource facility',
   airbase: 'Airbase', sam: 'Long SAM', aa: 'Flak Gun', radar: 'Radar station', tower: 'Bunker',
-  depot: 'Supply depot'
+  depot: 'Supply depot', missileFactory: 'Missile factory', antiMissile: 'Anti-missile battery',
+  economy: 'Economic complex'
 };
 function unitLabel(t, c) {
   /* Armour is a single gameplay class, but each nation names its own tank. */
@@ -7259,7 +8104,9 @@ function unitIconSVG(t) {
     if (t === 'b2' || t === 'b1' || t === 'bomber' || t === 'h6k') return open + '<path d="M12 3 14 9l6.5 2.2v1.6L14 12v4l3 2.2v1.4L12 18l-5 1.6v-1.4l3-2.2v-4L3.5 12.8v-1.6L10 9Z"/><path d="M12 5v5"/></svg>';
     return open + '<path d="M21.5 12 13 9.4V4.8L10.8 4v5.4L3 12l7.8 2.6V20l2.2-.8v-4.6Z"/><path d="M13 12h5"/></svg>';
   }
-  if (t === 'tank' || t === 't90') return open + '<rect x="3.5" y="8" width="16" height="8" rx="1"/><circle cx="14" cy="12" r="2.6"/><path d="M14 12h7M6 8v8"/><path d="M3.5 16v2M6.5 16v2M16 16v2M19 16v2"/></svg>';
+  if (t === 'tank' || t === 't90' || t === 'heavyTank') return open + '<rect x="3.5" y="8" width="16" height="8" rx="1"/><circle cx="14" cy="12" r="2.6"/><path d="M14 12h7M6 8v8"/><path d="M3.5 16v2M6.5 16v2M16 16v2M19 16v2"/></svg>';
+  if (t === 'tankDestroyer') return open + '<rect x="3" y="10" width="14" height="6" rx="1"/><path d="M10 10 20 7M10 12h4"/><circle cx="13" cy="13" r="1.6"/><path d="M4 16v2M8 16v2M14 16v2"/></svg>';
+  if (t === 'apc' || t === 'ifv') return open + '<path d="M3 15V10l4-3h9l4 4v4z"/><circle cx="7" cy="16" r="1.7"/><circle cx="17" cy="16" r="1.7"/><path d="M11 7v4M8 11h8"/></svg>';
   if (t === 'spaag') return open + '<rect x="3" y="9" width="12" height="7" rx="1"/><path d="M15 11h6M15 14h6"/><circle cx="7" cy="12" r="1.4"/><path d="M3 16v1.5M17 16v1.5"/></svg>';
   if (t === 'atgm') return open + '<path d="M3 17h18"/><path d="M6 17V11l6-3 6 3v6"/><path d="M12 8V4M9.6 6.2 12 4l2.4 2.2"/></svg>';
   if (t === 'manpads') return open + '<path d="M4 18 14 6l3 2.5L7.5 20Z"/><path d="M13 5l4 3.2"/><path d="M4 18l-1.5 2.5"/></svg>';
@@ -7275,6 +8122,9 @@ function buildingIconSVG(k) {
   if (k === 'mine') return open + '<path d="M4 20 9 6h6l5 14Z"/><path d="m9 20 3-9 3 9M7 14h10"/></svg>';
   if (k === 'radar') return open + '<path d="M5 20h14M12 20v-5"/><path d="M5.5 11a7 7 0 0 1 13-3"/><path d="m12 10 7-5M4 8l6 4"/></svg>';
   if (k === 'depot') return open + '<path d="M3 9 12 4l9 5v11H3Z"/><path d="M8 20v-6h8v6M8 11h8"/></svg>';
+  if (k === 'missileFactory') return open + '<path d="M3 20V9l6 3V8l6 4V7l6 4v9Z"/><path d="M8 20v-4h3v4M15 20v-2h3v2"/><path d="M9 6V2M15 4V1"/></svg>';
+  if (k === 'antiMissile') return open + '<path d="M3 20h18M6 20v-5h12v5"/><path d="M8 15V9l4-5 4 5v6"/><path d="M12 9v6"/></svg>';
+  if (k === 'economy') return open + '<path d="M3 20V8l5-3v15M8 20V9l5-4v15M13 20V10l8-3v13Z"/><path d="M5 12h1M10 13h1M17 13h2"/></svg>';
   if (k === 'outpost') return open + '<path d="M6 20V5M6 6h11l-2.5 3L17 12H6"/><path d="M3 20h8"/></svg>';
   return open + '<rect x="4" y="4" width="16" height="16"/><path d="M8 12h8M12 8v8"/></svg>';
 }
@@ -7341,10 +8191,10 @@ function selInfoHTML() {
       const u = units[0];
       return '<div class="si-head"><div class="si-icon">' + unitIconSVG(u.type) + '</div>' +
         '<div><div class="si-name">' + unitLabel(u.type, countryOf(hp)) + '</div><div class="si-sub">' + hp.country + ' · ' + hp.name + '</div></div>' +
-        '<div class="si-side">FIRST ARMY<b>' + (u.isWorker ? 'ENGINEER' : 'COMBAT') + '</b></div></div>' +
+        '<div class="si-side">FIRST ARMY<b>' + (u.isWorker ? 'ENGINEER' : (u.fly ? (u.readiness || 'AIR') : 'COMBAT')) + '</b></div></div>' +
         hpBar(u.hp, u.maxHp) +
         '<div class="si-grid">' + selStat('Mission', u.order ? String(u.order.k).toUpperCase() : 'HOLD') + selStat('Damage', (u.dmg || 0) + ' / shot') + selStat('Range', Math.round(u.range || 0) + ' m') + '</div>' +
-        '<div class="si-note">' + orderLine(u) + (u.overrideT > 0 ? ' · <b>ORDERS OVERRIDDEN</b>' : '') + '</div>';
+        '<div class="si-note">' + orderLine(u) + (u.maxCargo ? ' · CARGO ' + u.cargo.length + '/' + u.maxCargo : '') + (u.overrideT > 0 ? ' · <b>ORDERS OVERRIDDEN</b>' : '') + '</div>';
     }
     const totalHp = units.reduce((a, u) => a + u.hp, 0), totalMax = units.reduce((a, u) => a + u.maxHp, 0);
     const counts = {};
@@ -7509,6 +8359,8 @@ function buildTabsAndBar() {
   const cmd = $('cmdbar');
   cmd.innerHTML = `
     <button class="cmdbtn" id="btnAllCombat">ALL ARMY<small>select</small></button>
+    <button class="cmdbtn" id="btnLoad">LOAD<small>infantry</small></button>
+    <button class="cmdbtn" id="btnUnload">UNLOAD<small>deploy</small></button>
     <button class="cmdbtn" id="btnStop">STOP<small>halt</small></button>
     <button class="cmdbtn" id="btnRally">RALLY<small>set point</small></button>
     <button class="cmdbtn" id="btnCancel">CANCEL<small>mode</small></button>
@@ -7520,6 +8372,8 @@ function buildTabsAndBar() {
     sel.units = world.units.filter(u => !u.dead && u.owner === hp.idx && !u.isWorker).map(u => u.id);
     SFX.play('select');
   };
+  $('btnLoad').onclick = () => loadTransports();
+  $('btnUnload').onclick = () => unloadTransports();
   $('btnStop').onclick = () => {
     for (const id of sel.units) { const u = ent(id); if (u) { u.order = null; u.path = null; } }
   };
@@ -7588,6 +8442,10 @@ function refreshBuildButtons() {
           { k: 'spaag',   lb: 'AA Gun' },
           { k: 'tank',    lb: 'Main Tank' },
           { k: 't90',     lb: 'Heavy Tank' },
+          { k: 'heavyTank', lb: 'Assault Tank' },
+          { k: 'tankDestroyer', lb: 'Tank Destroyer' },
+          { k: 'ifv',     lb: 'IFV' },
+          { k: 'apc',     lb: 'APC' },
           { k: 'drone',   lb: 'UAV Drone' },
           { k: 'air',     lb: 'Fighter' },
           { k: 'f35',     lb: 'F-35' },
@@ -7616,6 +8474,7 @@ function refreshBuildButtons() {
           if (queueUnit(hp.idx, 'worker')) { SFX.play('build'); toast('Queued Engineer', 'hint'); }
         });
         createBtn('b_mine', 'OIL', 'Oil Rig', '', () => startPlace('mine'));
+        createBtn('b_economy', 'ECO', 'Economic Complex', '', () => startPlace('economy'));
       }
     } else if (app.bbTab === 'def') {
       const defList = (world.mode === 'real' && c.build) ? c.build.def : ['tower', 'aa', 'sam', 'radar'];
@@ -7625,6 +8484,7 @@ function refreshBuildButtons() {
       /* Airbase is a military structure, not an economy building. It stays
          hidden for nations that cannot field combat aircraft. */
       if (c.allowFixedWing) createBtn('b_airbase', 'AIR', 'Airbase', '', () => startPlace('airbase'));
+      createBtn('b_antiMissile', 'ABM', 'Anti-Missile', '', () => startPlace('antiMissile'));
       createBtn('b_depot', '⛟', 'Supply Depot', '', () => startPlace('depot'));
     } else if (app.bbTab === 'strat' && world.mode === 'real') {
       if (hp.country === 'ISR') createBtn('s_nuke', 'NUC', 'Nuclear (' + (hp.nukes || 0) + ')', '', () => fireNuke(hp));
@@ -7636,14 +8496,13 @@ function refreshBuildButtons() {
       createBtn('s_lights', 'LGT', 'City Lights', '', () => { app.cityLights = !app.cityLights; toast('City lights ' + (app.cityLights ? 'ON' : 'OFF'), 'hint'); });
       createBtn('s_rel', 'REL', 'Relations', '', () => openStrategicPanel());
     } else if (app.bbTab === 'msl') {
+      createBtn('b_missileFactory', 'MFG', 'Missile Factory', '', () => startPlace('missileFactory'));
       const msls = (c.build && c.build.msl) || ['fateh'];
       for (const mk of msls) {
         const m = CFG.MSL[mk]; if (!m) continue;
-        createBtn('m_' + mk, 'MSL', m.name, '', () => {
-          app.uimode = 'launch'; app.launchKind = mk;
-          toast('Click or tap target area for ' + m.name, 'hint');
-        });
+        createBtn('m_' + mk, 'MSL', m.name, '', () => queueMissileProduction(hp, mk));
       }
+      createBtn('s_salvo', 'SLV', 'Fire Salvo', '', () => openSalvoPanel());
     } else if (app.bbTab === 'aid' && world.mode === 'real') {
       for (const spKey of ['USA', 'RUS', 'CHN']) {
         const sp = REAL_CONFIG.MAJOR_POWERS[spKey];
@@ -7672,9 +8531,12 @@ function refreshBuildButtons() {
     } else if (bid.startsWith('m_')) {
       const mk = bid.slice(2);
       const cost = costOf(hp, mk);
-      const cd = Math.ceil(hp.mslCd[mk] || 0);
-      cstEl.textContent = cd > 0 ? cd + 's' : cost + ' cr';
-      b.classList.toggle('dis', coins < cost || cd > 0);
+      cstEl.textContent = (hp.mslStock[mk] || 0) + ' ready · ' + cost + ' cr';
+      b.classList.toggle('dis', coins < cost);
+    } else if (bid === 's_salvo') {
+      const kinds = Object.keys(hp.mslStock || {}).filter(k => (hp.mslStock[k] || 0) > 0);
+      cstEl.textContent = kinds.reduce((n, k) => n + hp.mslStock[k], 0) + ' ready';
+      b.classList.toggle('dis', kinds.length === 0);
     } else if (bid.startsWith('s_')) {
       cstEl.textContent = bid === 's_nuke' ? ((hp.nukes || 0) + ' left')
         : bid === 's_sw' ? Math.ceil(hp.swCd || 0) + 's'
@@ -7694,11 +8556,78 @@ function refreshBuildButtons() {
   }
 }
 
+$('salvoArm').onclick = armSalvo;
+$('salvoClose').onclick = () => $('salvoScr').classList.add('hidden');
+
 function startPlace(kind) {
   app.uimode = 'place';
   app.placeKind = kind;
   $('placeBtns').classList.remove('hidden');
-  toast('Click or tap map to place ' + kind.toUpperCase(), 'hint');
+  toast('Click or tap map to place ' + buildingLabel(kind).toUpperCase(), 'hint');
+}
+
+function openSalvoPanel() {
+  const hp = humanPlayer();
+  const c = countryOf(hp);
+  const kinds = ((c.build && c.build.msl) || []).filter(k => CFG.MSL[k]);
+  if (!kinds.length) { toast('No missile arm available', 'err'); return; }
+  const selEl = $('salvoKind');
+  const total = kinds.reduce((n, k) => n + (hp.mslStock[k] || 0), 0);
+  selEl.innerHTML = '<option value="__all">All available — ' + total + ' ready</option>' +
+    kinds.map(k => '<option value="' + k + '">' + CFG.MSL[k].name + ' — ' + (hp.mslStock[k] || 0) + ' ready</option>').join('');
+  const sync = () => {
+    const k = selEl.value;
+    const stock = k === '__all' ? total : (hp.mslStock[k] || 0);
+    $('salvoStock').textContent = stock + ' in stock · 100 cr per interceptor defence';
+    const inp = $('salvoCount');
+    inp.max = String(Math.max(1, stock));
+    inp.value = String(Math.min(Math.max(1, Number(inp.value) || 1), Math.max(1, stock)));
+  };
+  selEl.onchange = sync;
+  sync();
+  $('salvoScr').classList.remove('hidden');
+}
+
+function armSalvo() {
+  const hp = humanPlayer();
+  const kind = $('salvoKind').value;
+  const types = Object.keys(hp.mslStock || {}).filter(k => CFG.MSL[k] && (hp.mslStock[k] || 0) > 0);
+  const stock = kind === '__all' ? types.reduce((n, k) => n + hp.mslStock[k], 0) : (hp.mslStock[kind] || 0);
+  const count = clamp(Math.round(Number($('salvoCount').value) || 1), 1, Math.max(1, stock));
+  if (stock <= 0) { toast('No missiles in stock', 'err'); return; }
+  app.salvo = { kind, count: Math.min(count, stock), targets: [] };
+  app.uimode = 'salvo';
+  $('salvoScr').classList.add('hidden');
+  toast('Salvo armed: click ' + app.salvo.count + ' target point' + (app.salvo.count > 1 ? 's' : ''), 'hint');
+}
+
+function addSalvoTarget(x, y) {
+  const hp = humanPlayer();
+  const s = app.salvo;
+  if (!s || (s.kind !== '__all' && !CFG.MSL[s.kind])) { app.uimode = 'none'; return; }
+  const types = Object.keys(hp.mslStock || {}).filter(k => CFG.MSL[k] && (hp.mslStock[k] || 0) > 0);
+  const stock = s.kind === '__all' ? types.reduce((n, k) => n + hp.mslStock[k], 0) : (hp.mslStock[s.kind] || 0);
+  if (stock <= 0) { toast('Missile stock exhausted', 'err'); app.uimode = 'none'; return; }
+  s.targets.push({ x, y });
+  if (s.targets.length >= s.count) {
+    const targets = s.targets.slice();
+    let launched = 0;
+    if (s.kind === '__all') {
+      let ti = 0;
+      for (const t of targets) {
+        while (ti < types.length && (hp.mslStock[types[ti]] || 0) <= 0) ti++;
+        if (ti >= types.length) break;
+        if (launchMissile(hp.idx, types[ti], t.x, t.y)) launched++;
+        if ((hp.mslStock[types[ti]] || 0) <= 0) ti++;
+      }
+    } else {
+      for (const t of targets) if (launchMissile(hp.idx, s.kind, t.x, t.y)) launched++;
+    }
+    app.uimode = 'none';
+    const label = s.kind === '__all' ? 'missiles' : CFG.MSL[s.kind].name;
+    app.salvo = { kind: '', count: 1, targets: [] };
+    toast(launched + '× ' + label + ' launched simultaneously', 'hint');
+  }
 }
 
 /* Diplomacy & Major Powers Modals */
@@ -7714,13 +8643,17 @@ function openDiplomacyModal() {
       const sc = scoreBetween(hp.idx, p.idx);
       const trade = tradeEligible(hp, p);
       const canGift = rel !== 'WAR' && sc >= GIFT_MIN_SCORE;
+      const agr = getAgreement(hp.idx, p.idx);
+      const agrTxt = agr ? '<div class="dim" style="font-size:10px;margin-top:2px">' + agr.type + (agr.until ? ' · ' + Math.max(0, Math.ceil(agr.until - world.time)) + 's' : '') + '</div>' : '';
       const badgeColor = rel === 'WAR' ? '#f87171' : (rel === 'ALLY' ? '#4ade80' : (rel === 'TRADE' ? '#38bdf8' : '#94a3b8'));
       return `<tr>
         <td><span class="dflag">${flagImg(p.country)}</span> <b>${p.name}</b> <span class="dim">(${p.capital})</span></td>
-        <td style="color:${badgeColor};font-weight:800">${rel}<div class="dim" style="font-weight:500">${sc}</div></td>
+        <td style="color:${badgeColor};font-weight:800">${rel}<div class="dim" style="font-weight:500">${sc}</div>${agrTxt}</td>
         <td class="dim">${c.economy.gdp}<div><b style="color:#eaf2fb">${Math.floor(p.cents / 100)}${CICO}</b> treasury</div></td>
         <td>
           ${rel !== 'WAR' ? `<button class="actMini war" onclick="window._setDiplo(${p.idx},'WAR')">Declare War</button>` : `<button class="actMini peace" onclick="window._setDiplo(${p.idx},'NEUTRAL')">Ceasefire (60 cr)</button>`}
+          ${rel !== 'WAR' && !agr ? `<button class="actMini" onclick="window._proposePact(${p.idx},'NAP')">Non-aggression</button>` : ''}
+          ${rel !== 'WAR' && !agr ? `<button class="actMini" onclick="window._proposePact(${p.idx},'MUTUAL_ENEMY')">Mutual enemy</button>` : ''}
           ${rel === 'NEUTRAL' ? `<button class="actMini" onclick="window._setDiplo(${p.idx},'TRADE')" ${trade.ok ? '' : 'title="' + trade.why + '"'}>Trade Pact (40 cr)</button>` : ''}
           ${rel === 'TRADE' ? `<button class="actMini peace" onclick="window._setDiplo(${p.idx},'ALLY')">Defense Pact (90 cr)</button>` : ''}
           ${rel === 'NEUTRAL' && !trade.ok ? `<div class="dim" style="font-size:10px;margin-top:3px">${trade.why}</div>` : ''}
@@ -7755,12 +8688,28 @@ window._setDiplo = function (targetIdx, newRel) {
   }
   if (cost > 0) { hp.cents -= cost * 100; noteSpend(hp, cost * 100); }
   setRelation(hp.idx, targetIdx, newRel, false);
+  if (newRel === 'ALLY') setAgreement(hp.idx, targetIdx, 'DEFENSIVE', true);
+  else if (newRel === 'TRADE') setAgreement(hp.idx, targetIdx, 'TRADE', true);
+  else if (newRel === 'WAR' && getAgreement(hp.idx, targetIdx)) breakAgreement(hp.idx, targetIdx, 'war declared');
   /* Skirmish starts every pair at war, so a paid ceasefire also normalises the
      relationship score — otherwise no transfer or pact could ever be reached. */
   if (world.mode === 'classic' && newRel === 'NEUTRAL' && targetIdx >= 0 && scoreBetween(hp.idx, targetIdx) < GIFT_MIN_SCORE) {
     setScore(hp.idx, targetIdx, GIFT_MIN_SCORE, 'ceasefire');
   }
   openDiplomacyModal();
+};
+window._proposePact = function (targetIdx, type) {
+  if (!world) return false;
+  const hp = humanPlayer();
+  const target = world.players[targetIdx];
+  const cost = type === 'TRADE' ? 40 : 0;
+  if (hp.cents < cost * 100) { toast('Need ' + cost + ' cr', 'err'); return false; }
+  const r = proposeAgreement(hp.idx, targetIdx, type);
+  if (!r.ok) { toast((target ? target.name : 'Partner') + ' refused the ' + type + ' offer (' + r.why + ')', 'err'); openDiplomacyModal(); return false; }
+  if (cost) { hp.cents -= cost * 100; noteSpend(hp, cost * 100); }
+  toast(type + ' agreed with ' + (target ? target.name : 'partner'), 'aid');
+  openDiplomacyModal();
+  return true;
 };
 
 function openMajorPowersModal() {
@@ -7848,6 +8797,11 @@ function openEconomyModal() {
     ${row('Resource fields (' + (hp.resourceN || 0) + ')', fmt(eco.res) + CICO + '/min', 'pos')}
     ${row('Mines &amp; engineers', fmt(eco.mine + eco.workers) + CICO + '/min <span class="dim">(mine ' + fmt(eco.mine) + ' · engineers ' + fmt(eco.workers) + ')</span>', 'pos')}
     ${row('Gross income', fmt(eco.cpt) + CICO + '/min')}
+    ${world.mode === 'classic' ? `<div class="ehead">Oil fields</div>` +
+      `<div class="erow"><span>Owned fields</span><b>${(world.oilFields || []).filter(f => { const o = geoOwnerAt(f.x, f.y); return o && o.idx === hp.idx; }).length}</b></div>` +
+      `<div class="erow"><span>Developed complexes</span><b>${world.buildings.filter(b => !b.dead && b.owner === hp.idx && b.kind === 'economy').length}</b></div>` +
+      `<div class="erow"><span>Investment opportunities</span><b>${economicSites(hp).length} field(s)</b></div>` +
+      `<div class="dim" style="font-size:10.5px">Economic Complexes cost ${costOf(hp, 'economy')}${CICO}, take six minutes and pay their field's own yield (24-40${CICO}/min).</div>` : ''}
     <div class="ehead">Trade routes</div>
     ${(world.players.filter(o => o.alive && o.idx !== hp.idx && (getRelation(hp.idx, o.idx) === 'TRADE' || getRelation(hp.idx, o.idx) === 'ALLY')))
       .map(o => {
@@ -7947,6 +8901,7 @@ canvas.addEventListener('mousedown', e => {
     if (launchMissile(humanPlayer().idx, app.launchKind, w.x, w.y)) app.uimode = 'none';
     return;
   }
+  if (app.uimode === 'salvo') { addSalvoTarget(w.x, w.y); return; }
   if (app.uimode === 'rally') {
     const hp = humanPlayer(); hp.rallyX = w.x; hp.rallyY = w.y; app.uimode = 'none';
     toast('Rally point updated', 'hint'); return;
@@ -8042,6 +8997,7 @@ canvas.addEventListener('touchend', e => {
       const w = s2w(t.clientX, t.clientY);
       app.mouseW = w;
       if (app.uimode === 'launch') { if (launchMissile(humanPlayer().idx, app.launchKind, w.x, w.y)) app.uimode = 'none'; }
+      else if (app.uimode === 'salvo') { addSalvoTarget(w.x, w.y); }
       else if (app.uimode === 'rally') { const hp = humanPlayer(); hp.rallyX = w.x; hp.rallyY = w.y; app.uimode = 'none'; }
       else if (app.uimode !== 'place') selectAt(w);
     }
@@ -8288,6 +9244,7 @@ function renderBrief() {
   $('briefBox').innerHTML = `
     <div class="bhead"><span class="bt">${flagImg(c.code)} National security council · operational brief</span><span class="pill gdp">${modeTxt} · ${app.difficulty}</span></div>
     <div><b>Starting treasury:</b> ${c.economy.startCoins}${CICO} · <b>Base income:</b> ${c.economy.baseCpt}${CICO}/min · <b>Agenda:</b> ${app.agenda === 'maximalist' ? 'Maximalist' : 'Standard'}</div>
+    <div><b>National doctrine:</b> ${app.gameMode === 'classic' ? DOCTRINES[app.doctrine || 'balanced'].name : (app.agenda === 'maximalist' ? 'Hardline / maximalist' : 'Standard national doctrine')} · <b>Advisors:</b> ${app.gameMode === 'classic' ? 'five national desks, Off / Suggest / Auto' : 'Real-mode chain of command'}</div>
     <div><b>Opening forces:</b> ${forces}</div>
     <ul>
       <li><b>Hold</b> ${c.capital} and control <b>${cityTarget} cities</b> (your capital plus captured outposts).</li>
@@ -8361,14 +9318,16 @@ function buildLobbyFromState() {
   } else {
     if (app.classicPreset === '1v1') {
       app.lobby = [
-        { human: true, country: 'ISR', team: 0 },
-        { human: false, country: 'IRN', team: 1 }
+        { human: true, country: app.myCountry, team: 0 },
+        { human: false, country: REAL_KEYS.find(k => k !== app.myCountry) || 'ISR', team: 1 }
       ];
     } else if (app.classicPreset === 'blocs') {
       const blocMap = { ISR: 0, TUR: 0, JOR: 0, IRN: 1, SYR: 1, IRQ: 1, YEM: 1, SAU: 2, UAE: 2, QAT: 2, KWT: 2, BHR: 2, OMN: 2, EGY: 2, LBN: 1, PSE: 1 };
-      app.lobby = REAL_KEYS.slice(0, 12).map(k => ({ human: k === 'ISR', country: k, team: blocMap[k] || 0 }));
+      app.lobby = REAL_KEYS.map(k => ({ human: k === app.myCountry, country: k, team: blocMap[k] || 0 }));
     } else {
-      app.lobby = REAL_KEYS.slice(0, 10).map((k, idx) => ({ human: k === 'ISR', country: k, team: idx }));
+      /* Free-for-all defaults to Iran vs eighteen AI countries. Every AI slot
+         can be reassigned by clicking its flag, so any roster is possible. */
+      app.lobby = REAL_KEYS.map(k => ({ human: k === app.myCountry, country: k, team: REAL_KEYS.indexOf(k) }));
     }
     renderClassicLobbyList();
   }
@@ -8389,12 +9348,15 @@ function renderClassicLobbyList() {
       ${slot.human || app.lobby.length <= 2 ? '' : '<button class="pdel">✕</button>'}
     `;
     row.querySelector('.pfac').onclick = () => {
-      const used = new Set(app.lobby.map(s => s.country));
       const curIdx = REAL_KEYS.indexOf(slot.country);
-      for (let step = 1; step <= REAL_KEYS.length; step++) {
-        const cand = REAL_KEYS[(curIdx + step) % REAL_KEYS.length];
-        if (!used.has(cand)) { slot.country = cand; break; }
-      }
+      /* With a full 19-country lobby every nation is already assigned, so the
+         old "find an unused country" cycle did nothing. Walk to the next
+         country and swap slots instead: uniqueness is preserved and every AI or
+         human slot can be reassigned at any roster size. */
+      const cand = REAL_KEYS[(curIdx + 1) % REAL_KEYS.length];
+      const holder = app.lobby.findIndex(s => s.country === cand);
+      if (holder >= 0 && holder !== idx) app.lobby[holder].country = slot.country;
+      slot.country = cand;
       renderClassicLobbyList();
     };
     row.querySelector('.pteam').onclick = () => {
@@ -8408,7 +9370,7 @@ function renderClassicLobbyList() {
 }
 
 $('addAiBtn').onclick = () => {
-  if (app.lobby.length >= 12) return;
+  if (app.lobby.length >= REAL_KEYS.length) return;
   const used = new Set(app.lobby.map(s => s.country));
   const next = REAL_KEYS.find(k => !used.has(k));
   if (!next) return;
@@ -8421,6 +9383,15 @@ document.querySelectorAll('#segDiff button').forEach(b => {
     document.querySelectorAll('#segDiff button').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
     app.difficulty = b.dataset.v;
+    renderBrief();
+    updateMenuSummary();
+  };
+});
+document.querySelectorAll('#segDoctrine button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#segDoctrine button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    app.doctrine = b.dataset.v;
     renderBrief();
     updateMenuSummary();
   };
@@ -8548,6 +9519,8 @@ $('howBtn').onclick = () => { overlayReturn = 'titleScr'; showScreen('howtoScr')
 $('howClose').onclick = () => showScreen(overlayReturn);
 $('diploHudBtn').onclick = openDiplomacyModal;
 $('diploClose').onclick = () => $('diploScr').classList.add('hidden');
+$('advisorHudBtn').onclick = openAdvisorPanel;
+$('advisorClose').onclick = () => $('advisorScr').classList.add('hidden');
 $('mpHudBtn').onclick = openMajorPowersModal;
 $('mpClose').onclick = () => $('mpScr').classList.add('hidden');
 $('ecoHudBtn').onclick = openEconomyModal;
@@ -8606,6 +9579,7 @@ function startMatch() {
 
   /* Diplomacy is a shared system now: skirmish shows the same panel as Real. */
   $('diploHudBtn').classList.remove('hidden');
+  $('advisorHudBtn').classList.toggle('hidden', app.gameMode !== 'classic');
   $('mpHudBtn').classList.toggle('hidden', app.gameMode !== 'real');
 
   syncFogButtons();
@@ -8618,7 +9592,7 @@ function startMatch() {
   buildTabsAndBar();
   closeRoster();
   miniTerrain = null; miniStamp = '';
-  ['ecoScr', 'objScr', 'diploScr', 'mpScr'].forEach(id => $(id).classList.add('hidden'));
+  ['ecoScr', 'objScr', 'diploScr', 'mpScr', 'advisorScr'].forEach(id => $(id).classList.add('hidden'));
   for (const p of world.players) { p.objs = objectivesFor(p); p.objDone = 0; }
   /* Populate aid and the income breakdown before the first frame, so the HUD
      and economy panel never read 0% aid at match start. */
@@ -8947,6 +9921,121 @@ const CITY_TABLE = [
   { c: 'YEM', n: 'Hodeidah', lon: 42.95, lat: 14.80, pop: 0.6, role: 'port' }
 ];
 
+/* Expanded urban network. Coordinates are the city centres used by the map
+   projection; populations below are metro figures in millions and drive both
+   city income share and the visual weight of the marker. */
+const EXTRA_CITY_TABLE = [
+  { c:'IRN', n:'Karaj', lon:50.988, lat:35.836, pop:3.6, role:'industrial' },
+  { c:'IRN', n:'Qom', lon:50.876, lat:34.640, pop:1.2, role:'holy' },
+  { c:'IRN', n:'Ahvaz', lon:48.670, lat:31.320, pop:1.3, role:'oil' },
+  { c:'IRN', n:'Kermanshah', lon:47.065, lat:34.314, pop:0.95, role:'city' },
+  { c:'IRN', n:'Urmia', lon:45.076, lat:37.552, pop:0.8, role:'city' },
+  { c:'IRN', n:'Rasht', lon:49.583, lat:37.280, pop:0.7, role:'port' },
+  { c:'IRN', n:'Zahedan', lon:60.863, lat:29.496, pop:0.6, role:'city' },
+  { c:'IRN', n:'Hamadan', lon:48.515, lat:34.799, pop:0.55, role:'city' },
+  { c:'IRN', n:'Kerman', lon:57.079, lat:30.283, pop:0.74, role:'city' },
+  { c:'IRN', n:'Yazd', lon:54.367, lat:31.897, pop:0.58, role:'city' },
+  { c:'IRN', n:'Ardabil', lon:48.293, lat:38.249, pop:0.53, role:'city' },
+  { c:'IRN', n:'Bandar Abbas', lon:56.267, lat:27.187, pop:0.53, role:'port' },
+  { c:'IRN', n:'Arak', lon:49.689, lat:34.092, pop:0.52, role:'industrial' },
+  { c:'IRN', n:'Eslamshahr', lon:51.235, lat:35.552, pop:0.45, role:'city' },
+  { c:'IRN', n:'Zanjan', lon:48.479, lat:36.676, pop:0.43, role:'city' },
+  { c:'IRN', n:'Sanandaj', lon:47.000, lat:35.321, pop:0.41, role:'city' },
+  { c:'IRN', n:'Qazvin', lon:50.004, lat:36.268, pop:0.40, role:'industrial' },
+  { c:'IRN', n:'Khorramabad', lon:48.356, lat:33.487, pop:0.37, role:'city' },
+  { c:'IRN', n:'Gorgan', lon:54.434, lat:36.841, pop:0.35, role:'city' },
+  { c:'IRN', n:'Sari', lon:53.060, lat:36.563, pop:0.31, role:'city' },
+  { c:'IRN', n:'Kashan', lon:51.433, lat:33.983, pop:0.30, role:'city' },
+  { c:'IRN', n:'Dezful', lon:48.406, lat:32.381, pop:0.26, role:'city' },
+  { c:'IRN', n:'Mahshahr', lon:49.198, lat:30.556, pop:0.16, role:'oil' },
+  { c:'ISR', n:'Rishon LeZion', lon:34.792, lat:31.964, pop:0.26, role:'city' },
+  { c:'ISR', n:'Petah Tikva', lon:34.888, lat:32.084, pop:0.25, role:'city' },
+  { c:'ISR', n:'Ashdod', lon:34.655, lat:31.804, pop:0.23, role:'port' },
+  { c:'ISR', n:'Netanya', lon:34.853, lat:32.322, pop:0.22, role:'city' },
+  { c:'ISR', n:'Holon', lon:34.772, lat:32.016, pop:0.20, role:'city' },
+  { c:'ISR', n:'Bnei Brak', lon:34.834, lat:32.081, pop:0.20, role:'city' },
+  { c:'PSE', n:'Hebron', lon:35.100, lat:31.533, pop:0.22, role:'city' },
+  { c:'PSE', n:'Nablus', lon:35.254, lat:32.221, pop:0.16, role:'city' },
+  { c:'PSE', n:'Khan Yunis', lon:34.306, lat:31.340, pop:0.20, role:'city' },
+  { c:'PSE', n:'Jabalia', lon:34.483, lat:31.533, pop:0.20, role:'city' },
+  { c:'PSE', n:'Rafah', lon:34.255, lat:31.297, pop:0.17, role:'city' },
+  { c:'SAU', n:'Taif', lon:40.416, lat:21.270, pop:0.70, role:'city' },
+  { c:'SAU', n:'Tabuk', lon:36.572, lat:28.384, pop:0.55, role:'city' },
+  { c:'SAU', n:'Buraydah', lon:43.973, lat:26.326, pop:0.60, role:'city' },
+  { c:'SAU', n:'Khamis Mushait', lon:42.733, lat:18.300, pop:0.45, role:'city' },
+  { c:'SAU', n:'Abha', lon:42.505, lat:18.216, pop:0.40, role:'city' },
+  { c:'SAU', n:'Najran', lon:44.128, lat:17.492, pop:0.35, role:'city' },
+  { c:'SAU', n:'Hail', lon:41.691, lat:27.522, pop:0.40, role:'city' },
+  { c:'SAU', n:'Jubail', lon:49.663, lat:27.005, pop:0.40, role:'industrial' },
+  { c:'SAU', n:'Yanbu', lon:38.062, lat:24.090, pop:0.30, role:'port' },
+  { c:'SAU', n:'Al Khobar', lon:50.208, lat:26.279, pop:0.30, role:'port' },
+  { c:'SAU', n:'Dhahran', lon:50.103, lat:26.289, pop:0.25, role:'oil' },
+  { c:'SAU', n:'Hofuf', lon:49.565, lat:25.383, pop:0.30, role:'city' },
+  { c:'TUR', n:'Konya', lon:32.485, lat:37.875, pop:1.4, role:'city' },
+  { c:'TUR', n:'Kayseri', lon:35.483, lat:38.723, pop:1.0, role:'industrial' },
+  { c:'TUR', n:'Mersin', lon:34.642, lat:36.800, pop:0.9, role:'port' },
+  { c:'TUR', n:'Eskisehir', lon:30.521, lat:39.777, pop:0.8, role:'industrial' },
+  { c:'TUR', n:'Diyarbakir', lon:40.231, lat:37.914, pop:0.8, role:'city' },
+  { c:'TUR', n:'Samsun', lon:36.330, lat:41.287, pop:0.7, role:'port' },
+  { c:'TUR', n:'Denizli', lon:29.088, lat:37.777, pop:0.6, role:'city' },
+  { c:'TUR', n:'Sanliurfa', lon:38.796, lat:37.167, pop:0.6, role:'city' },
+  { c:'TUR', n:'Adapazari', lon:30.403, lat:40.783, pop:0.55, role:'city' },
+  { c:'TUR', n:'Malatya', lon:38.355, lat:38.310, pop:0.5, role:'city' },
+  { c:'TUR', n:'Kahramanmaras', lon:36.937, lat:37.586, pop:0.5, role:'city' },
+  { c:'TUR', n:'Erzurum', lon:41.277, lat:39.906, pop:0.4, role:'city' },
+  { c:'TUR', n:'Van', lon:43.380, lat:38.501, pop:0.4, role:'city' },
+  { c:'TUR', n:'Batman', lon:41.132, lat:37.881, pop:0.35, role:'oil' },
+  { c:'IRQ', n:'Karbala', lon:44.025, lat:32.616, pop:0.7, role:'holy' },
+  { c:'IRQ', n:'Nasiriyah', lon:46.259, lat:31.044, pop:0.6, role:'city' },
+  { c:'IRQ', n:'Sulaymaniyah', lon:45.435, lat:35.555, pop:0.7, role:'city' },
+  { c:'IRQ', n:'Fallujah', lon:43.782, lat:33.350, pop:0.35, role:'city' },
+  { c:'IRQ', n:'Ramadi', lon:43.308, lat:33.426, pop:0.35, role:'city' },
+  { c:'IRQ', n:'Samarra', lon:43.875, lat:34.198, pop:0.25, role:'city' },
+  { c:'IRQ', n:'Tikrit', lon:43.678, lat:34.615, pop:0.25, role:'city' },
+  { c:'IRQ', n:'Amarah', lon:47.155, lat:31.845, pop:0.35, role:'city' },
+  { c:'IRQ', n:'Diwaniyah', lon:44.925, lat:31.992, pop:0.30, role:'city' },
+  { c:'SYR', n:'Hama', lon:36.750, lat:35.133, pop:0.7, role:'city' },
+  { c:'SYR', n:'Deir ez-Zor', lon:40.141, lat:35.336, pop:0.5, role:'oil' },
+  { c:'SYR', n:'Raqqa', lon:39.010, lat:35.950, pop:0.4, role:'city' },
+  { c:'SYR', n:'Tartus', lon:35.887, lat:34.883, pop:0.3, role:'port' },
+  { c:'SYR', n:'Idlib', lon:36.634, lat:35.931, pop:0.3, role:'city' },
+  { c:'SYR', n:'Daraa', lon:36.100, lat:32.617, pop:0.2, role:'city' },
+  { c:'EGY', n:'Luxor', lon:32.640, lat:25.687, pop:0.5, role:'city' },
+  { c:'EGY', n:'Aswan', lon:32.906, lat:24.089, pop:0.4, role:'city' },
+  { c:'EGY', n:'Asyut', lon:31.184, lat:27.178, pop:0.6, role:'city' },
+  { c:'EGY', n:'Mansoura', lon:31.380, lat:31.040, pop:0.6, role:'city' },
+  { c:'EGY', n:'Tanta', lon:30.950, lat:30.783, pop:0.5, role:'city' },
+  { c:'EGY', n:'Ismailia', lon:32.272, lat:30.597, pop:0.4, role:'city' },
+  { c:'EGY', n:'Damietta', lon:31.813, lat:31.417, pop:0.3, role:'port' },
+  { c:'EGY', n:'Hurghada', lon:33.812, lat:27.258, pop:0.3, role:'port' },
+  { c:'EGY', n:'Sharm el-Sheikh', lon:34.330, lat:27.916, pop:0.15, role:'port' },
+  { c:'JOR', n:'Madaba', lon:35.794, lat:31.717, pop:0.15, role:'city' },
+  { c:'JOR', n:'Salt', lon:35.733, lat:32.033, pop:0.1, role:'city' },
+  { c:'LBN', n:'Tyre', lon:35.194, lat:33.271, pop:0.12, role:'port' },
+  { c:'LBN', n:'Zahle', lon:35.904, lat:33.847, pop:0.15, role:'city' },
+  { c:'LBN', n:'Jounieh', lon:35.617, lat:33.983, pop:0.1, role:'port' },
+  { c:'UAE', n:'Ajman', lon:55.513, lat:25.405, pop:0.5, role:'port' },
+  { c:'UAE', n:'Ras Al Khaimah', lon:55.943, lat:25.801, pop:0.35, role:'port' },
+  { c:'UAE', n:'Fujairah', lon:56.327, lat:25.129, pop:0.3, role:'port' },
+  { c:'KWT', n:'Hawalli', lon:48.029, lat:29.333, pop:0.3, role:'city' },
+  { c:'KWT', n:'Salmiya', lon:48.080, lat:29.333, pop:0.25, role:'city' },
+  { c:'KWT', n:'Jahra', lon:47.658, lat:29.338, pop:0.2, role:'city' },
+  { c:'QAT', n:'Al Wakrah', lon:51.600, lat:25.167, pop:0.2, role:'city' },
+  { c:'QAT', n:'Al Khor', lon:51.500, lat:25.683, pop:0.1, role:'city' },
+  { c:'BHR', n:'Muharraq', lon:50.612, lat:26.257, pop:0.15, role:'city' },
+  { c:'BHR', n:'Isa Town', lon:50.550, lat:26.167, pop:0.1, role:'city' },
+  { c:'OMN', n:'Nizwa', lon:57.533, lat:22.933, pop:0.15, role:'city' },
+  { c:'OMN', n:'Sur', lon:59.529, lat:22.567, pop:0.12, role:'port' },
+  { c:'OMN', n:'Ibri', lon:56.500, lat:23.225, pop:0.1, role:'city' },
+  { c:'YEM', n:'Ibb', lon:44.183, lat:13.967, pop:0.3, role:'city' },
+  { c:'YEM', n:'Dhamar', lon:44.400, lat:14.550, pop:0.2, role:'city' },
+  { c:'YEM', n:'Mukalla', lon:49.124, lat:14.543, pop:0.2, role:'port' },
+  { c:'YEM', n:'Saada', lon:43.760, lat:16.940, pop:0.15, role:'city' }
+];
+for (const c of EXTRA_CITY_TABLE) {
+  if (!CITY_TABLE.some(x => x.c === c.c && x.n === c.n)) CITY_TABLE.push(c);
+}
+
 const US_BASES = [
   { code: 'BHR', name: 'NSA Bahrain', type: 'Naval', lon: 50.59, lat: 26.21 },
   { code: 'QAT', name: 'Al Udeid', type: 'Air', lon: 51.32, lat: 25.12 },
@@ -9186,6 +10275,8 @@ function unitSpeedFactor(u) {
   const wheeled = (CFG.UNITS[u.type] && CFG.UNITS[u.type].armor === 'light');
   let f = wheeled ? T.wheeled : T.ground;
   if (roadAt(u.x, u.y)) f = Math.max(f, 0.9);
+  /* A river is passable everywhere, but exactly one fifth of ground speed. */
+  if (world.map && world.map.terrain && world.map.terrain.riverAt && world.map.terrain.riverAt(u.x, u.y)) f *= 0.2;
   return f / 3;
 }
 
@@ -9207,6 +10298,35 @@ function buildCities() {
   for (const p of world.players) p.cityPop = 0;
   refreshCityShares();
   applyCityCaps();
+}
+
+/* Every city in the table must have a capturable ground seat. The old map
+   generator skipped points near a capital or another city, which left visible
+   cities with no capturable installation. This reconciles the two datasets. */
+function ensureCitySeats() {
+  for (const c of world.cities) {
+    if (c.razed) continue;
+    const existing = world.buildings.find(b => {
+      if (b.dead || (b.kind !== 'camp' && b.kind !== 'outpost' && b.kind !== 'ncamp')) return false;
+      const raw = (b.city || '').split(' (')[0].trim();
+      return b.cityKey === c.id || raw === c.name;
+    });
+    if (existing) {
+      if (!existing.cityKey) existing.cityKey = c.id;
+      continue;
+    }
+    const owner = c.owner >= 0 ? world.players[c.owner] : null;
+    const bd = CFG.BUILDINGS.outpost;
+    const b = {
+      id: world.nextId++, kind: 'outpost', owner: c.owner, team: owner ? owner.team : -1,
+      x: c.x, y: c.y, hp: bd.hp, maxHp: bd.hp, r: bd.r,
+      cd: 0, target: 0, face: 0, dead: false, color: owner ? owner.color : CFG.COLORS.N,
+      armor: bd.armor, capturable: true, captureProg: 0, suppressed: false,
+      captureBy: -1, city: c.name + (owner ? ' (' + owner.name + ')' : ''),
+      cityKey: c.id
+    };
+    world.buildings.push(b);
+  }
 }
 function refreshCityShares() {
   const total = {}, held = {};
@@ -9379,13 +10499,28 @@ function updateCities() {
       }
     }
     if (attackers >= needInf && !friendly && world.time > 60) {
-      /* updateCities runs every 0.5 s, so advance by that interval. */
-      const baseSec = c.capital ? 45 : (c.pop >= 6 ? 30 : 18);
-      c.captureT += (0.5 / baseSec) * Math.sqrt(Math.min(6, attackers));
+      /* updateCities runs every 0.5 s, so advance by that interval. The size of
+         the city fixes the campaign clock: a capital takes ten minutes, every
+         other city seven. More infantry can hold the ring but cannot compress
+         the occupation into seconds. */
+      const baseSec = c.capital ? CFG.CAPTURE.CITY_CAPITAL_SEC : CFG.CAPTURE.CITY_SEC;
+      c.captureT += 0.5 / baseSec;
       if (c.captureT >= 1) {
         c.captureT = 0;
         const old = c.owner;
         c.owner = enemy.owner;
+        /* The city clock owns the city; its ground seat follows it. Converting
+           the seat earlier would shorten the seven/ten-minute occupation, and
+           leaving it behind would show an unowned marker inside captured ground. */
+        for (const seat of world.buildings) {
+          if (seat.dead || seat.owner === c.owner) continue;
+          if (seat.cityKey !== c.id && (seat.city || '').split(' (')[0].trim() !== c.name) continue;
+          if (seat.kind !== 'camp' && seat.kind !== 'outpost' && seat.kind !== 'ncamp') continue;
+          seat.owner = c.owner; seat.team = world.players[c.owner].team; seat.color = world.players[c.owner].color;
+          if (seat.kind === 'camp') { seat.kind = 'outpost'; seat.maxHp = CFG.BUILDINGS.outpost.hp; seat.hp = seat.maxHp; }
+          seat.captureProg = 0; seat.suppressed = false;
+          seat.city = c.name + ' (' + world.players[c.owner].name + ')';
+        }
         if (old >= 0) {
           const op = world.players[old];
           logEvent(op.country + ' lost ' + c.name + ' to ' + world.players[c.owner].country, 'crit');
@@ -10221,6 +11356,10 @@ const UNIT_META = {
   drone:   { name: 'Shahed-136 Loitering Munition', role: 'Expendable one-way attack drone that trades itself for a target.', r: 'DRN', strong: 'Buildings, armour', weak: 'SAM, SPAAG, MANPADS', special: 'Destroys itself on impact. No rearm needed.' },
   bomber:  { name: 'Strategic Bomber', role: 'Heavy aircraft that drops large bombs on buildings and formations.', r: 'BMB', strong: 'Buildings, massed ground units', weak: 'Long-range SAM, interceptors', special: 'Splash damage. Requires an airbase.' },
   t90:     { name: 'T-90M Proryv', role: 'Heavy main battle tank with thicker armour and a bigger gun.', r: 'MBT', strong: 'Infantry, buildings, lighter tanks', weak: 'ATGM teams, aircraft', special: 'Limited ammunition; rearm at a supply depot.' },
+  heavyTank: { name: 'Assault Tank', role: 'Slow, heavily armoured breakthrough vehicle for bunkers and fortified lines.', r: 'HVY', strong: 'Bunkers, fortified positions, lighter armour', weak: 'Tank destroyers, ATGM teams, aircraft', special: 'Higher HP and gun damage; slower and expensive to replace.' },
+  tankDestroyer: { name: 'Tank Destroyer', role: 'Long-range specialist that kills tanks but folds against infantry.', r: 'TD', strong: 'Main and heavy tanks', weak: 'Infantry, aircraft, flanking', special: 'Longest ground range; low survivability when exposed.' },
+  ifv:     { name: 'Infantry Fighting Vehicle', role: 'Mechanised infantry transport that adds supporting autocannon fire.', r: 'IFV', strong: 'Infantry, light vehicles', weak: 'Tanks, ATGM', special: 'Carries 3 infantry. Select it and use LOAD / UNLOAD.' },
+  apc:     { name: 'Armoured Personnel Carrier', role: 'Affordable, fast infantry transport with light self-defence.', r: 'APC', strong: 'Mobility, infantry delivery', weak: 'Tanks, ATGM, air attack', special: 'Carries 4 infantry. Select it and use LOAD / UNLOAD.' },
   su34:    { name: 'Su-34 Fullback', role: 'Armoured strike fighter that bombs ground targets.', r: 'GND', strong: 'Buildings, armour', weak: 'Air-superiority fighters, SAM', special: 'Requires an airbase.' },
   f35:     { name: 'F-35A Lightning II', role: 'Stealth multirole fighter; hard for radar to detect.', r: 'MUL', strong: 'Aircraft, ground targets', weak: 'Dense SAM coverage', special: 'Stealth reduces the chance a SAM locks on. Requires an airbase.' },
   b1:      { name: 'B-1B Lancer', role: 'Supersonic heavy bomber with a large bomb load.', r: 'BMB', strong: 'Buildings, massed units', weak: 'Long-range SAM, interceptors', special: 'Splash damage. Requires an airbase.' },
@@ -10251,17 +11390,20 @@ const BUILDING_META = {
   camp:    { name: 'Capital Command', role: 'Your headquarters. Lose it and the state can capitulate.', r: 'BASE', strong: 'Anchors production and supply', weak: 'Sustained attack, capture', special: 'Capturable only after suppression.' },
   tower:   { name: 'Bunker', role: 'Fortified ground-defence post that stops infantry cold.', r: 'BNK', strong: 'Infantry, light vehicles', weak: 'Armour, ATGM, aircraft', special: 'Cannot shoot at aircraft.' },
   aa:      { name: 'Anti-Aircraft Gun', role: 'Static short-range air defence against aircraft and drones.', r: 'SMS', strong: 'Aircraft, drones', weak: 'Ground units', special: 'Cannot shoot at ground targets.' },
-  sam:     { name: 'Long-Range SAM Site', role: 'Area air-defence battery that reaches deep into enemy airspace.', r: 'SML', strong: 'Aircraft, bombers, missiles', weak: 'Ground assault', special: 'Intercepts missiles with a probability roll. Cannot hit ground units.' },
+  sam:     { name: 'Long-Range SAM Site', role: 'Area air-defence battery that reaches deep into enemy airspace.', r: 'SML', strong: 'Aircraft, bombers', weak: 'Ground assault', special: 'Cannot engage ballistic missiles. Cannot hit ground units.' },
   radar:   { name: 'Radar Station', role: 'Reveals a large area of fog and spots incoming aircraft.', r: 'RDR', strong: 'Vision, early warning', weak: 'Any attack; unarmed', special: 'Unarmed. Extends vision and missile warning.' },
   airbase: { name: 'Airbase', role: 'Houses, launches and rearms fixed-wing aircraft.', r: 'BASE', strong: 'Enables air power', weak: 'Missiles, capture', special: 'Each airbase supports 3 aircraft. Aircraft cannot be built without one.' },
   mine:    { name: 'Oil Rig (Resource Facility)', role: 'Extracts a resource field for steady income.', r: 'ECO', strong: 'Income', weak: 'Raids; unarmed', special: 'Adds 9 coins per minute while it stands — a five-minute payback.' },
   depot:   { name: 'Supply Depot', role: 'Extends supply range and rearms nearby units.', r: 'SUP', strong: 'Logistics', weak: 'Raids; unarmed', special: 'Extends the supply radius and rearms armour and aircraft.' },
-  outpost: { name: 'City Outpost', role: 'Claims a city and projects control over its district.', r: 'BASE', strong: 'Territory, income', weak: 'Capture', special: 'Capturable by infantry after suppression.' }
+  outpost: { name: 'City Outpost', role: 'Claims a city and projects control over its district.', r: 'BASE', strong: 'Territory, income', weak: 'Capture', special: 'Capturable by infantry after suppression.' },
+  missileFactory: { name: 'Missile Factory', role: 'Serial production line for ballistic and cruise missiles.', r: 'MSL', strong: 'Sustained missile stock', weak: 'Capture, precision strikes', special: 'Queue unlimited missiles. Each costs its missile price and 4:00 of factory time.' },
+  antiMissile: { name: 'Anti-Missile Battery', role: 'The only system that engages incoming ballistic missiles.', r: 'ABM', strong: 'Missiles', weak: 'Ground assault, capture', special: 'Costs 500 to build. Each interception costs 100 coins; with under 100 it holds fire.' },
+  economy: { name: 'Economic Complex', role: 'Three-minute strategic investment that generates steady income.', r: 'ECO', strong: 'Income, endurance', weak: 'Capture, massed armour', special: '2400 HP (4x an airbase), 18 coins/min, and deploys its own AA gun and bunker on completion.' }
 };
 
 const MSL_META = {
   tomahawk:{ name: 'Tomahawk', role: 'Subsonic low-flying cruise missile.', r: 'MSL', strong: 'Buildings', weak: 'Short-range SAM', special: 'Flies low: hard to detect, slow enough to watch.' },
-  fateh:   { name: 'Fateh-110', role: 'Short-range ballistic missile.', r: 'MSL', strong: 'Buildings, massed units', weak: 'Patriot-class SAM', special: 'Interceptable by long-range SAM.' },
+  fateh:   { name: 'Fateh-110', role: 'Short-range ballistic missile.', r: 'MSL', strong: 'Buildings, massed units', weak: 'Anti-missile battery', special: 'Only an anti-missile battery can intercept it.' },
   kheibar: { name: 'Kheibar Shekan', role: 'Manoeuvring medium-range ballistic missile.', r: 'MSL', strong: 'Buildings', weak: 'Dense SAM coverage', special: 'Manoeuvring re-entry: harder to intercept.' },
   fattah:  { name: 'Fattah-1', role: 'Claimed hypersonic manoeuvring missile.', r: 'MSL', strong: 'High-value buildings', weak: 'Almost nothing', special: 'Very hard to intercept.' },
   df21d:   { name: 'DF-21D', role: 'Anti-ship ballistic missile used here against structures.', r: 'MSL', strong: 'Buildings', weak: 'Layered SAM', special: 'High structure damage.' },
@@ -10321,14 +11463,17 @@ function entryStats(kind, key) {
     out.push(['Range', b.range ? b.range + ' px' : '—']);
     if (b.vision) out.push(['Vision', b.vision + ' px']);
     out.push(['Cost', cost + ' coins']);
-    out.push(['Build time', 'instant on placement']);
+    out.push(['Build time', b.buildTime ? fmtTime(b.buildTime) : 'instant on placement']);
+    if (b.incomeCpm) out.push(['Income', b.incomeCpm + ' coins/min']);
+    if (key === 'missileFactory') out.push(['Missile build', '4:00 each']);
+    if (key === 'antiMissile') out.push(['Interception', '100 coins / shot']);
   } else {
     const m = CFG.MSL[key];
     if (!m) return out;
     out.push(['Damage', m.dmg]);
     out.push(['Blast radius', m.radius + ' px']);
     out.push(['Speed', m.speed + ' px/s']);
-    out.push(['Cooldown', m.cd + ' s']);
+    out.push(['Factory time', '4:00']);
     out.push(['Cost', cost + ' coins']);
   }
   return out;

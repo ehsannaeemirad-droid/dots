@@ -3399,6 +3399,12 @@ const ADVISOR_DEFS = [
   { id: 'diplomacy', name: 'Diplomatic Advisor', icon: 'DIP', role: 'Pacts, trade, ceasefires and isolation warnings.' },
   { id: 'intel', name: 'Intelligence Advisor', icon: 'INT', role: 'Visible enemy concentrations, missile sites and warnings.' }
 ];
+const ADVISOR_PRIORITIES = {
+  eco: [['yield', 'Highest yield'], ['safe', 'Safe interior']],
+  military: [['cities', 'Cities first'], ['economy', 'Economy first']],
+  air: [['air', 'Air superiority'], ['strike', 'Strike missions']],
+  diplomacy: [['security', 'Security pacts'], ['trade', 'Trade pacts']]
+};
 const FIELD_YIELD = {
   'Ghawar Oil': 40, 'Shaybah Oil': 38, 'Rumaila Oil': 38, 'Kirkuk Oil': 34, 'Burgan Oil': 38,
   'Ahvaz Oil': 36, 'South Pars Gas': 34, 'Kerman Copper/Gas': 30, 'North Field LNG': 38,
@@ -3433,10 +3439,10 @@ function initSkirmishSystems() {
   });
   const hp = humanPlayer();
   world.advisors = {
-    eco:       { mode: 'suggest', cap: 900, reserve: 150, maxInvestments: 4, recs: [], log: [], spent: 0 },
-    military:  { mode: 'suggest', cap: 600, reserve: 100, maxInvestments: 4, recs: [], log: [], spent: 0 },
-    air:       { mode: 'suggest', cap: 700, reserve: 120, maxInvestments: 3, recs: [], log: [], spent: 0 },
-    diplomacy: { mode: 'suggest', cap: 240, reserve: 80, maxInvestments: 4, recs: [], log: [], spent: 0 },
+    eco:       { mode: 'suggest', cap: 900, reserve: 150, maxInvestments: 4, priority: 'yield', recs: [], log: [], spent: 0 },
+    military:  { mode: 'suggest', cap: 600, reserve: 100, maxInvestments: 4, priority: 'cities', recs: [], log: [], spent: 0 },
+    air:       { mode: 'suggest', cap: 700, reserve: 120, maxInvestments: 3, priority: 'air', recs: [], log: [], spent: 0 },
+    diplomacy: { mode: 'suggest', cap: 240, reserve: 80, maxInvestments: 4, priority: 'security', recs: [], log: [], spent: 0 },
     intel:     { mode: 'suggest', cap: 0, reserve: 0, maxInvestments: 0, recs: [], log: [], spent: 0 }
   };
   world.agreements = {};
@@ -3540,7 +3546,15 @@ function getAgreement(a, b) {
   if (!world || !world.agreements) return null;
   const ag = world.agreements[agreementKey(a, b)];
   if (!ag) return null;
-  if (ag.until > 0 && world.time >= ag.until) { delete world.agreements[agreementKey(a, b)]; return null; }
+  if (ag.until > 0 && world.time >= ag.until) {
+    delete world.agreements[agreementKey(a, b)];
+    const pa = world.players[ag.a], pb = world.players[ag.b];
+    /* Expiry is a real diplomatic event: a lapsed pact must not leave the
+       countries permanently marked ALLY/TRADE/CEASEFIRE. */
+    setRelation(ag.a, ag.b, pa && pb && pa.team === pb.team ? 'ALLY' : 'NEUTRAL', true);
+    logEvent((pa ? pa.country : ag.a) + '–' + (pb ? pb.country : ag.b) + ' ' + ag.type + ' expired', 'aid');
+    return null;
+  }
   return ag;
 }
 function setAgreement(a, b, type, silent) {
@@ -4089,6 +4103,17 @@ function createWorld(lobby, map, diff, mode) {
         }
       }
       p.stats.startAirframes = made;
+    }
+    if (c.code === 'ISR') {
+      /* Israel's starting identity includes radar coverage, not just airframes:
+         one fixed early-warning set watches the narrow national depth. */
+      const rp = nudgeFree(pos.x + 12, pos.y - 96);
+      world.buildings.push({
+        id: world.nextId++, kind: 'radar', owner: i, team: slot.team,
+        x: rp.x, y: rp.y, hp: 220, maxHp: 220, r: 14,
+        cd: 0, target: 0, face: 0, dead: false, color: c.color, armor: 'structure',
+        capturable: true
+      });
     }
     if (c.startSam) {
       const samPos = nudgeFree(pos.x - 56, pos.y - 40);
@@ -6861,6 +6886,20 @@ function advisorCharge(id, cost) {
   a.spent += cost; hp.advisorSpend[id] = (hp.advisorSpend[id] || 0) + cost;
   return true;
 }
+/* Advisors must find a legal site, not assume the first offset from the camp is
+   buildable. This matters most for airbases and SAMs, whose footprints and
+   proximity rules are much larger than a bunker's. */
+function advisorSpot(p, kind, x, y) {
+  for (let rad = 0; rad <= 360; rad += 24) {
+    for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2;
+      const sp = freeSpotLocal(x + Math.cos(a) * rad, y + Math.sin(a) * rad,
+        world.w, world.h, world.obstacles, world.terrainBlocked);
+      if (!canPlaceBuilding(p.idx, kind, sp.x, sp.y)) return sp;
+    }
+  }
+  return null;
+}
 function addAdvisorRec(id, rec) {
   const a = advisorState(id);
   if (!a) return;
@@ -6874,6 +6913,15 @@ function advisorLog(id, text) {
   const a = advisorState(id); if (!a) return;
   a.log.unshift({ t: Math.round(world.time), text });
   if (a.log.length > 10) a.log.pop();
+}
+/* Important advisor events reach the field log without becoming a per-tick
+   notification stream. The same subject is silent for 45 game-seconds. */
+function advisorNotify(id, key, msg, cls) {
+  const a = advisorState(id); if (!a) return;
+  a.notified = a.notified || {};
+  if (world.time - (a.notified[key] == null ? -1e9 : a.notified[key]) < 45) return;
+  a.notified[key] = world.time;
+  toast(msg, cls || 'warn');
 }
 function executeAdvisorRec(id, recId) {
   const a = advisorState(id); if (!a) return false;
@@ -6894,6 +6942,16 @@ function executeAdvisorRec(id, recId) {
   }
   return !!ok;
 }
+function rejectAdvisorRec(id, recId) {
+  const a = advisorState(id); if (!a) return false;
+  const rec = a.recs.find(r => r.id === recId);
+  if (!rec) return false;
+  a.recs = a.recs.filter(r => r !== rec);
+  (a.history = a.history || []).unshift({ t: world.time, status: 'rejected', text: rec.short || rec.text });
+  advisorLog(id, (rec.short || rec.text) + ' — rejected by the player');
+  renderAdvisorPanel();
+  return true;
+}
 
 function renderAdvisorPanel() {
   if (!world || world.mode !== 'classic' || !world.advisors) return;
@@ -6911,24 +6969,36 @@ function renderAdvisorPanel() {
     const modeBtn = m => '<button class="btn advMode" data-adv="' + d.id + '" data-mode="' + m + '" style="margin:0;padding:3px 7px;font-size:9px;' + (a.mode === m ? 'border-color:var(--cyan);color:var(--cyan)' : '') + '">' + m.toUpperCase() + '</button>';
     const recs = a.mode === 'off' ? '<div class="dim" style="margin-top:4px">Advisor off — no recommendations or automatic actions.</div>' : (a.recs.length ? a.recs.map(r => '<div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px"><span style="flex:1;color:' + (r.priority === 'danger' ? '#f87171' : r.priority === 'warn' ? '#fbbf24' : 'var(--text-2)') + '">' + r.text + '</span>' +
       (r.where ? '<button class="btn advJump" data-x="' + r.where.x + '" data-y="' + r.where.y + '" style="margin:0;padding:3px 8px;font-size:9px">Locate</button>' : '') +
-      (r.execute ? '<button class="btn advApprove" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Approve</button>' : '') + '</div>').join('') : '<div class="dim" style="margin-top:4px">No recommendation.</div>');
+      (r.execute ? '<button class="btn advApprove" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Approve</button>' : '') +
+      '<button class="btn advReject" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Reject</button></div>').join('') : '<div class="dim" style="margin-top:4px">No recommendation.</div>');
     const log = a.log.slice(0, 2).map(x => '<div class="dim" style="font-size:10px">' + fmtTime(x.t) + ' — ' + x.text + '</div>').join('');
+    const priority = ADVISOR_PRIORITIES[d.id]
+      ? '<label class="dim" style="font-size:10px">priority <select class="amtin advPriority" data-adv="' + d.id + '" style="padding:2px 4px">' +
+        ADVISOR_PRIORITIES[d.id].map(o => '<option value="' + o[0] + '"' + ((a.priority || o[0]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>'
+      : '';
+    const maxInv = d.id === 'eco'
+      ? '<label class="dim" style="font-size:10px">max complexes <input class="amtin advMax" data-adv="eco" type="number" min="0" step="1" value="' + a.maxInvestments + '" style="width:48px;padding:2px 4px"></label>'
+      : '';
     return '<div style="border-top:1px solid var(--line);padding:9px 0">' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="min-width:150px">' + d.icon + ' · ' + d.name + '</b>' + modeBtn('off') + modeBtn('suggest') + modeBtn('auto') +
       '<span class="dim" style="font-size:10px">spent ' + Math.round(a.spent) + ' / ' + Math.round(a.cap) + ' cr</span>' +
-      (d.id !== 'intel' ? '<label class="dim" style="font-size:10px">budget <input class="amtin advCap" data-adv="' + d.id + '" type="number" min="0" step="50" value="' + a.cap + '" style="width:70px;padding:2px 4px"></label><label class="dim" style="font-size:10px">reserve <input class="amtin advReserve" data-adv="' + d.id + '" type="number" min="0" step="25" value="' + a.reserve + '" style="width:60px;padding:2px 4px"></label>' : '') + '</div>' +
+      (d.id !== 'intel' ? '<label class="dim" style="font-size:10px">budget <input class="amtin advCap" data-adv="' + d.id + '" type="number" min="0" step="50" value="' + a.cap + '" style="width:70px;padding:2px 4px"></label><label class="dim" style="font-size:10px">reserve <input class="amtin advReserve" data-adv="' + d.id + '" type="number" min="0" step="25" value="' + a.reserve + '" style="width:60px;padding:2px 4px"></label>' : '') +
+      priority + maxInv + '</div>' +
       '<div class="dim" style="font-size:10px;margin-top:2px">' + d.role + '</div>' + recs + log + '</div>';
   }).join('');
   box.querySelectorAll('.advMode').forEach(b => b.onclick = () => {
     world.advisors[b.dataset.adv].mode = b.dataset.mode; renderAdvisorPanel();
   });
   box.querySelectorAll('.advApprove').forEach(b => b.onclick = () => executeAdvisorRec(b.dataset.adv, b.dataset.rec));
+  box.querySelectorAll('.advReject').forEach(b => b.onclick = () => rejectAdvisorRec(b.dataset.adv, b.dataset.rec));
   box.querySelectorAll('.advJump').forEach(b => b.onclick = () => {
     cam.x = Number(b.dataset.x); cam.y = Number(b.dataset.y); cam.zT = Math.max(cam.zT || 0.62, 0.8);
     $('advisorScr').classList.add('hidden'); clampCam();
   });
   box.querySelectorAll('.advCap').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].cap = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
   box.querySelectorAll('.advReserve').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].reserve = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
+  box.querySelectorAll('.advPriority').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].priority = inp.value; world.advisorTick = 99; updateAdvisors(); renderAdvisorPanel(); });
+  box.querySelectorAll('.advMax').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].maxInvestments = Math.max(0, Math.floor(Number(inp.value) || 0)); world.advisorTick = 99; updateAdvisors(); renderAdvisorPanel(); });
   if (doc) doc.querySelectorAll('.docPick').forEach(b => b.onclick = () => switchDoctrine(b.dataset.doc));
 }
 function openAdvisorPanel() {
@@ -6947,7 +7017,7 @@ function switchDoctrine(next) {
   return true;
 }
 
-function economicSites(p) {
+function economicSites(p, priority) {
   const out = [];
   for (const f of world.oilFields || []) {
     const owner = territoryControllerAt(f.x, f.y);
@@ -6956,9 +7026,12 @@ function economicSites(p) {
     if (eb && !eb.dead) continue;
     out.push(f);
   }
+  const pri = priority || (world.advisors && world.advisors.eco && world.advisors.eco.priority) || 'yield';
+  if (pri === 'safe') return out.sort((a, b) =>
+    dist2(a.x, a.y, p.startX, p.startY) - dist2(b.x, b.y, p.startX, p.startY));
   return out.sort((a, b) => b.yieldCpm - a.yieldCpm);
 }
-function advisorDefenceGaps(p) {
+function advisorDefenceGaps(p, priority) {
   const gaps = [];
   for (const c of world.cities || []) {
     if (c.razed || c.owner !== p.idx) continue;
@@ -6972,11 +7045,36 @@ function advisorDefenceGaps(p) {
     if (def === 0) gaps.push({ x: c.x, y: c.y, name: c.name, need: 'bunker', capital: !!c.capital });
     else if (aa === 0) gaps.push({ x: c.x, y: c.y, name: c.name, need: 'aa', capital: !!c.capital });
   }
-  return gaps.sort((a, b) => (b.capital ? 1 : 0) - (a.capital ? 1 : 0)).slice(0, 6);
+  /* Economic complexes are strategic assets, not just another building: the
+     military desk treats their defensive package as a real obligation. */
+  for (const b of world.buildings) {
+    if (b.dead || b.owner !== p.idx || b.kind !== 'economy') continue;
+    let def = 0, aa = 0;
+    forNear(b.x, b.y, 150, e => {
+      if (e.dead || e.kind === 'unit' || e.owner !== p.idx) return false;
+      if (e.kind === 'tower') def++;
+      if (e.kind === 'aa' || e.kind === 'sam') aa++;
+      return false;
+    });
+    if (def === 0) gaps.push({ x: b.x, y: b.y, name: 'Economic Complex', need: 'bunker', economy: true });
+    else if (aa === 0) gaps.push({ x: b.x, y: b.y, name: 'Economic Complex', need: 'aa', economy: true });
+  }
+  const pri = priority || (world.advisors && world.advisors.military && world.advisors.military.priority) || 'cities';
+  return gaps.sort((a, b) => pri === 'economy'
+    ? ((b.economy ? 1 : 0) - (a.economy ? 1 : 0)) || ((b.capital ? 1 : 0) - (a.capital ? 1 : 0))
+    : ((b.capital ? 1 : 0) - (a.capital ? 1 : 0)) || ((b.economy ? 1 : 0) - (a.economy ? 1 : 0))).slice(0, 8);
 }
-function advisorAirTypes(p) {
+function advisorAirTypes(p, priority) {
   const c = countryOf(p);
-  return ((c.build && c.build.army) || []).filter(k => CFG.UNITS[k] && CFG.UNITS[k].fly && !CFG.UNITS[k].kamikaze);
+  const list = ((c.build && c.build.army) || []).filter(k => CFG.UNITS[k] && CFG.UNITS[k].fly && !CFG.UNITS[k].kamikaze);
+  const pri = priority || (world.advisors && world.advisors.air && world.advisors.air.priority) || 'air';
+  return list.sort((a, b) => {
+    const A = CFG.UNITS[a], B = CFG.UNITS[b];
+    const score = u => pri === 'strike'
+      ? (u.siege ? 20 : 0) + (u.dmg || 0) * 2 + (u.range || 0) / 100
+      : (u.aa ? 20 : 0) + (u.speed || 0) / 40 + (u.dmgType === 'autocannon' ? 4 : 0);
+    return score(B) - score(A);
+  });
 }
 function updateAdvisors() {
   if (world.mode !== 'classic' || !world.advisors || !humanPlayer()) return;
@@ -6992,12 +7090,16 @@ function updateAdvisors() {
     if (b.dead || b.owner !== hp.idx || b.kind !== 'economy') continue;
     let threat = 0;
     forNear(b.x, b.y, 260, e => { if (!e.dead && e.kind === 'unit' && hostile(hp, e)) threat++; return false; });
-    if (threat) addAdvisorRec('eco', { short: 'Economic Complex under threat', priority: 'danger',
-      text: 'Economic Complex under attack: ' + threat + ' hostile units within 260 m. Defend the site or it will stop paying.', where: { x: b.x, y: b.y } });
+    if (threat) {
+      addAdvisorRec('eco', { short: 'Economic Complex under threat', priority: 'danger',
+        text: 'Economic Complex under attack: ' + threat + ' hostile units within 260 m. Defend the site or it will stop paying.', where: { x: b.x, y: b.y } });
+      advisorNotify('eco', 'threat' + b.id, 'Economic Advisor: Economic Complex under attack (' + threat + ' hostile units).', 'err');
+    }
   }
 
-  /* Economic Advisor: highest-yield owned field without a complex. */
-  const sites = economicSites(hp);
+  /* Economic Advisor: best owned field without a complex. The player's chosen
+     priority decides whether that means yield or interior safety. */
+  const sites = economicSites(hp, a.eco.priority);
   const ownedEconomy = world.buildings.filter(b => !b.dead && b.owner === hp.idx && b.kind === 'economy').length;
   if (sites.length && ownedEconomy < a.eco.maxInvestments) {
     const f = sites[0], cost = costOf(hp, 'economy');
@@ -7016,9 +7118,11 @@ function updateAdvisors() {
   } else addAdvisorRec('eco', { short: 'Economy developed', priority: 'ok', text: ownedEconomy >= a.eco.maxInvestments ? 'Investment portfolio is at its ' + a.eco.maxInvestments + '-complex limit.' : 'No undeveloped owned oil field remains. Protect existing complexes.' });
 
   /* Military Advisor: exposed city without a bunker or AA. */
-  const gaps = advisorDefenceGaps(hp);
+  const gaps = advisorDefenceGaps(hp, a.military.priority);
   if (gaps.length) {
     const g = gaps[0], kind = g.need, cost = costOf(hp, kind);
+    advisorNotify('military', 'gap' + Math.round(g.x) + ':' + Math.round(g.y),
+      'Military Advisor: ' + g.name + ' lacks ' + (kind === 'tower' ? 'a bunker' : 'air defence') + '.', g.capital || g.economy ? 'err' : 'warn');
     addAdvisorRec('military', { short: (kind === 'tower' ? 'Bunker ' : 'AA ') + g.name, priority: g.capital ? 'danger' : 'warn',
       text: g.name + (g.capital ? ' (capital)' : '') + ' has no ' + (kind === 'tower' ? 'bunker' : 'air defence') + '. Recommended: ' + (kind === 'tower' ? 'bunker' : 'AA gun') + ' (' + cost + ' cr).',
       cost, where: { x: g.x, y: g.y }, failure: 'the site is blocked or the military advisor budget/reserve cannot cover ' + cost + ' cr', execute: () => {
@@ -7033,15 +7137,76 @@ function updateAdvisors() {
       if (b) { advisorCharge('military', cost); advisorLog('military', 'AUTO: fortified ' + g.name); a.military.recs = []; }
     }
   } else addAdvisorRec('military', { short: 'Defences adequate', priority: 'ok', text: 'All held cities have a bunker and air-defence coverage.' });
+  /* Ground reinforcement is a recommendation, not indiscriminate production:
+     only visible armoured pressure near an owned city or economic site counts. */
+  const armouredThreat = [];
+  for (const u of world.units) {
+    if (u.dead || u.owner < 0 || u.owner === hp.idx || !hostile(hp, u)) continue;
+    if (u.armor !== 'armor' && u.armor !== 'heavy') continue;
+    if (app.fog && !fogVisibleAt(u.x, u.y)) continue;
+    const nearAsset = (world.cities || []).some(c => !c.razed && c.owner === hp.idx && dist2(u.x, u.y, c.x, c.y) < 420 * 420) ||
+      world.buildings.some(b => !b.dead && b.owner === hp.idx && b.kind === 'economy' && dist2(u.x, u.y, b.x, b.y) < 420 * 420);
+    if (nearAsset) armouredThreat.push(u);
+  }
+  if (armouredThreat.length) {
+    const army = (((countryOf(hp).build || {}).army) || []);
+    const pick = ['atgm', 'tankDestroyer', 'heavyTank', 'tank'].find(k => army.includes(k) && canBuildType(hp, k));
+    if (pick) {
+      const cost = costOf(hp, pick);
+      addAdvisorRec('military', { short: 'Reinforce against armour', priority: armouredThreat.length >= 6 ? 'danger' : 'warn',
+        text: armouredThreat.length + ' enemy armoured vehicles are near a held asset. Order ' + unitLabel(pick, countryOf(hp)) + ' (' + cost + ' cr) to reinforce the sector.',
+        cost, where: { x: armouredThreat[0].x, y: armouredThreat[0].y }, execute: () => {
+          if (!advisorCanSpend('military', cost)) return false;
+          if (!queueUnit(hp.idx, pick)) return false;
+          advisorCharge('military', cost); advisorLog('military', 'Ordered ' + pick + ' against armour'); return true;
+        } });
+    }
+  }
+  /* Visible enemy air power is an air-defence problem before it is a fighter
+     procurement problem. */
+  const enemyAir = world.units.filter(u => !u.dead && u.owner >= 0 && u.owner !== hp.idx && u.fly && !u.kamikaze && hostile(hp, u) && (!app.fog || fogVisibleAt(u.x, u.y))).length;
+  const capital = world.players[hp.idx] && ent(hp.campId);
+  const samNearCapital = capital && world.buildings.some(b => !b.dead && b.owner === hp.idx && b.kind === 'sam' && dist2(b.x, b.y, capital.x, capital.y) < 420 * 420);
+  if (enemyAir >= 3 && !samNearCapital && canBuildType(hp, 'sam')) {
+    const cost = costOf(hp, 'sam');
+    addAdvisorRec('military', { short: 'Layered air defence', priority: 'danger',
+      text: enemyAir + ' enemy aircraft are visible and the capital has no SAM umbrella. Deploy a SAM battery (' + cost + ' cr).',
+      cost, where: capital ? { x: capital.x, y: capital.y } : null, execute: () => {
+        if (!advisorCanSpend('military', cost) || !capital) return false;
+        const sp = advisorSpot(hp, 'sam', capital.x - 70, capital.y - 55);
+        if (!sp) return false;
+        const b = placeBuilding(hp.idx, 'sam', sp.x, sp.y);
+        if (!b) return false; advisorCharge('military', cost); advisorLog('military', 'Deployed SAM battery'); return b.id;
+      } });
+  }
 
   /* Air Force Advisor: capacity, readiness, repairs. */
-  const airTypes = advisorAirTypes(hp);
+  const airTypes = advisorAirTypes(hp, a.air.priority);
   const slots = airSlots(hp.idx);
   const planes = world.units.filter(u => !u.dead && u.owner === hp.idx && u.fly && !u.kamikaze);
   const rearming = planes.filter(u => u.readiness === 'REARMING' || u.readiness === 'REPAIRING').length;
   if (!airTypes.length) addAdvisorRec('air', { short: 'No fixed-wing force', priority: 'warn', text: 'This country fields no fixed-wing aircraft; invest in air defence instead.' });
-  else if (!slots.bases) addAdvisorRec('air', { short: 'Build an airbase', priority: 'warn', text: 'No airbase: aircraft production is blocked. Airbase costs ' + costOf(hp, 'airbase') + ' cr.', cost: costOf(hp, 'airbase'), execute: () => { const cost = costOf(hp,'airbase'); if (!advisorCanSpend('air', cost)) return false; const camp = ent(hp.campId); const sp = freeSpotLocal(camp.x + 90, camp.y - 70, world.w, world.h, world.obstacles, world.terrainBlocked); const b = placeBuilding(hp.idx, 'airbase', sp.x, sp.y); if (!b) return false; advisorCharge('air', cost); advisorLog('air', 'Built forward airbase'); return b.id; } });
-  else if (slots.used >= slots.cap) addAdvisorRec('air', { short: 'Hangars full', priority: 'warn', text: 'Airbases are at capacity (' + slots.used + '/' + slots.cap + '). Another airbase would add 3 slots.' });
+  else if (!slots.bases) addAdvisorRec('air', { short: 'Build an airbase', priority: 'warn', text: 'No airbase: aircraft production is blocked. Airbase costs ' + costOf(hp, 'airbase') + ' cr.', cost: costOf(hp, 'airbase'), execute: () => {         const cost = costOf(hp,'airbase'); if (!advisorCanSpend('air', cost)) return false; const camp = ent(hp.campId); const sp = advisorSpot(hp, 'airbase', camp.x + 90, camp.y - 70); if (!sp) return false; const b = placeBuilding(hp.idx, 'airbase', sp.x, sp.y); if (!b) return false; advisorCharge('air', cost); advisorLog('air', 'Built forward airbase'); return b.id; } });
+  else if (slots.used >= slots.cap) {
+    const cost = costOf(hp, 'airbase');
+    addAdvisorRec('air', { short: 'Expand airbase capacity', priority: 'warn',
+      text: 'Airbases are at capacity (' + slots.used + '/' + slots.cap + '). A new airbase adds three slots (' + cost + ' cr).',
+      cost, execute: () => {
+        if (!advisorCanSpend('air', cost)) return false;
+        const camp = ent(hp.campId);
+        const sp = advisorSpot(hp, 'airbase', camp.x + 90, camp.y - 70);
+        if (!sp) return false;
+        const b = placeBuilding(hp.idx, 'airbase', sp.x, sp.y);
+        if (!b) return false; advisorCharge('air', cost); advisorLog('air', 'Built additional airbase'); return b.id;
+      } });
+    if (a.air.mode === 'auto' && advisorCanSpend('air', cost)) {
+      const camp = ent(hp.campId);
+      const sp = advisorSpot(hp, 'airbase', camp.x + 90, camp.y - 70);
+      const b = sp ? placeBuilding(hp.idx, 'airbase', sp.x, sp.y) : null;
+      if (b) { advisorCharge('air', cost); advisorLog('air', 'AUTO: built additional airbase'); a.air.recs = []; }
+    }
+    advisorNotify('air', 'capacity', 'Air Force Advisor: airbases at maximum capacity (' + slots.used + '/' + slots.cap + ').', 'warn');
+  }
   else {
     const pick = airTypes.find(k => canBuildType(hp, k)) || airTypes[0];
     const cost = costOf(hp, pick);
@@ -7049,6 +7214,30 @@ function updateAdvisors() {
       text: (rearming ? rearming + ' aircraft rearming/repairing. ' : '') + 'Hangar space ' + slots.used + '/' + slots.cap + ': order ' + unitLabel(pick, countryOf(hp)) + ' for ' + cost + ' cr.',
       cost, execute: () => { if (!advisorCanSpend('air', cost)) return false; const ok = queueUnit(hp.idx, pick); if (ok) { advisorCharge('air', cost); advisorLog('air', 'Ordered ' + pick); } return ok; } });
     if (a.air.mode === 'auto' && !rearming && advisorCanSpend('air', cost)) { if (queueUnit(hp.idx, pick)) { advisorCharge('air', cost); advisorLog('air', 'AUTO: ordered ' + pick); a.air.recs = []; } }
+  }
+
+  /* Diplomatic Advisor: a war that cannot be won is a ceasefire opportunity,
+     but a ceasefire is never launched automatically without the approved desk
+     policy and its usual AI acceptance check. */
+  const warFoe = world.players.find(o => o.alive && o.idx !== hp.idx && getRelation(hp.idx, o.idx) === 'WAR');
+  if (warFoe && !getAgreement(hp.idx, warFoe.idx)) {
+    const canTalk = !(world.ceasefireCd && world.ceasefireCd[agreementKey(hp.idx, warFoe.idx)] > world.time);
+    if (canTalk) {
+      addAdvisorRec('diplomacy', { short: 'Ceasefire with ' + warFoe.country, priority: 'warn',
+        text: 'The war with ' + warFoe.name + ' is draining the treasury and the army. Propose a ceasefire to regroup; refusal costs nothing.',
+        cost: 0, execute: () => {
+          const r = proposeAgreement(hp.idx, warFoe.idx, 'CEASEFIRE');
+          if (!r.ok) { toast(warFoe.name + ' refused the ceasefire (' + r.why + ')', 'err'); return false; }
+          world.ceasefireCd = world.ceasefireCd || {};
+          world.ceasefireCd[agreementKey(hp.idx, warFoe.idx)] = world.time + 180;
+          advisorLog('diplomacy', 'Ceasefire agreed with ' + warFoe.country); return true;
+        } });
+      if (a.diplomacy.mode === 'auto' && (a.diplomacy.lastCeasefireT == null || world.time - a.diplomacy.lastCeasefireT > 90)) {
+        a.diplomacy.lastCeasefireT = world.time;
+        const r = proposeAgreement(hp.idx, warFoe.idx, 'CEASEFIRE');
+        if (r.ok) { advisorLog('diplomacy', 'AUTO: ceasefire with ' + warFoe.country); a.diplomacy.recs = []; }
+      }
+    }
   }
 
   /* Diplomatic Advisor: pick a neutral neighbour with no pact. */
@@ -7060,9 +7249,13 @@ function updateAdvisors() {
     if (rel === 'NEUTRAL' || rel === 'TRADE') { dipTarget = o; break; }
   }
   if (dipTarget) {
-    const type = scoreBetween(hp.idx, dipTarget.idx) >= TRADE_MIN_SCORE ? 'TRADE' : 'NAP';
+    const dipScore = scoreBetween(hp.idx, dipTarget.idx);
+    const type = a.diplomacy.priority === 'trade'
+      ? (dipScore >= TRADE_MIN_SCORE ? 'TRADE' : 'NAP')
+      : (dipScore >= 70 ? 'DEFENSIVE'
+        : (dipScore >= TRADE_MIN_SCORE + 10 ? 'TRADE' : 'NAP'));
     addAdvisorRec('diplomacy', { short: type + ' with ' + dipTarget.country, priority: 'normal',
-      text: 'Propose a ' + (type === 'NAP' ? 'non-aggression pact' : 'trade agreement') + ' with ' + dipTarget.name + ' (relations ' + scoreBetween(hp.idx, dipTarget.idx) + '/100).',
+      text: 'Propose a ' + (type === 'NAP' ? 'non-aggression pact' : 'trade agreement') + ' with ' + dipTarget.name + ' (relations ' + dipScore + '/100).',
       cost: type === 'TRADE' ? 40 : 0, execute: () => {
         const cost = type === 'TRADE' ? 40 : 0;
         if (!advisorCanSpend('diplomacy', cost)) return false;
@@ -7075,7 +7268,12 @@ function updateAdvisors() {
       const r = proposeAgreement(hp.idx, dipTarget.idx, type);
       if (r.ok) { if (type === 'TRADE') { hp.cents -= 4000; noteSpend(hp, 4000); advisorCharge('diplomacy', 40); } advisorLog('diplomacy', 'AUTO: ' + type + ' with ' + dipTarget.country); a.diplomacy.recs = []; }
     }
-  } else addAdvisorRec('diplomacy', { short: 'No neutral partner', priority: 'warn', text: 'No uncommitted neighbour remains. Avoid fighting more than one great power at once.' });
+  } else {
+    const allied = world.players.filter(o => o.alive && o.idx !== hp.idx && (getRelation(hp.idx, o.idx) === 'ALLY' || getAgreement(hp.idx, o.idx))).length;
+    addAdvisorRec('diplomacy', { short: allied ? 'No neutral partner' : 'Diplomatic isolation', priority: allied ? 'warn' : 'danger',
+      text: allied ? 'No uncommitted neighbour remains. Avoid fighting more than one great power at once.'
+        : 'No pacts or allies remain. Diplomatic isolation makes every border a potential front.' });
+  }
 
   /* Intelligence Advisor: only fog-visible contacts, explicitly confirmed. */
   const seen = [];
@@ -7087,9 +7285,13 @@ function updateAdvisors() {
   }
   const armour = seen.filter(u => u.armor === 'armor' || u.armor === 'heavy').length;
   const factories = world.buildings.filter(b => !b.dead && b.owner >= 0 && b.owner !== hp.idx && b.kind === 'missileFactory' && (!app.fog || fogVisibleAt(b.x, b.y))).length;
-  if (seen.length) addAdvisorRec('intel', { short: 'Contact: ' + seen.length + ' enemy units', priority: armour >= 6 ? 'danger' : 'warn',
-    text: 'Confirmed: ' + seen.length + ' enemy units visible' + (armour ? ', including ' + armour + ' armoured vehicles' : '') + '.' + (factories ? ' Confirmed: ' + factories + ' enemy missile factory site(s).' : '') + ' Estimated intent: local pressure, not a confirmed offensive.',
-    where: { x: seen[0].x, y: seen[0].y } });
+  const enemyEcon = world.buildings.filter(b => !b.dead && b.owner >= 0 && b.owner !== hp.idx && b.kind === 'economy' && (!app.fog || fogVisibleAt(b.x, b.y))).length;
+  if (seen.length) {
+    addAdvisorRec('intel', { short: 'Contact: ' + seen.length + ' enemy units', priority: armour >= 6 ? 'danger' : 'warn',
+      text: 'Confirmed: ' + seen.length + ' enemy units visible' + (armour ? ', including ' + armour + ' armoured vehicles' : '') + '.' + (factories ? ' Confirmed: ' + factories + ' enemy missile factory site(s).' : '') + (enemyEcon ? ' Confirmed: ' + enemyEcon + ' enemy economic complex(es).' : '') + ' Estimated intent: local pressure, not a confirmed offensive.',
+      where: { x: seen[0].x, y: seen[0].y } });
+    if (armour >= 6) advisorNotify('intel', 'armour', 'Intelligence Advisor: ' + armour + ' enemy armoured vehicles confirmed.', 'err');
+  }
   else addAdvisorRec('intel', { short: 'No contacts', priority: 'ok', text: 'No enemy formation is currently visible inside friendly sensor range. Exact enemy missile stocks remain unknown.' });
   for (const k in a) if (a[k].mode === 'off') a[k].recs = [];
   if ($('advisorScr') && !$('advisorScr').classList.contains('hidden')) renderAdvisorPanel();
@@ -7146,8 +7348,9 @@ function updateSkirmishDiplomacy() {
     const ag = world.agreements[key];
     if (ag.until > 0 && world.time >= ag.until) {
       delete world.agreements[key];
+      const pa = world.players[ag.a], pb = world.players[ag.b];
+      setRelation(ag.a, ag.b, pa && pb && pa.team === pb.team ? 'ALLY' : 'NEUTRAL', true);
       if (ag.type === 'CEASEFIRE') {
-        setRelation(ag.a, ag.b, 'NEUTRAL', true);
         world.ceasefireCd = world.ceasefireCd || {};
         world.ceasefireCd[agreementKey(ag.a, ag.b)] = world.time + 180;
       }
@@ -8913,6 +9116,30 @@ function orderLine(u) {
 function selInfoHTML() {
   const hp = humanPlayer();
   if (!hp) return '';
+  /* Economic sites are terrain features rather than entities, so they have
+     their own inspector. Clicking one answers the 3.md economy-UI question:
+     who owns it, its yield, whether it is developed, and why not. */
+  if (sel.inspect && sel.inspect.kind === 'oil') {
+    const f = (world.oilFields || []).find(d => d.fieldId === sel.inspect.id);
+    if (f) {
+      const owner = territoryControllerAt(f.x, f.y);
+      const eb = f.econId ? ent(f.econId) : null;
+      const developed = !!(eb && !eb.dead);
+      const own = !!(owner && owner.idx === hp.idx);
+      const why = developed ? '' : (!own ? 'Oil field outside controlled territory' : canPlaceBuilding(hp.idx, 'economy', f.x, f.y));
+      const cost = costOf(hp, 'economy');
+      const status = developed ? 'DEVELOPED' : (own && !why ? 'AVAILABLE' : 'UNAVAILABLE');
+      const ownerName = owner ? (owner.country + ' · ' + owner.name) : 'Neutral / unclaimed';
+      const action = !developed && own && !why
+        ? '<button class="btn" onclick="window._oilBuild(' + f.fieldId + ')" style="margin-top:8px;padding:5px 9px;font-size:10px">Build Economic Complex · ' + cost + ' cr</button>'
+        : '';
+      return '<div class="si-head"><div class="si-icon">' + buildingIconSVG('economy') + '</div>' +
+        '<div><div class="si-name">' + (f.n || 'Oil Field') + '</div><div class="si-sub">' + ownerName + '</div></div>' +
+        '<div class="si-side">ECONOMIC SITE<b>' + status + '</b></div></div>' +
+        '<div class="si-grid">' + selStat('Field yield', f.yieldCpm + ' cr/min') + selStat('Complex', developed ? 'OPERATIONAL' : 'NONE', !developed) + selStat('Defence', developed ? 'AA + BUNKER' : 'NONE') + '</div>' +
+        '<div class="si-note">' + (developed ? 'Pays ' + f.yieldCpm + ' cr/min while operational. Its AA gun and bunker deploy with the complex.' : (why || 'Ready for an Economic Complex. The build includes one AA gun and one bunker.')) + '</div>' + action;
+    }
+  }
   let e = null, kind = 'unit';
   if (sel.inspect) e = ent(sel.inspect.id);
   else if (sel.bId) { e = ent(sel.bId); kind = 'building'; }
@@ -9074,7 +9301,9 @@ function updateHud() {
   const ctxBtn = $('ctxBtn');
   ctxBtn.classList.add('hidden');
   /* Selection hygiene belongs here: dead ids must never leak into the panel. */
-  if (sel.inspect) { const ie = ent(sel.inspect.id); if (!ie || ie.dead) sel.inspect = null; }
+  if (sel.inspect && sel.inspect.kind === 'oil') {
+    if (!(world.oilFields || []).some(f => f.fieldId === sel.inspect.id)) sel.inspect = null;
+  } else if (sel.inspect) { const ie = ent(sel.inspect.id); if (!ie || ie.dead) sel.inspect = null; }
   if (sel.bId) { const sb = ent(sel.bId); if (!sb || sb.dead || !buildingVisibleToHuman(sb)) sel.bId = 0; }
   if (sel.units.length) sel.units = sel.units.filter(id => { const su = ent(id); return su && !su.dead; });
   $('selinfo').innerHTML = selInfoHTML();
@@ -9995,7 +10224,27 @@ function selectAt(w) {
       SFX.play('select'); return;
     }
   }
+  for (const f of world.oilFields || []) {
+    if (dist2(w.x, w.y, f.x, f.y) <= 46 * 46) {
+      sel.inspect = { kind: 'oil', id: f.fieldId };
+      SFX.play('select'); return;
+    }
+  }
 }
+window._oilBuild = function (fieldId) {
+  const hp = humanPlayer();
+  if (!hp || world.mode !== 'classic') return false;
+  const f = (world.oilFields || []).find(d => d.fieldId === fieldId);
+  if (!f) { toast('Oil field no longer exists', 'err'); return false; }
+  const why = canPlaceBuilding(hp.idx, 'economy', f.x, f.y);
+  if (why) { toast(why, 'err'); return false; }
+  const b = placeBuilding(hp.idx, 'economy', f.x, f.y);
+  if (!b) { toast('Could not start the Economic Complex', 'err'); return false; }
+  sel.inspect = null; sel.bId = b.id;
+  toast('Economic Complex started on ' + (f.n || 'oil field'), 'aid');
+  updateHud();
+  return true;
+};
 
 function issueMoveOrder(tx, ty) {
   if (!sel.units.length) return;

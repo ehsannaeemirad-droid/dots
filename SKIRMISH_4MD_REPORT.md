@@ -30,10 +30,15 @@ Target: Skirmish mode (`world.mode === 'classic'`); Real mode left at its origin
 - Suppressed capturable installations are no longer shot forever: ground capture units inside the ring stop firing so the capture clock can complete.
 - AI target knowledge uses discovered installations (`_seenBy`) rather than free perfect knowledge for non-city buildings; city seats remain public geography.
 - AI border alerts issue real movement orders to the incursion.
+- Offensive corps stage in a dispersed ring instead of stacking on the capital, so one ballistic strike cannot erase the reserve army.
+- Target scoring prefers outer city seats over the 600-second capital, penalises the target's whole field army, and rejects seats that no ground formation can reach across the land mask.
+- A committed siege survives unrelated war declarations, a single capital raider, and a ceasefire offer while the seat is suppressed. Reinforcements gather in groups instead of walking in one at a time.
+- AI worker replacement is capped while its field army is small; previously every coin went into another engineer killed at the front, leaving no combat units.
 
 ### Borders, sovereignty and occupation
 - `territoryControllerAt` separates static geographic sovereignty from current military control; captured city seats project control over nearby ground and oil fields.
 - `updateBorders` detects unauthorized ground incursions, differentiates a single patrol from a large formation/duration, applies relationship damage, warns the defender, alerts AI defenders and issues withdrawal orders. Authorized `TRANSIT`/alliance movement is ignored.
+- A unit carrying a live assault objective is not auto-returned at a neutral border; the crossing is still logged, still damages relations and still alerts the sovereign, but the offensive can reach its objective.
 - Constructing on occupied oil fields is allowed through current control, including after capturing a city seat; static map ownership no longer blocks captured fields.
 - Capturing a city seat updates the city immediately instead of waiting for the next ground sync.
 
@@ -42,7 +47,9 @@ Target: Skirmish mode (`world.mode === 'classic'`); Real mode left at its origin
 - Skirmish city network reduced from 111 to **96** seats; Iran has **12** instead of ~31. Capitals and high-value ports/industrial/oil cities are retained; removed settlements remain geographic detail.
 - Fog now records last-known contacts for 55 s with a timestamped faded “?” marker; contacts decay instead of remaining perfect.
 - Notifications group duplicates, prioritise critical events (9 s), expose a FIELD LOG history panel and cap visible cards at four.
-- Minimap enlarged (210 px desktop, responsive smaller), uses an undistorted 220×203 canvas, and supports click-to-navigate.
+- The FIELD LOG has working category filters (ALL, ALERTS, WAR, DIPLO, ECON, FIELD). Selecting a category filters history and suppresses live cards outside it; the choice is visible as an active chip.
+- Unavailable national equipment is shown in the ARMY bar as a disabled `LOCKED` entry. Hovering/its accessible label explains why (not in the national inventory, or foreign supply exhausted) instead of silently omitting it.
+- Minimap enlarged (210 px desktop, responsive smaller), uses an undistorted 220×203 canvas, supports click/drag panning and wheel zoom of the camera in addition to click-to-navigate.
 - Command bar adds IDLE selection and armed ATTACK MOVE (real `amove` orders), in addition to ALL ARMY, STOP, LOAD/UNLOAD, RALLY.
 - Advisor mode Off clears recommendations and automatic actions; failed approvals now explain the cause. Recommendations carry map coordinates and a LOCATE button. History records completed actions.
 
@@ -57,6 +64,13 @@ Target: Skirmish mode (`world.mode === 'classic'`); Real mode left at its origin
 8. **AI had no way to request an ally attack.** Fix: real call-to-arms with movement orders and coalition tracking. Verified by test E.
 9. **Advisor approval failed silently.** Fix: explicit failure toast/log with reasons and retained recommendation state. Verified by test D.
 10. **City ownership waited for a later sync.** Fix: capture transfers the city immediately; ownership regression updated to assert immediate transfer.
+11. **AI aborted every offensive when it declared an unrelated war.** Root cause: war declaration reset `siegeId` and `pushT`, re-pathing the committed corps and switching target. Fix: declarations no longer cancel an existing siege. This was one of the direct reasons captures never completed.
+12. **Arriving AI ground units were ordered home at a neutral border.** Root cause: border return ran for every foreign unit, including a corps with a live assault target; `assault` was also cleared as soon as the target left weapon range. Fix: persistent assault objectives and a border exemption for committed assault units, while keeping the diplomatic penalty and defender alert. Aircraft suppressed the city while the ground force was bounced away; this is now resolved.
+13. **Path smoothing cut straight across blocked terrain.** Root cause: A* used the blocked grid, but line-of-sight smoothing checked only obstacle rectangles, collapsing a land route into one waypoint across water; the unit then stalled at the coast. Fix: smoothing samples the same blocked/terrain mask, A* gets a full-grid budget and a BFS fallback, and target selection rejects seats outside the home land component. Ground offensives now march to the objective.
+14. **AI starving its army to rebuild workers.** Root cause: dead engineers were replaced without counting the queue while combat units were under strength. Fix: worker target is reduced to two while at war below 16 combat units, and pending workers count toward the cap.
+15. **One raider recalled the entire field army.** Root cause: any hostile within 380 px of the capital cancelled all unit orders. Fix: only six-plus raiders or a capital below 65% HP trigger a full recall; committed assault units keep their orders otherwise.
+16. **Winning AI signed a ceasefire during a siege.** Root cause: the losing defender could ask and the attacker accepted while its target was suppressed. Fix: both proposer and recipient refuse a ceasefire while either has a suppressed/capturing seat.
+17. **Idle AI trickled into the frontier.** Fix: the field army now stages at home until the offensive trigger, then commits all available combat units in a single push.
 
 ## C. New systems
 - Central relationship matrix/bands and formal-state cooldown bookkeeping.
@@ -65,15 +79,15 @@ Target: Skirmish mode (`world.mode === 'classic'`); Real mode left at its origin
 - Sovereignty/controller/occupancy model and transit rights.
 - Occupied-territory construction/economy access.
 - Real call-to-arms and defensive assistance.
-- Scaled world pipeline (map, pathfinding, movement, weapons, vision, capture, camera).
-- Last-known-contact fog, grouped notification log, enlarged clickable minimap, attack-move/idle controls.
-- `tests/specs/overhaul.test.cjs` (42 checks) covering 4.md Tests A–J plus scale/mode isolation.
+- Scaled world pipeline (map, land-component pathfinding, movement, weapons, vision, capture, camera).
+- Last-known-contact fog, grouped notification log with category filters, locked production entries with explanations, draggable/zoomable minimap, attack-move/idle controls.
+- `tests/specs/overhaul.test.cjs` (51 checks) covering 4.md Tests A–J, map/mode isolation and the three completed UI surfaces.
 
 ## D. Testing results
 
 ### Automated
-- `node tests/run.cjs` — **15 spec files, 328 checks, 0 failed in 165.5 s** (final re-run before commit).
-- `node tests/run.cjs overhaul` — **42/42 checks** covering:
+- `node tests/run.cjs` — **15 spec files, 337 checks, 0 failed in 179.5 s** (final re-run before commit).
+- `node tests/run.cjs overhaul` — **51/51 checks** covering:
   - A neutral missile escalation, target record and damage;
   - B unauthorized/authorized transit;
   - C Iran F-35 denial and Israel F-35I availability;
@@ -82,16 +96,21 @@ Target: Skirmish mode (`world.mode === 'classic'`); Real mode left at its origin
   - F captured oil field construction;
   - H ceasefire duration/expiry/cooldown;
   - I stale contacts/decay;
-  - map scale, city reduction and Real-mode isolation.
+  - map scale, city reduction and Real-mode isolation;
+  - notification category filtering, disabled production entries with reasons, and real minimap drag/wheel events.
 - Existing capture, structures, economy, AI composition, ownership, stability and UI specs pass.
 
 ### 30-minute simulations
-| Focus | In-game time | Active wars (new) | Cities held by a foreign power | Iran/Israel units at end | Missiles | Border logs | Contacts | Sim time |
-|---|---|---|---|---|---|---|---|
-| Iran, all-AI FFA | 1800.1 s | 7 (4 new: IRN–JOR, IRN–KWT, UAE–YEM, IRQ–KWT) | 0 | 12 (started 13) | 12 | 26 | 31 | 82.9 s (21.7× real time) |
-| Israel, all-AI FFA | 1800.1 s | 8 (5 new: IRN–UAE, SAU–SYR, SAU–JOR, SAU–YEM, UAE–YEM) | 0 | 4 (started 11) | 12 | 25 | 33 | 82.8 s (21.7× real time) |
+| Focus | In-game time | City flips | Cities held by a foreign power | Focus cities/units at end | Missiles | Border logs |
+|---|---|---|---|---|---|---|
+| Iran, all-AI FFA | 1809.8 s | **1 — Bandar Abbas IRN→SAU at t=1062, via outpost** | 1 (IRN<SAU) | 11 cities / 29 units | 17 | 43 |
+| Israel, all-AI FFA | 1809.8 s | 0 | 0 | 7 cities / 3 units | 12 | 45 |
 
-Both matches remained undecided at 30:00, with 19 governments alive and the original 96 city seats still held by their starting owners. AI declared new wars and issued dozens of offensive pushes, but no siege completed before the sample ended; this is recorded as a remaining issue rather than claimed as a success.
+The capture is a normal AI ground capture, not a harness shortcut. The recorder compares every city's owner every 10 in-game seconds and reported:
+
+> `{"t":1062,"city":"Bandar Abbas","from":"IRN","to":"SAU","via":"outpost"}`
+
+Saudi AI suppressed the Bandar Abbas seat, its ground formation entered the capture ring, completed the 420-second outpost capture, and `convertBuildingOwner` transferred the city. The city remained Saudi at the end of the match (foreign list `IRN<SAU(Bandar Abbas)`). The Israel-perspective match produced no flip in this sample, so capture is now proven end to end but is not yet a reliable outcome of every 30-minute match.
 
 These are **headless automated simulations**, not human-played matches. The game clock ran 1800 in-game seconds at the 6× speed setting, with every seat AI-controlled, Medium difficulty and Balanced doctrine.
 
@@ -99,18 +118,17 @@ These are **headless automated simulations**, not human-played matches. The game
 Not manually played in a browser. The visual layer was not reviewed by a human in this run; only automated DOM/UI checks and source-level inspection were performed.
 
 ## E. Remaining issues / limits
-- Automated 30-minute runs show active AI wars and offensives, but successful city capture remained rare/absent in the final sample. AI forces can attrition against a defended capital without completing the 7–10 minute capture clock. This needs a dedicated force-concentration/withdrawal pass.
+- Capture is now demonstrated but still low-frequency: one of the two fresh matches produced a city flip (Bandar Abbas), the other none. AI forces can still attrition against a strong garrison before holding a seat for the full clock, so a longer or different sample may produce no flip. This needs further balancing of assault survivability versus defender concentration.
 - AI economic and strength estimates for war initiation still use aggregate military power, not fully simulated intelligence; only non-city target knowledge is sensor-gated.
 - Fog contacts show last position/age but not an explicit estimated force-strength/confidence number.
-- Notification history has no category filter controls beyond priority styling.
-- Production UI still uses the existing tabs; unavailable items are omitted with a note rather than shown as disabled entries with a tooltip.
-- Minimap supports click navigation, not drag-pan/zoom gestures.
+- Notification filters are single-select (one active category at a time); there is no saved per-category mute preference across sessions.
+- Land-component checks and the BFS fallback add pathfinding work when the blocked mask changes; the measured 30-minute runs stayed within the performance below, but this is heavier than the original straight-line fallback.
 - No human-played Iran/Israel match was conducted, so subjective readability/UX and manual command flow remain unverified.
 
 ## F. Real-mode regression
 Real mode was booted in the acceptance spec and checked for scale (`spaceScale = 1`), map dimensions and full city count. The complete existing suite (including Real-mode scenarios for capture, economy, objectives, stability and UI) passes. No Real-mode regressions were observed in automated tests. Real mode was not manually played.
 
 ## G. Performance
-- Scaled Skirmish: each 1800-second match completed in about 83 s of headless simulation (≈21.7 in-game seconds per real second). No crash or runaway memory was observed.
-- Pathfinding initially degraded because of the grid mismatch; after the fix, stuck-unit counts fell and pushes resumed.
+- Scaled Skirmish: the two recorded 1800-second matches plus ten-second ownership comparisons completed in 225.2 s wall time (≈112 s per match; ≈16× real time with recorder overhead). Earlier uninstrumented runs were ≈83 s (21.7×). No crash or runaway memory was observed.
+- Pathfinding initially degraded because of the grid mismatch, then failed again when smoothing cut across water. After matching the land mask, full-grid A*, BFS fallback and committed-assault border handling, ground units moved to their objectives and the measured capture occurred.
 - 6× notification volume is controlled by four visible cards, duplicate grouping, longer critical retention and an on-demand history panel.

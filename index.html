@@ -446,6 +446,9 @@ button{font-family:inherit;touch-action:manipulation;color:inherit}
 .bbtn:hover .blb{color:var(--text)}
 .bbtn.dis{opacity:.35}
 .bbtn.dis:hover{background:var(--surface)}
+.bbtn.locked{opacity:.5;cursor:not-allowed;filter:grayscale(.55)}
+.bbtn.locked:hover{background:var(--surface);border-color:var(--line)}
+.bbtn.locked .bcst{color:var(--text-3);font-size:8px;letter-spacing:.06em}
 .bbtn.on{background:var(--brass-wash)}
 .bbtn.patron .bic{border-color:rgba(124,195,211,.4);color:var(--cyan)}
 
@@ -2519,7 +2522,7 @@ const SFX = (() => {
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
 /* ===================== PATHFINDING (A*) ===================== */
-const PF = { CS: 40, NX: 0, NY: 0, blocked: null, soft: null, g: null, f: null, gStamp: null, cStamp: null, from: null, static: null, dirty: true, ver: 0, heap: [] };
+const PF = { CS: 40, NX: 0, NY: 0, blocked: null, soft: null, g: null, f: null, gStamp: null, cStamp: null, from: null, static: null, dirty: true, ver: 0, heap: [], comp: null };
 function pfInit(w, h) {
   PF.CS = Math.round(40 * ((world && world.spaceScale) || 1));
   PF.NX = Math.max(1, Math.ceil(w / PF.CS));
@@ -2528,6 +2531,7 @@ function pfInit(w, h) {
   PF.blocked = new Uint8Array(n); PF.soft = new Uint8Array(n);
   PF.g = new Float32Array(n); PF.f = new Float32Array(n);
   PF.gStamp = new Int32Array(n); PF.cStamp = new Int32Array(n); PF.from = new Int32Array(n);
+  PF.comp = new Int32Array(n);
   PF.ver = 0; PF.heap.length = 0;
 }
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
@@ -2551,7 +2555,48 @@ function rebuildBlocked() {
     const y0 = clamp(((b.y - rr) / PF.CS) | 0, 0, PF.NY - 1), y1 = clamp(((b.y + rr) / PF.CS) | 0, 0, PF.NY - 1);
     for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) PF.blocked[cy * PF.NX + cx] = 1;
   }
+  /* Water and other terrain blocks are separate from map.staticBlock. They
+     must enter the same grid or A* and the movement test disagree and produce
+     a "reachable" straight path that the unit cannot walk. */
+  if (world.terrainBlocked) {
+    for (let cy = 0; cy < PF.NY; cy++) for (let cx = 0; cx < PF.NX; cx++) {
+      const idx = cy * PF.NX + cx;
+      if (PF.blocked[idx]) continue;
+      if (world.terrainBlocked(cx * PF.CS + PF.CS / 2, cy * PF.CS + PF.CS / 2)) PF.blocked[idx] = 1;
+    }
+  }
+  /* Label connected land components whenever the map mask changes. Target
+     selection uses this to reject a city that no ground army can actually
+     march to; otherwise the AI commits its corps to a straight-line fallback
+     across water and the unit sits at the coast for the rest of the war. */
+  PF.comp.fill(-1);
+  let compId = 0;
+  const queue = new Int32Array(PF.blocked.length);
+  for (let start = 0; start < PF.blocked.length; start++) {
+    if (PF.blocked[start] || PF.comp[start] >= 0) continue;
+    let head = 0, tail = 0;
+    queue[tail++] = start; PF.comp[start] = compId;
+    while (head < tail) {
+      const c = queue[head++];
+      const cx = c % PF.NX, cy = (c / PF.NX) | 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= PF.NX || ny >= PF.NY) continue;
+        const n = ny * PF.NX + nx;
+        if (PF.blocked[n] || PF.comp[n] >= 0) continue;
+        PF.comp[n] = compId; queue[tail++] = n;
+      }
+    }
+    compId++;
+  }
   PF.dirty = false;
+}
+function groundReachable(ax, ay, bx, by) {
+  if (PF.dirty) rebuildBlocked();
+  const s = nearestFree(pfIdx(ax, ay)), t = nearestFree(pfIdx(bx, by));
+  if (s < 0 || t < 0 || !PF.comp) return false;
+  return PF.comp[s] >= 0 && PF.comp[s] === PF.comp[t];
 }
 function nearestFree(idx) {
   if (idx < 0 || !PF.blocked[idx]) return idx;
@@ -2596,6 +2641,19 @@ function losClear(ax, ay, bx, by) {
     if (!b.dead && segDist2(ax, ay, bx, by, b.x, b.y) < (b.r + 12) * (b.r + 12)) return false;
   }
   if (world && world.losBlocked && world.losBlocked(ax, ay, bx, by)) return false;
+  /* Path smoothing must obey the same land mask as A*. Checking only obstacle
+     rectangles let a land route collapse into one straight waypoint across the
+     Gulf; the unit then walked into water, stalled, and never reached the war. */
+  if (world && PF.blocked) {
+    const dx = bx - ax, dy = by - ay;
+    const d = Math.hypot(dx, dy);
+    const steps = Math.ceil(d / Math.max(8, PF.CS * 0.4));
+    for (let i = 1; i < steps; i++) {
+      const x = ax + dx * (i / steps), y = ay + dy * (i / steps);
+      if (PF.blocked[pfIdx(x, y)]) return false;
+      if (world.terrainBlocked && world.terrainBlocked(x, y)) return false;
+    }
+  }
   return true;
 }
 function obstacleBlocksShot(ax, ay, bx, by) {
@@ -2660,7 +2718,12 @@ function findPath(sx, sy, tx, ty) {
   PF.f[s] = 0;
   PF.heap.push(s);
   let found = false, expanded = 0;
-  while (PF.heap.length && expanded < 8000) {
+  /* The scaled theatre grid is roughly 98 x 90 cells. An 8,000-cell budget
+     exhausted before A* could round the Gulf and its mountain barriers, so a
+     failed search returned the straight-line fallback; ground units then walked
+     into blocked terrain and sat there for the rest of the match. Explore the
+     whole grid before giving up. */
+  while (PF.heap.length && expanded < 40000) {
     const c = hpop();
     if (PF.cStamp[c] === PF.ver) continue;
     PF.cStamp[c] = PF.ver; expanded++;
@@ -2682,7 +2745,10 @@ function findPath(sx, sy, tx, ty) {
       }
     }
   }
-  if (!found) return straight;
+  if (!found) {
+    const alt = bfsRoute(s, t);
+    return alt || straight;
+  }
   const cells = [];
   let c = t;
   while (c !== -1 && c !== s) { cells.push(c); c = PF.from[c]; }
@@ -2701,6 +2767,33 @@ function findPath(sx, sy, tx, ty) {
     i = far + 1;
   }
   return out;
+}
+/* Breadth-first fallback for the rare case where the heap search exhausts its
+   budget on the scaled grid. It guarantees a route whenever the two cells are
+   in the same land component, instead of handing the unit a straight line
+   through terrain that it can never walk. */
+function bfsRoute(s, t) {
+  if (!PF.blocked || s < 0 || t < 0 || s === t) return null;
+  const n = PF.blocked.length;
+  const seen = new Uint8Array(n);
+  const from = new Int32Array(n); const q = new Int32Array(n);
+  let head = 0, tail = 0; q[tail++] = s; seen[s] = 1; from[s] = -1;
+  while (head < tail && !seen[t]) {
+    const c = q[head++]; const cx = c % PF.NX, cy = (c / PF.NX) | 0;
+    for (const [dx, dy] of DIRS) {
+      if (dx && dy) continue;
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= PF.NX || ny >= PF.NY) continue;
+      const m = ny * PF.NX + nx;
+      if (PF.blocked[m] || seen[m]) continue;
+      seen[m] = 1; from[m] = c; q[tail++] = m;
+    }
+  }
+  if (!seen[t]) return null;
+  const cells = [];
+  for (let c = t; c !== -1; c = from[c]) cells.push(c);
+  cells.reverse();
+  return cells.map(idx => ({ x: (idx % PF.NX) * PF.CS + PF.CS / 2, y: ((idx / PF.NX) | 0) * PF.CS + PF.CS / 2 }));
 }
 
 /* ===================== REAL MIDDLE EAST GEOGRAPHY ===================== */
@@ -3484,6 +3577,19 @@ function proposeAgreement(a, b, type) {
   /* A ceasefire is more attractive to a state that is losing; friendship only
      helps pacts, never makes a victor hand its advantage away. */
   const losing = type === 'CEASEFIRE' && powerB < powerA * 0.75;
+  /* A commander does not sign away a seat that is already suppressed and
+     waiting on the capture clock. The losing defender used to ask for a
+     ceasefire at exactly that moment, and the winning AI accepted it. */
+  if (type === 'CEASEFIRE' && A.aiCtl && A.aiCtl.siegeId) {
+    const sg = ent(A.aiCtl.siegeId);
+    if (sg && !sg.dead && sg.owner === b && sg.capturable &&
+        (sg.suppressed || (sg.captureProg || 0) > 0)) return { ok: false, why: 'attacker will not abandon a siege' };
+  }
+  if (type === 'CEASEFIRE' && B.aiCtl && B.aiCtl.siegeId) {
+    const sg = ent(B.aiCtl.siegeId);
+    if (sg && !sg.dead && sg.owner === a && sg.capturable &&
+        (sg.suppressed || (sg.captureProg || 0) > 0)) return { ok: false, why: 'defender is still taking ground' };
+  }
   const chance = clamp(0.45 + (score - 50) / 160 + (type === 'TRADE' ? 0.16 : 0)
     + (weakSeeking ? 0.16 : 0) + (losing ? 0.22 : 0)
     - (B.credibility != null && B.credibility < 60 ? 0.15 : 0), 0.05, 0.95);
@@ -3813,7 +3919,13 @@ function updateBorders() {
         }
       }
     }
-    if (!u.foreignReturn) {
+    /* A corps with a live assault objective keeps moving even when the route
+       crosses a neutral border. The crossing is still recorded, still costs
+       relations and still alerts the sovereign; it just cannot teleport the
+       offensive home before it reaches the enemy it was ordered to take. */
+    const committedAssault = u.assault && ent(u.assault) && !ent(u.assault).dead;
+    if (committedAssault) u.foreignReturn = false;
+    if (!u.foreignReturn && !committedAssault) {
       const home = nearestFriendlyAnchor(u.x, u.y, u.owner);
       if (home) { u.order = { k: 'move', x: home.x, y: home.y }; assignPath(u, home.x, home.y); u.foreignReturn = true; }
     }
@@ -5144,7 +5256,10 @@ function findTargetFor(u) {
   const acq = Math.max(u.range + 40 * (world.spaceScale || 1), CFG.STANCE.AGG_ACQUIRE * (world.spaceScale || 1));
   if (u.assault) {
     const a = ent(u.assault);
-    if (!a || a.dead || !hostile(u, a) || !canHit(u, a)) u.assault = 0;
+    /* Keep the objective while the unit is still marching. Clearing it on
+       weapon range made the border system treat a committed corps as an
+       unauthorised traveller and send it home before it could arrive. */
+    if (!a || a.dead || !hostile(u, a)) u.assault = 0;
     else {
       const suppressedObjective = world.mode === 'classic' && a.kind !== 'unit' && a.capturable && a.suppressed &&
         u.capture && dist2(u.x, u.y, a.x, a.y) < (CFG.CAPTURE.RADIUS * (world.spaceScale || 1) * 1.35) ** 2;
@@ -5322,6 +5437,11 @@ function updateUnits() {
       }
     }
 
+    /* Self-heal a consumed waypoint list. A unit that still has a move/amove
+       order but whose path index has run off the end used to stand in place
+       forever, because nothing re-issued the path unless the order changed. */
+    if (u.order && (u.order.k === 'move' || u.order.k === 'amove') &&
+        (!u.path || u.pi >= u.path.length)) assignPath(u, u.order.x, u.order.y);
     if (u.path && u.pi < u.path.length) {
       const wp = u.path[u.pi];
       const dx = wp.x - u.x, dy = wp.y - u.y, d = Math.hypot(dx, dy);
@@ -5892,7 +6012,15 @@ function aiEconomyAndBuild(p, ai, c) {
       if (!canPlaceBuilding(p.idx, 'mine', d.x, d.y)) { placeBuilding(p.idx, 'mine', d.x, d.y); aiLog(p, 'bought mine'); return; }
     }
   }
-  if (!needsAirbase && !isNonState(p.country) && myWorkers < Math.min(12, myMines * 3 + 2) && freeBuild >= costOf(p, 'worker')) {
+  /* Workers replace losses automatically, but only while the country is not
+     fighting for its life. A besieged AI used to spend every coin on another
+     engineer after enemy fire killed the previous one, so it never saved for
+     a combat unit and its army vanished from the front. */
+  const pendingWorkers = (p.spawnQ || []).filter(k => k === 'worker').length;
+  let combatUnits = 0;
+  for (const u of world.units) if (!u.dead && u.owner === p.idx && !u.isWorker) combatUnits++;
+  const workerTarget = atWar(p) && combatUnits < 16 ? Math.min(2, myMines * 3 + 2) : Math.min(12, myMines * 3 + 2);
+  if (!needsAirbase && !isNonState(p.country) && myWorkers + pendingWorkers < workerTarget && freeBuild >= costOf(p, 'worker')) {
     if (queueUnit(p.idx, 'worker')) aiLog(p, 'bought worker');
     return;
   }
@@ -5982,12 +6110,16 @@ function pickEnemyTargetFor(p) {
   const strategic = world.mode === 'classic';
   const prof = (p.aiCtl && p.aiCtl.profile) || AI_PERSONALITY_PROFILES.opportunistic;
   const coalition = p.aiCtl && p.aiCtl.coalition;
+  let myCombat = 0;
+  for (const u of world.units) if (!u.dead && u.owner === p.idx && !u.isWorker) myCombat++;
   for (const b of world.buildings) {
     if (b.dead || !hostile(p, b) || b.team === -1) continue;
     if (!strategic && b.kind !== 'camp' && b.kind !== 'outpost') continue;
     /* Only city seats and previously scouted installations are targetable. An
        AI cannot see a hidden SAM site or airbase across the map for free. */
     if (strategic && !b.city && !(b._seenBy && world.time - b._seenBy[p.idx] < 180)) continue;
+    const home = ent(p.campId) || p;
+    if (strategic && !groundReachable(home.x, home.y, b.x, b.y)) continue;
     const d = dist(p.startX, p.startY, b.x, b.y);
     const value = { camp: 360, outpost: 130, airbase: 230, missileFactory: 260, economy: 190,
       sam: 150, radar: 125, depot: 105, mine: 90, tower: 65 }[b.kind] || 50;
@@ -5995,6 +6127,27 @@ function pickEnemyTargetFor(p) {
     if (strategic) {
       const city = cityForBuilding(b);
       if (city) sc += (city.capital ? 300 : 45) + (city.pop || 0) * 24;
+      /* Take the outer city seats first. A capital is a 600-second occupation
+         behind the strongest garrison; opening every campaign against it fed
+         the field army into the one objective it could not hold. */
+      if (b.kind === 'camp') sc -= 2000;
+      /* Prefer a seat that can actually be taken. Without this the AI kept
+         choosing the enemy capital because of its flat value bonus, fed a
+         company into its garrison, and never reached the 7-10 minute capture
+         clock. A defended capital is now a late-war objective, not the first
+         push of every campaign. */
+      let guard = 0;
+      const guardR = 260 * (world.spaceScale || 1);
+      forNear(b.x, b.y, guardR, e => {
+        if (!e.dead && e.kind === 'unit' && hostile(p, e)) guard += (CFG.AI.POWER[e.type] || 1);
+        return false;
+      });
+      sc -= guard * 80;
+      if (city && city.capital && guard > myCombat * 0.35) sc -= 600;
+      /* The counter-attack, not the peacetime garrison, is what kills a siege.
+         Weight the target's whole field army so a weak neighbour is attacked
+         before a mobilised one. */
+      sc -= armyPower(b.owner) * 0.28;
       if (prof.economy >= 1.25 && (b.kind === 'economy' || b.kind === 'mine' || b.kind === 'depot')) sc += 160;
       if (prof.aggression >= 1.2 && b.kind === 'camp') sc += 80;
       if (p.aiCtl && p.aiCtl.grievanceTarget === b.owner && world.time < (p.aiCtl.grievanceUntil || 0)) sc += 900;
@@ -6007,7 +6160,7 @@ function pickEnemyTargetFor(p) {
     /* Focus (Medium+): a capital is the decisive objective, so concentrating on
        it is worth more than another outpost on the frontier. */
     const ai2 = p.aiCtl;
-    if (ai2 && ai2.cfg && ai2.cfg.focus && b.kind === 'camp' && b.owner >= 0 && world.players[b.owner] && world.players[b.owner].capitalHeld) sc += 260;
+    if (ai2 && ai2.cfg && ai2.cfg.focus && b.kind === 'outpost' && b.owner >= 0 && world.players[b.owner] && world.players[b.owner].capitalHeld) sc += 90;
     if (sc > bestScore) { bestScore = sc; best = b; }
   }
   return best;
@@ -6038,6 +6191,15 @@ function aiTacticalCommands(p, ai) {
   if (threat) {
     ai.panicUntil = world.time + 10;
     ai.posture = 'defend';
+    /* One raider on the capital perimeter must not recall a corps that is
+       already marching into an enemy city. Only a real concentration (or a
+       damaged capital) pulls the field army home. */
+    let raidSize = 0;
+    forNear(camp.x, camp.y, 380, e => {
+      if (!e.dead && e.kind === 'unit' && hostile(p, e)) raidSize++;
+      return false;
+    });
+    const capitalEmergency = raidSize >= 6 || camp.hp < camp.maxHp * 0.65;
     /* Only restate orders for units that are not already converging on this threat.
        Previously every unit was re-pathed on every think tick, which both wasted
        CPU and produced jittery, indecisive movement. */
@@ -6047,6 +6209,7 @@ function aiTacticalCommands(p, ai) {
       if (fireNuke(p)) aiLog(p, 'nuclear release on its own capital perimeter');
     }
     for (const u of combatUnits) {
+      if (!capitalEmergency && u.assault) continue;
       const already = u.order && u.order.k === 'amove' && dist2(u.order.x, u.order.y, threat.x, threat.y) < 150 * 150;
       if (already) continue;
       const ox = threat.x + (Math.random() - 0.5) * 40;
@@ -6069,11 +6232,12 @@ function aiTacticalCommands(p, ai) {
      invalid, or the siege times out, and idle units keep feeding into it. */
   const nowT = world.time;
   let siege = ai.siegeId ? ent(ai.siegeId) : null;
-  if (!siege || siege.dead || !hostile(p, siege) || nowT > (ai.siegeUntil || 0)) { siege = null; ai.siegeId = 0; }
+  if (!siege || siege.dead || !hostile(p, siege) || nowT > (ai.siegeUntil || 0) ||
+      !groundReachable(camp.x, camp.y, siege.x, siege.y)) { siege = null; ai.siegeId = 0; }
   if (siege && siege.capturable && siege.suppressed) ai.siegeUntil = Math.max(ai.siegeUntil || 0, nowT + 180);
   /* Risk awareness: a push that meets a stronger force withdraws instead of
      feeding itself into a meat grinder. Hard presses on longer than Easy. */
-  if (siege && nowT >= (ai.retreatT || 0)) {
+  if (siege && nowT >= (ai.retreatT || 0) && !(siege.capturable && siege.suppressed)) {
     ai.retreatT = nowT + 4;
     let mine = 0, theirs = 0;
     forNear(siege.x, siege.y, 320, e => {
@@ -6083,7 +6247,11 @@ function aiTacticalCommands(p, ai) {
       else if (hostile(p, e)) theirs += w;
       return false;
     });
-    if (theirs > 0 && mine < theirs * (1.4 - ai.cfg.retreat * 0.5)) {
+    /* Classic campaigns commit: only a severe local mismatch justifies giving
+       up the ground. The old parity threshold made an AI that had reached the
+       objective retreat before the capture clock could even start. */
+    const retreatMul = world.mode === 'classic' ? 0.55 : (1.4 - ai.cfg.retreat * 0.5);
+    if (theirs > 0 && mine < theirs * retreatMul) {
       aiLog(p, 'withdrawing from ' + (siege.city || siege.kind) + ' — outnumbered');
       for (const u of combatUnits) {
         if (u.order && dist2(u.x, u.y, siege.x, siege.y) < 260 * 260) { u.order = null; u.path = null; }
@@ -6098,17 +6266,54 @@ function aiTacticalCommands(p, ai) {
     let spdSum = 0;
     for (const u of combatUnits) spdSum += (u.speed || 0) * unitSpeedFactor(u);
     const reach = (spdSum / Math.max(1, combatUnits.length)) * 200 + 120;
+    const ready = combatUnits.filter(u => !u.order && !u.target &&
+      dist2(u.x, u.y, siege.x, siege.y) <= reach * reach);
+    /* Stage reinforcements instead of trickling them in one at a time. A
+       single fresh unit walking into a defended ring was killed before it could
+       join the capture stack; four or more can actually hold ground. */
+    let ring = 0;
+    const ringR = CFG.CAPTURE.RADIUS * (world.spaceScale || 1);
+    forNear(siege.x, siege.y, ringR, e => {
+      if (!e.dead && e.kind === 'unit' && e.owner === p.idx && e.capture && !e.fly) ring++;
+      return false;
+    });
+    /* A suppressed seat is waiting on infantry, not more firepower. Ground
+       units that had acquired a distant target used to sit at the staging
+       point while the capture clock stayed at zero; redirect every available
+       capture unit to the ring. */
+    if (siege.suppressed && siege.capturable) {
+      let sentHold = 0;
+      for (const u of combatUnits) {
+        if (sentHold >= 10) break;
+        if (!u.capture || u.fly) continue;
+        if (dist2(u.x, u.y, siege.x, siege.y) < ringR * ringR) continue;
+        if (dist2(u.x, u.y, siege.x, siege.y) > reach * reach) continue;
+        if (u.order && u.order.k === 'amove' && dist2(u.order.x, u.order.y, siege.x, siege.y) < 90 * 90) continue;
+        u.target = 0;
+        const hx = siege.x + (Math.random() - 0.5) * 45;
+        const hy = siege.y + (Math.random() - 0.5) * 45;
+        u.order = { k: 'amove', x: hx, y: hy };
+        assignPath(u, hx, hy);
+        u.assault = siege.id;
+        sentHold++;
+      }
+      if (sentHold) aiLog(p, 'committing infantry to take ' + (siege.city || siege.kind));
+    }
+    if (ready.length < (ring === 0 ? 4 : 3)) return;
     let sent = 0;
     for (const u of combatUnits) {
       if (sent >= 10) break;
       if (u.order || u.target) continue;
       if (dist2(u.x, u.y, siege.x, siege.y) > reach * reach) continue;
-      // Never strip the capital's home guard to feed a siege.
-      if (dist2(u.x, u.y, camp.x, camp.y) < 150 * 150) continue;
+      /* Do not exempt every unit standing at the capital: fresh units spawn
+         there, so the old home-guard rule kept all reinforcements out of the
+         siege forever. A real threat to the capital is handled by the defensive
+         branch above, which orders the army back. */
       const ox = siege.x + (Math.random() - 0.5) * 55;
       const oy = siege.y + (Math.random() - 0.5) * 55;
       u.order = { k: 'amove', x: ox, y: oy };
       assignPath(u, ox, oy);
+      u.assault = siege.id;
       sent++;
     }
     if (sent) aiLog(p, 'reinforcing siege of ' + (siege.city || siege.kind));
@@ -6169,7 +6374,11 @@ function aiTacticalCommands(p, ai) {
         }
       }
       let dest = hot;
-      if (!dest && !siege && archetypeAllowsPush(p)) dest = pickEnemyTargetFor(p);
+      let staging = false;
+      /* Stage the field army at home until the offensive trigger is met. Sending
+         idle units at the chosen enemy every 12 s fed them into the frontier a
+         few at a time, so the AI never accumulated the company a push needs. */
+      if (!dest && !siege && archetypeAllowsPush(p)) { dest = camp; staging = true; }
       if (!dest && !archetypeAllowsPush(p)) {
         /* A survivor that never attacks still spreads its army across its own
            cities instead of stacking eighty units on the capital. */
@@ -6184,11 +6393,15 @@ function aiTacticalCommands(p, ai) {
       }
       if (dest) {
         let sent = 0;
+        /* A field army waiting for the next push is a missile target if it
+           parks shoulder-to-shoulder on the capital. Spread the staging ring
+           so one ballistic strike cannot erase the whole reserve. */
+        const spread = staging ? 420 : 70;
         for (const u of idle) {
           if (sent >= 14) break;
           if (dist2(u.x, u.y, dest.x, dest.y) > 1400 * 1400) continue;
-          const ox = dest.x + (Math.random() - 0.5) * 70;
-          const oy = dest.y + (Math.random() - 0.5) * 70;
+          const ox = dest.x + (Math.random() - 0.5) * spread;
+          const oy = dest.y + (Math.random() - 0.5) * spread;
           u.order = { k: 'amove', x: ox, y: oy };
           assignPath(u, ox, oy);
           sent++;
@@ -6214,18 +6427,23 @@ function aiTacticalCommands(p, ai) {
     : Math.ceil(ai.cfg.minAttack * riskMul);
   /* A long war loosens the requirement: waiting for a textbook army forever is
      its own kind of passivity, and Hard releases the brake sooner. */
-  if (world.time > (ai.cfg.forceAfter || 330)) needForce = Math.max(3, Math.round(needForce * 0.6));
+  if (world.mode === 'classic') needForce = Math.max(needForce, isNonState(p.country) ? 3 : 16);
+  if (world.time > (ai.cfg.forceAfter || 330)) needForce = Math.max(world.mode === 'classic' ? 12 : 3, Math.round(needForce * (world.mode === 'classic' ? 0.8 : 0.6)));
   if (ai.pushT <= 0 && combatUnits.length >= needForce && archetypeAllowsPush(p)) {
     const rules = archetypeRules(p);
     ai.pushT = (rules.pushEvery || ai.cfg.pushEvery) * (0.85 + Math.random() * 0.35);
-    const tgt = pickEnemyTargetFor(p);
+    /* Keep the committed objective until it falls or times out. Re-picking on
+       every push cadence re-pathed the whole army before it could arrive. */
+    const tgt = (ai.siegeId && ent(ai.siegeId)) || pickEnemyTargetFor(p);
     if (tgt && !canProjectPower(p, tgt.x, tgt.y).ok) return;
     if (tgt) {
       /* Instrumentation: only a push that actually issues orders counts. */
       ai.pushes = (ai.pushes || 0) + 1;
       if (ai.siegeId !== tgt.id) ai.siegeFeedT = 0;
       ai.siegeId = tgt.id;
-      ai.siegeUntil = world.time + 300;
+      /* The commitment must outlast the occupation, not end before it: an
+         outpost needs 420 s and a capital 600 s once suppressed. */
+      ai.siegeUntil = world.time + (world.mode === 'classic' ? 900 : 300);
       ai.lastTarget = tgt.owner >= 0 && world.players[tgt.owner] ? world.players[tgt.owner].country : null;
       ai.lastPushT = Math.round(world.time);
       /* Commitment horizon: no formation is ordered further than it could march
@@ -6238,7 +6456,9 @@ function aiTacticalCommands(p, ai) {
       const pool = combatUnits
         .filter(u => dist2(u.x, u.y, tgt.x, tgt.y) <= horizon * horizon)
         .sort((a, b) => dist2(a.x, a.y, tgt.x, tgt.y) - dist2(b.x, b.y, tgt.x, tgt.y));
-      const sendMax = Math.max(1, Math.ceil(combatUnits.length * (rules.risk === 'high' ? 0.8 : rules.risk === 'low' ? 0.55 : 0.68)));
+      const sendMax = Math.max(1, Math.ceil(combatUnits.length * (world.mode === 'classic'
+        ? 1
+        : (rules.risk === 'high' ? 0.8 : rules.risk === 'low' ? 0.55 : 0.68))));
       let sent = 0;
       for (const u of pool) {
         if (sent >= sendMax) break;
@@ -6962,7 +7182,9 @@ function updateSkirmishDiplomacy() {
         if (existing) breakAgreement(p.idx, target.idx, 'war declared');
         setRelation(p.idx, target.idx, 'WAR', false);
         target.wasAttacked = true;
-        p.aiCtl.siegeId = 0; p.aiCtl.pushT = 0;
+        /* A new declaration must not cancel the corps already committed to an
+           existing siege. Resetting the siege id here made every fresh war
+           re-path the whole army and guaranteed no occupation ever finished. */
         aiLog(p, 'declared war on ' + target.country + ' for strategic advantage');
       }
     }
@@ -7013,13 +7235,32 @@ function stepSim() {
 /* ===================== RENDERING (MIDDLE EAST MAP + ENTITIES + HUD) ===================== */
 const canvas = $('game'), ctx = canvas.getContext('2d');
 const mini = $('minimap'), mctx = mini.getContext('2d');
-mini.addEventListener('pointerdown', e => {
+let miniDragging = false;
+function miniLookAt(e) {
   if (!world) return;
   const r = mini.getBoundingClientRect();
   cam.x = clamp((e.clientX - r.left) / Math.max(1, r.width), 0, 1) * world.w;
   cam.y = clamp((e.clientY - r.top) / Math.max(1, r.height), 0, 1) * world.h;
   clampCam();
+}
+mini.addEventListener('pointerdown', e => {
+  if (!world || e.button !== 0) return;
+  miniDragging = true;
+  try { mini.setPointerCapture(e.pointerId); } catch (_) {}
+  miniLookAt(e);
+  e.preventDefault();
 });
+mini.addEventListener('pointermove', e => { if (miniDragging) miniLookAt(e); });
+const endMiniDrag = () => { miniDragging = false; };
+mini.addEventListener('pointerup', endMiniDrag);
+mini.addEventListener('pointercancel', endMiniDrag);
+mini.addEventListener('lostpointercapture', endMiniDrag);
+mini.addEventListener('wheel', e => {
+  if (!world) return;
+  e.preventDefault();
+  cam.zT = clamp((cam.zT || cam.z) * (e.deltaY < 0 ? 1.14 : 0.88), CFG.CAMERA.MIN_Z, CFG.CAMERA.MAX_Z);
+  if (app.reduceMotion) cam.z = cam.zT;
+}, { passive: false });
 
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -8963,8 +9204,25 @@ function refreshBuildButtons() {
         }
       } else {
         const available = skirmishBuildList(hp);
+        const addLocked = (k) => {
+          const av = equipmentAvailability(hp, k);
+          const meta = entryMeta('u', k);
+          const why = av.why || ('not in the ' + hp.country + ' national inventory');
+          const b = document.createElement('button');
+          b.className = 'bbtn locked';
+          b.disabled = true;
+          b.dataset.bid = 'u_' + k; b.dataset.entry = 'u:' + k; b.dataset.tab = 'army';
+          b.title = (meta ? meta.name : unitLabel(k, c)) + ' — unavailable. ' + why + '. Production is restricted to national equipment; imported systems require a supplier and available foreign supply.';
+          b.setAttribute('aria-label', b.title);
+          b.innerHTML = `<span class="bic">${meta ? roleBadge(meta.r) : '—'}</span>` +
+            `<span class="blb">${unitLabel(k, c)}</span>` +
+            `<span class="brole">${meta ? meta.role : 'Not in inventory'}</span>` +
+            `<span class="bcst">LOCKED</span>`;
+          row.appendChild(b);
+        };
         for (const k of available) {
           const av = equipmentAvailability(hp, k);
+          if (!av.ok) { addLocked(k); continue; }
           const label = unitLabel(k, c) + (av.class === 'imported' ? ' · import' : (av.class === 'licensed' ? ' · licensed' : ''));
           createBtn('u_' + k, '', label, '', () => {
             if (queueUnit(hp.idx, k)) {
@@ -8973,11 +9231,17 @@ function refreshBuildButtons() {
             }
           });
         }
-        const denied = Object.keys(CFG.UNITS).filter(k => !available.includes(k)).slice(0, 6);
+        const denied = Object.keys(CFG.UNITS).filter(k => !available.includes(k));
+        const priority = ['f35', 'f22', 'b2', 'typhoon', 'j20', 's400', 'patriot', 'abrams'];
+        const showcase = denied.slice().sort((a, b) => {
+          const ia = priority.indexOf(a), ib = priority.indexOf(b);
+          return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+        }).slice(0, 7);
+        for (const k of showcase) addLocked(k);
         if (denied.length) {
           const note = document.createElement('div');
           note.className = 'bnote';
-          note.textContent = 'Not in the ' + hp.country + ' inventory: ' + denied.map(k => unitLabel(k, c)).join(', ') + '. Production is restricted to national equipment.';
+          note.textContent = 'Locked entries are not in the ' + hp.country + ' inventory. Hover a locked system for the reason; production is restricted to national equipment and available imports.';
           row.appendChild(note);
         }
       }
@@ -9449,6 +9713,18 @@ let panState = { on: false, sx: 0, sy: 0, cx: 0, cy: 0, moved: false };
 let lpTimer = null;
 
 const TOAST_CATEGORY = { crit: 'ALERT · COMMAND', err: 'WARNING', aid: 'DIPLOMACY', hint: 'OPERATION' };
+const NOTIF_CATEGORIES = [
+  { key: 'all', label: 'ALL' }, { key: 'alert', label: 'ALERTS' }, { key: 'war', label: 'WAR' },
+  { key: 'diplomacy', label: 'DIPLO' }, { key: 'economy', label: 'ECON' }, { key: 'field', label: 'FIELD' }
+];
+function notifCategory(msg, cls) {
+  if (cls === 'aid') return 'diplomacy';
+  if (cls === 'crit' || cls === 'err') return 'alert';
+  if (/ceasefire|war\b|missile|strike|attack|invasion|incursion|withdraw|siege|captur/i.test(msg)) return 'war';
+  if (/built|construct|income|oil|econom|produc|queued|fund|rig|complex/i.test(msg)) return 'economy';
+  if (/relation|pact|ally|alliance|transit|diplomat|call.to.arms|assistance/i.test(msg)) return 'diplomacy';
+  return 'field';
+}
 function toast(msg, cls) {
   app.notifs = app.notifs || [];
   const now = world ? world.time : performance.now() / 1000;
@@ -9463,6 +9739,8 @@ function toast(msg, cls) {
     return;
   }
   const box = $('toasts');
+  const catKey = notifCategory(msg, cls);
+  const visible = !app.notifFilter || app.notifFilter === 'all' || app.notifFilter === catKey;
   const d = document.createElement('div');
   d.className = 'toast' + (cls ? ' ' + cls : '');
   const cat = TOAST_CATEGORY[cls] || 'FIELD REPORT';
@@ -9471,20 +9749,32 @@ function toast(msg, cls) {
   timeEl.textContent = world ? fmtTime(world.time) : '';
   const body = document.createElement('span'); body.className = 'tbody'; body.textContent = msg;
   d.appendChild(catEl); d.appendChild(body); d.appendChild(timeEl);
-  box.appendChild(d);
-  while (box.children.length > 4) box.removeChild(box.firstChild);
-  const rec = { msg, cls: cls || 'info', t: now, count: 1, el: d, cat };
+  if (visible) {
+    box.appendChild(d);
+    while (box.children.length > 4) box.removeChild(box.firstChild);
+  }
+  const rec = { msg, cls: cls || 'info', t: now, count: 1, el: visible ? d : null, cat, catKey };
   app.notifs.unshift(rec);
   if (app.notifs.length > 80) app.notifs.length = 80;
   if ($('notifPanel') && !$('notifPanel').classList.contains('hidden')) renderNotifHistory();
-  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, cls === 'crit' ? 9000 : (cls === 'warn' || cls === 'err' ? 6500 : 4500));
+  if (visible) setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, cls === 'crit' ? 9000 : (cls === 'warn' || cls === 'err' ? 6500 : 4500));
 }
 function renderNotifHistory() {
   const box = $('notifPanel'); if (!box) return;
-  const list = (app.notifs || []).slice(0, 50);
-  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:11px;letter-spacing:.12em">FIELD LOG</b><button class="btn" onclick="window._toggleNotifs()" style="margin:0;padding:2px 7px;font-size:9px">CLOSE</button></div>' +
-    (list.length ? list.map(n => '<div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid rgba(255,255,255,.05);font-size:10px"><span class="dim" style="min-width:34px">' + fmtTime(n.t) + '</span><span style="flex:1;color:' + (n.cls === 'crit' || n.cls === 'err' ? '#f0a08a' : n.cls === 'warn' ? '#e0c07a' : '#b9c7d2') + '">' + n.msg + (n.count > 1 ? ' ×' + n.count : '') + '</span></div>').join('') : '<div class="dim">No reports yet.</div>');
+  const filter = app.notifFilter || 'all';
+  const all = app.notifs || [];
+  const list = all.filter(n => filter === 'all' || (n.catKey || notifCategory(n.msg, n.cls)) === filter).slice(0, 50);
+  const chips = NOTIF_CATEGORIES.map(c => {
+    const on = c.key === filter;
+    const n = c.key === 'all' ? all.length : all.filter(x => (x.catKey || notifCategory(x.msg, x.cls)) === c.key).length;
+    return '<button class="btn" onclick="window._notifFilter(\'' + c.key + '\')" title="Show ' + c.label.toLowerCase() + ' notifications" style="margin:0;padding:2px 5px;font-size:8px;letter-spacing:.05em;' +
+      (on ? 'background:var(--brass-wash);border-color:var(--brass);color:var(--brass)' : 'opacity:.62') + '">' + c.label + (n ? ' ' + n : '') + '</button>';
+  }).join('');
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><b style="font-size:11px;letter-spacing:.12em">FIELD LOG</b><button class="btn" onclick="window._toggleNotifs()" style="margin:0;padding:2px 7px;font-size:9px">CLOSE</button></div>' +
+    '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">' + chips + '</div>' +
+    (list.length ? list.map(n => '<div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid rgba(255,255,255,.05);font-size:10px"><span class="dim" style="min-width:34px">' + fmtTime(n.t) + '</span><span style="flex:1;color:' + (n.cls === 'crit' || n.cls === 'err' ? '#f0a08a' : n.cls === 'warn' ? '#e0c07a' : '#b9c7d2') + '">' + n.msg + (n.count > 1 ? ' ×' + n.count : '') + '</span></div>').join('') : '<div class="dim">No ' + (filter === 'all' ? '' : filter + ' ') + 'reports yet.</div>');
 }
+window._notifFilter = function (k) { app.notifFilter = k || 'all'; renderNotifHistory(); };
 window._toggleNotifs = function () {
   const p = $('notifPanel'); if (!p) return;
   p.classList.toggle('hidden');
@@ -9749,14 +10039,6 @@ function issueMoveOrder(tx, ty) {
 }
 
 function clampCam() { if (!world) return; cam.x = clamp(cam.x, 0, world.w); cam.y = clamp(cam.y, 0, world.h); }
-
-mini.addEventListener('pointerdown', e => {
-  if (!world) return;
-  const rect = mini.getBoundingClientRect();
-  cam.x = ((e.clientX - rect.left) / rect.width) * world.w;
-  cam.y = ((e.clientY - rect.top) / rect.height) * world.h;
-  clampCam();
-});
 
 $('placeOk').onclick = () => {
   if (!app.mouseW) return;

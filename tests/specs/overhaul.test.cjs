@@ -202,6 +202,48 @@ module.exports = {
     check.ok(notes.count >= 2, 'repeated notifications are grouped', notes.count);
     check.ok(notes.hasPanel, 'a notification history panel exists', notes);
 
+    /* 4.md UI completion: category filters, locked production entries, minimap drag/zoom */
+    await boot(['IRN', 'KWT'], 'IRN');
+    const ui = await page.json(`(() => {
+      app.bbTab = 'army'; refreshBuildButtons();
+      const locked = Array.from(document.querySelectorAll('.bbtn.locked'));
+      const f35 = locked.find(b => b.dataset.bid === 'u_f35');
+      app.notifs = []; app.notifFilter = 'war';
+      const box = document.getElementById('toasts'); box.innerHTML = '';
+      toast('Economic complex built', 'hint');
+      const hiddenCard = box.children.length;
+      toast('Missile strike incoming', 'hint');
+      const shownCard = box.children.length;
+      renderNotifHistory();
+      const panel = document.getElementById('notifPanel');
+      const chips = panel.querySelectorAll('button[onclick*="_notifFilter"]').length;
+      const warText = panel.textContent;
+      app.notifFilter = 'economy'; renderNotifHistory();
+      const econText = panel.textContent;
+      const mini = document.getElementById('minimap');
+      cam.zT = 0.8; cam.z = 0.8;
+      mini.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true }));
+      const zoomed = cam.zT;
+      const rect = mini.getBoundingClientRect();
+      cam.x = 0;
+      mini.dispatchEvent(new PointerEvent('pointerdown', { clientX: rect.left + 1, clientY: rect.top + 1, button: 0, bubbles: true, pointerId: 7 }));
+      mini.dispatchEvent(new PointerEvent('pointermove', { clientX: rect.left + rect.width * 0.75, clientY: rect.top + rect.height * 0.5, bubbles: true, pointerId: 7 }));
+      mini.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 }));
+      const draggedX = cam.x;
+      app.notifFilter = 'all'; renderNotifHistory();
+      return { locked: locked.length, f35: !!f35, f35disabled: f35 && f35.disabled, reason: f35 && f35.title,
+        hiddenCard, shownCard, chips, warText, econText, zoomed, draggedX, worldW: world.w };
+    })()`);
+    check.ok(ui.locked >= 3, 'unavailable production entries are rendered', ui.locked);
+    check.ok(ui.f35 && ui.f35disabled && /unavailable/i.test(ui.reason || ''), 'a locked entry is disabled and explains why', ui);
+    check.eq(ui.hiddenCard, 0, 'a category filter suppresses live cards outside the selected category', ui);
+    check.eq(ui.shownCard, 1, 'the selected category still shows live cards', ui);
+    check.ok(ui.chips >= 6, 'the field log exposes category filter controls', ui.chips);
+    check.ok(/missile strike/i.test(ui.warText) && !/economic complex built/i.test(ui.warText), 'the war filter isolates war reports', ui.warText);
+    check.ok(/economic complex built/i.test(ui.econText) && !/missile strike/i.test(ui.econText), 'the economy filter isolates economy reports', ui.econText);
+    check.ok(ui.zoomed > 0.8, 'the minimap wheel zooms the camera', ui.zoomed);
+    check.ok(ui.draggedX > ui.worldW * 0.5, 'dragging the minimap pans the camera', ui);
+
     /* 8 — world scale and city reduction, plus Real-mode isolation */
     await boot(['IRN', 'ISR', 'SAU', 'TUR', 'EGY', 'IRQ', 'SYR', 'JOR', 'LBN', 'UAE', 'KWT', 'QAT', 'BHR', 'OMN', 'YEM', 'PSE', 'HZB', 'HMS', 'HOU'], 'IRN');
     const classic = await page.json(`(() => {

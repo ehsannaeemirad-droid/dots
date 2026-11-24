@@ -507,7 +507,7 @@ button{font-family:inherit;touch-action:manipulation;color:inherit}
   border:1px solid var(--line-2);background:#060c11;border-radius:var(--r);overflow:hidden;
   box-shadow:0 12px 30px -18px rgba(0,0,0,.9);
 }
-#minimap{display:block;width:148px;height:auto;touch-action:none}
+#minimap{display:block;width:210px;height:auto;touch-action:none;cursor:crosshair}
 
 #placeBtns{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 16px);display:flex;gap:1px;z-index:20;border:1px solid var(--line-2)}
 #placeBtns button{width:78px;height:42px;border:0;background:var(--surface);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
@@ -626,7 +626,7 @@ button{font-family:inherit;touch-action:manipulation;color:inherit}
   #rosterPanel{padding:10px;max-height:46vh;overflow:auto}
   #rosterPanel .chip{min-width:132px;flex:1 1 132px;padding:6px 8px}
   .chip .csub{max-width:145px}
-  #minimap{width:124px}
+  #minimap{width:168px}
   #selinfo{max-width:50vw;font-size:10px;padding:7px 9px;left:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px)}
   #minimapWrap{right:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px)}
   #toasts{top:80px;max-width:94vw}
@@ -664,7 +664,7 @@ button{font-family:inherit;touch-action:manipulation;color:inherit}
   #objHudBtn{display:none}
   #topbar{gap:2px}
   .spdgroup .spd{min-width:21px;padding:0 2px;font-size:9px}
-  #minimap{width:106px}
+  #minimap{width:142px}
   #selinfo{max-width:47vw}
   .bbtn{width:68px}
 }
@@ -1108,7 +1108,7 @@ body.map-focus #minimapWrap{opacity:.9}
   #toasts{top:54px;right:8px;width:min(296px,38vw);max-height:96px;overflow:hidden}
   .toast{font-size:9.5px;padding:6px 9px 6px 24px}
   #minimapWrap{right:8px;bottom:calc(var(--bar1) + var(--bar2) + var(--safe) + 8px);width:116px;padding:3px}
-  #minimap{width:108px}
+  #minimap{width:148px}
   #cmdbar{padding:2px 8px}
   #buildbar{padding:4px 8px calc(4px + var(--safe))}
   #buildbar .bbtn{width:72px;min-height:0;height:100%;padding:3px 6px}
@@ -1154,7 +1154,7 @@ body.map-focus #minimapWrap{opacity:.9}
 
 <div id="selinfo"></div>
 <div id="hoverTag"></div>
-<div id="minimapWrap" class="hidden"><canvas id="minimap" width="200" height="125"></canvas></div>
+<div id="minimapWrap" class="hidden"><canvas id="minimap" width="220" height="203"></canvas></div>
 <div id="cmdbar" class="hidden"></div>
 <div id="buildbar" class="hidden"><div id="bbTabs"></div><div id="bbRow"></div></div>
 <div id="placeBtns" class="hidden"><button id="placeOk">✓</button><button id="placeNo">✕</button></div>
@@ -1167,6 +1167,8 @@ body.map-focus #minimapWrap{opacity:.9}
   <div class="btnrow"><button class="btn primary" id="salvoArm">Arm salvo</button><button class="btn" id="salvoClose">Cancel</button></div>
 </div></div>
 <div id="toasts"></div>
+<button id="notifLogBtn" class="btn hidden" onclick="window._toggleNotifs()" style="position:fixed;right:14px;top:52px;z-index:26;padding:3px 9px;font-size:9px;letter-spacing:.16em;margin:0">FIELD LOG</button>
+<div id="notifPanel" class="hidden" style="position:fixed;right:14px;top:84px;z-index:27;width:min(390px,calc(100vw - 28px));max-height:46vh;overflow:auto;padding:10px;background:rgba(9,15,20,.98);border:1px solid var(--hair-2);box-shadow:0 20px 50px -20px #000"></div>
 <div id="countScr" class="overlay hidden"><div class="count-wrap"><div class="count-label">Operation begins</div><div id="countNum">3</div></div></div>
 
 <div id="ecoScr" class="overlay hidden">
@@ -1303,7 +1305,7 @@ body.map-focus #minimapWrap{opacity:.9}
           <button class="mcard" id="modeClassicCard">
             <span class="mcard-tag">Direct skirmish</span>
             <h3>Skirmish — same map</h3>
-            <p>No diplomacy and no superpower aid. Free-for-all or team blocs on the same geography. This is not a separate historical theatre.</p>
+            <p>A compact 19-nation strategic theatre. Real diplomacy: relations, pacts, transit rights, ceasefires and coalition calls. National inventories restrict production, while oil, occupied territory, advisors and a decisive AI fight for the same victory cities.</p>
             <span class="mcard-state">Selected</span>
           </button>
         </div>
@@ -1443,7 +1445,7 @@ const CONFIG = {
     MIN_FIELD_YIELD: 24,
     MAX_FIELD_YIELD: 40,
     DOCTRINE_SWITCH_COST: 250,
-    AGREEMENT_DAYS: { NAP: 480, DEFENSIVE: 600, MILITARY: 600, TRADE: 420, CEASEFIRE: 240, MUTUAL_ENEMY: 420 }
+    AGREEMENT_DAYS: { NAP: 480, DEFENSIVE: 600, MILITARY: 600, TRADE: 420, CEASEFIRE: 600, MUTUAL_ENEMY: 420, TRANSIT: 600 }
   },
   GOLD: {
     WORKER_RATE_CPT: 50,
@@ -2519,6 +2521,7 @@ function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch 
 /* ===================== PATHFINDING (A*) ===================== */
 const PF = { CS: 40, NX: 0, NY: 0, blocked: null, soft: null, g: null, f: null, gStamp: null, cStamp: null, from: null, static: null, dirty: true, ver: 0, heap: [] };
 function pfInit(w, h) {
+  PF.CS = Math.round(40 * ((world && world.spaceScale) || 1));
   PF.NX = Math.max(1, Math.ceil(w / PF.CS));
   PF.NY = Math.max(1, Math.ceil(h / PF.CS));
   const n = PF.NX * PF.NY;
@@ -2657,7 +2660,7 @@ function findPath(sx, sy, tx, ty) {
   PF.f[s] = 0;
   PF.heap.push(s);
   let found = false, expanded = 0;
-  while (PF.heap.length && expanded < 3200) {
+  while (PF.heap.length && expanded < 8000) {
     const c = hpop();
     if (PF.cStamp[c] === PF.ver) continue;
     PF.cStamp[c] = PF.ver; expanded++;
@@ -2734,7 +2737,11 @@ const ME_RIVER_PATHS = {
 const ME_LON0 = 24.5, ME_LAT1 = 42.5, ME_LONPX = 97.3, ME_LATPX = 116;
 const ME_W = Math.round((64.5 - ME_LON0) * ME_LONPX);
 const ME_H = Math.round((ME_LAT1 - 11.5) * ME_LATPX);
-function meProj(lon, lat) { return { x: (lon - ME_LON0) * ME_LONPX, y: (ME_LAT1 - lat) * ME_LATPX }; }
+/* Skirmish uses ~3x the Real-mode world area (1.732x linear). Every coordinate
+   and every distance-bearing system is scaled together; Real mode keeps 1. */
+let ME_SPACE = 1;
+const SKIRMISH_SPACE_SCALE = 1.732;
+function meProj(lon, lat) { return { x: (lon - ME_LON0) * ME_LONPX * ME_SPACE, y: (ME_LAT1 - lat) * ME_LATPX * ME_SPACE }; }
 function meCentroidLL(pts) {
   let x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
   for (let i = 0; i < pts.length; i += 2) { x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]); y0 = Math.min(y0, pts[i + 1]); y1 = Math.max(y1, pts[i + 1]); }
@@ -2889,16 +2896,18 @@ function freeSpotLocal(x, y, W, H, obstacles, blockedFn) {
 }
 function ptRect(x, y, r, m) { return x > r.x - m && x < r.x + r.w + m && y > r.y - m && y < r.y + r.h + m; }
 
-function genMiddleEastMap(lobby, seed) {
+function genMiddleEastMap(lobby, seed, mode) {
+  ME_SPACE = mode === 'classic' ? SKIRMISH_SPACE_SCALE : 1;
+  const S = ME_SPACE;
   const rng = mulberry32((seed ^ 0x4D4541) >>> 0);
-  const W = ME_W, H = ME_H;
+  const W = Math.round(ME_W * S), H = Math.round(ME_H * S);
   const polys = [];
   for (const name in ME_GEO_COUNTRIES) {
     for (const flat of ME_GEO_COUNTRIES[name]) {
       const pts = [];
       for (let i = 0; i < flat.length; i += 2) {
         const q = meProj(flat[i], flat[i + 1]);
-        pts.push({ x: clamp(q.x, -40, W + 40), y: clamp(q.y, -40, H + 40) });
+        pts.push({ x: clamp(q.x, -40 * S, W + 40 * S), y: clamp(q.y, -40 * S, H + 40 * S) });
       }
       polys.push({ name: name, pts: pts, bb: polyBB(pts) });
     }
@@ -2908,8 +2917,8 @@ function genMiddleEastMap(lobby, seed) {
   function countryAt(x, y) {
     // Resolve two small/overlapping capital areas explicitly so country ownership
     // agrees with the selected scenario's national starting positions.
-    if (dist2(x, y, jerusalemAdminPoint.x, jerusalemAdminPoint.y) <= 12 * 12) return 'Israel';
-    if (dist2(x, y, bahrainCapitalPoint.x, bahrainCapitalPoint.y) <= 42 * 42) return 'Bahrain';
+    if (dist2(x, y, jerusalemAdminPoint.x, jerusalemAdminPoint.y) <= (12 * S) * (12 * S)) return 'Israel';
+    if (dist2(x, y, bahrainCapitalPoint.x, bahrainCapitalPoint.y) <= (42 * S) * (42 * S)) return 'Bahrain';
     // Check smaller enclaves first so they aren't shadowed by larger neighbors.
     const priority = ['Palestine', 'Bahrain', 'Qatar', 'Kuwait', 'Lebanon', 'Israel'];
     for (const pname of priority) {
@@ -2934,13 +2943,13 @@ function genMiddleEastMap(lobby, seed) {
     const pts = riverPathLL(ME_RIVER_PATHS[rn], meProj);
     riverPts[rn] = pts;
     const segs = [];
-    for (let i = 0; i < pts.length - 1; i++) segs.push({ x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y, r: ME_RIVER_R });
+    for (let i = 0; i < pts.length - 1; i++) segs.push({ x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y, r: ME_RIVER_R * S });
     riverSegs[rn] = segs;
   }
   const fordPts = {};
   for (const rn in ME_FORDS) fordPts[rn] = ME_FORDS[rn].map(q => meProj(q[0], q[1]));
   const deadSea = meProj(35.5, 31.5);
-  const inlandLakes = [{ x: deadSea.x, y: deadSea.y, rx: 13, ry: 52, n: 'DEAD SEA' }];
+  const inlandLakes = [{ x: deadSea.x, y: deadSea.y, rx: 13 * S, ry: 52 * S, n: 'DEAD SEA' }];
 
   /* River blockers used to be rebuilt inside inWater on every call, which is
      once per moving unit per tick: 30+ microseconds each and the single largest
@@ -2948,7 +2957,7 @@ function genMiddleEastMap(lobby, seed) {
   /* Rivers are no longer hard walls. They remain identifiable geometry for the
      movement multiplier, but only open sea and lakes block pathfinding. */
   const riverDetect = {};
-  for (const rn in riverSegs) riverDetect[rn] = riverBlocker(riverSegs[rn], [], 0, ME_RIVER_R + 3);
+  for (const rn in riverSegs) riverDetect[rn] = riverBlocker(riverSegs[rn], [], 0, ME_RIVER_R * S + 3);
 
   function inWater(x, y) {
     if (!landAt(x, y)) return true;
@@ -2974,23 +2983,25 @@ function genMiddleEastMap(lobby, seed) {
 
   const neutrals = [];
   for (const c of ME_CITIES) {
+    const cityCode = REAL_KEYS.find(k => REAL_COUNTRY_DB[k].geoName === c.country) || '';
+    if (mode === 'classic' && !SKIRMISH_CITY_KEEP.has(cityCode + '|' + c.n) && !c.key) continue;
     const q = meProj(c.lon, c.lat);
-    let ok = q.x > 40 && q.y > 40 && q.x < W - 40 && q.y < H - 40 && !inWater(q.x, q.y);
+    let ok = q.x > 40 * S && q.y > 40 * S && q.x < W - 40 * S && q.y < H - 40 * S && !inWater(q.x, q.y);
     // Jerusalem and Tel Aviv are too close for separate RTS buildings at this scale.
-    const minCapDist = c.key === 'telaviv' ? 42 : 135;
+    const minCapDist = (c.key === 'telaviv' ? 42 : 135) * S;
     if (ok) for (const cc of camps) if (dist2(q.x, q.y, cc.x, cc.y) < minCapDist * minCapDist) { ok = false; break; }
-    if (ok) for (const nt of neutrals) if (dist2(q.x, q.y, nt.x, nt.y) < 105 * 105) { ok = false; break; }
+    if (ok) for (const nt of neutrals) if (dist2(q.x, q.y, nt.x, nt.y) < (105 * S) * (105 * S)) { ok = false; break; }
     if (ok) neutrals.push({ x: q.x, y: q.y, g: c.g || 6, city: c.n, key: c.key || '', geoName: c.country || countryAt(q.x, q.y) });
   }
 
-  const CS = 40, NX = Math.ceil(W / CS), NY = Math.ceil(H / CS);
+  const CS = Math.round(40 * S), NX = Math.ceil(W / CS), NY = Math.ceil(H / CS);
   const staticBlock = new Uint8Array(NX * NY);
   function rebuildMask() {
     for (let cy = 0; cy < NY; cy++) for (let cx = 0; cx < NX; cx++) {
       staticBlock[cy * NX + cx] = inWater(cx * CS + CS / 2, cy * CS + CS / 2) ? 1 : 0;
     }
   }
-  const causeway = bridgePoly(meProj(50.28, 26.03).x, meProj(50.28, 26.03).y, meProj(50.56, 26.14).x, meProj(50.56, 26.14).y, 40);
+  const causeway = bridgePoly(meProj(50.28, 26.03).x, meProj(50.28, 26.03).y, meProj(50.56, 26.14).x, meProj(50.56, 26.14).y, 40 * S);
   polys.push({ name: '', pts: causeway, bb: polyBB(causeway), bridge: true });
   rebuildMask();
 
@@ -3000,7 +3011,7 @@ function genMiddleEastMap(lobby, seed) {
     let x = q.x, y = q.y;
     if (inWater(x, y)) {
       let found = false;
-      for (let r = 24; r <= 140 && !found; r += 24) {
+      for (let r = 24 * S; r <= 140 * S && !found; r += 24 * S) {
         for (let a = 0; a < 12; a++) {
           const nx = x + Math.cos(a / 12 * TAU) * r, ny = y + Math.sin(a / 12 * TAU) * r;
           if (!inWater(nx, ny)) { x = nx; y = ny; found = true; break; }
@@ -3008,8 +3019,8 @@ function genMiddleEastMap(lobby, seed) {
       }
       if (!found) continue;
     }
-    if (deposits.some(d => dist2(x, y, d.x, d.y) < 65 * 65)) continue;
-    if (camps.some(c => dist2(x, y, c.x, c.y) < 60 * 60)) continue;
+    if (deposits.some(d => dist2(x, y, d.x, d.y) < (65 * S) * (65 * S))) continue;
+    if (camps.some(c => dist2(x, y, c.x, c.y) < (60 * S) * (60 * S))) continue;
     deposits.push({ x: x, y: y, n: o.n, geoName: o.country || countryAt(x, y) });
   }
 
@@ -3019,17 +3030,17 @@ function genMiddleEastMap(lobby, seed) {
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i], b = pts[i + 1];
       const len = Math.hypot(b.x - a.x, b.y - a.y);
-      const steps = Math.max(1, Math.round(len / 235));
+      const steps = Math.max(1, Math.round(len / (235 * S)));
       for (let s = 0; s < steps; s++) {
         const t = (s + 0.5) / steps;
         const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
-        const w = 92 + rng() * 36, h = 92 + rng() * 40;
+        const w = (92 + rng() * 36) * S, h = (92 + rng() * 40) * S;
         const rect = { x: x - w / 2, y: y - h / 2, w: w, h: h, label: R.n };
-        if (rect.x < 20 || rect.y < 20 || rect.x + rect.w > W - 20 || rect.y + rect.h > H - 20) continue;
+        if (rect.x < 20 * S || rect.y < 20 * S || rect.x + rect.w > W - 20 * S || rect.y + rect.h > H - 20 * S) continue;
         if (inWater(rect.x + rect.w / 2, rect.y + rect.h / 2)) continue;
-        if (camps.some(c => ptRect(c.x, c.y, rect, 90))) continue;
-        if (neutrals.some(nt => ptRect(nt.x, nt.y, rect, 72))) continue;
-        if (deposits.some(d => ptRect(d.x, d.y, rect, 56))) continue;
+        if (camps.some(c => ptRect(c.x, c.y, rect, 90 * S))) continue;
+        if (neutrals.some(nt => ptRect(nt.x, nt.y, rect, 72 * S))) continue;
+        if (deposits.some(d => ptRect(d.x, d.y, rect, 56 * S))) continue;
         obstacles.push(rect);
       }
     }
@@ -3051,7 +3062,7 @@ function genMiddleEastMap(lobby, seed) {
   const seas = ME_SEAS.map(s => ({ n: s.n, p: meProj(s.lon, s.lat), small: !!s.small }));
 
   return {
-    id: 'middleeast', name: 'Middle East', theme: 'me', w: W, h: H,
+    id: 'middleeast', name: 'Middle East', theme: 'me', w: W, h: H, spaceScale: S,
     camps: camps, deposits: deposits, neutrals: neutrals, obstacles: obstacles,
     blockedFn: inWater, staticBlock: staticBlock,
     terrain: {
@@ -3101,6 +3112,59 @@ let countT = 0, acc = 0;
 function ent(id) { return id ? (world.ents.get(id) || null) : null; }
 function countryOf(p) { return REAL_COUNTRY_DB[p.country] || REAL_COUNTRY_DB.ISR; }
 
+/* ---------- central 0-100 relationship scale ---------- */
+const RELATION_BANDS = [
+  { min: 90, label: 'Close strategic partnership' },
+  { min: 75, label: 'Strongly friendly' },
+  { min: 60, label: 'Friendly' },
+  { min: 40, label: 'Neutral' },
+  { min: 25, label: 'Unfriendly' },
+  { min: 10, label: 'Hostile' },
+  { min: 0,  label: 'Extremely hostile' }
+];
+function relationBand(score) {
+  for (const b of RELATION_BANDS) if (score >= b.min) return b.label;
+  return 'Extremely hostile';
+}
+function pairKey(a, b) { return [a, b].sort().join(':'); }
+
+/* Every pair is seeded from this table, so Skirmish never falls back to a world
+   where everybody is an identical zero. Values are 0-100, 50 = neutral. */
+const SKIRMISH_RELATION_OVERRIDES = {
+  'IRN:ISR': 4, 'IRN:PSE': 70, 'IRN:LBN': 58, 'IRN:SYR': 84, 'IRN:HZB': 90, 'IRN:HOU': 82, 'IRN:HMS': 66,
+  'IRN:SAU': 22, 'IRN:UAE': 28, 'IRN:QAT': 56, 'IRN:OMN': 68, 'IRN:TUR': 48, 'IRN:IRQ': 56,
+  'IRN:EGY': 38, 'IRN:JOR': 35, 'IRN:KWT': 30, 'IRN:BHR': 26,
+  'ISR:EGY': 72, 'ISR:JOR': 68, 'ISR:UAE': 62, 'ISR:BHR': 58, 'ISR:SAU': 45, 'ISR:TUR': 40,
+  'ISR:PSE': 5, 'ISR:LBN': 18, 'ISR:SYR': 12, 'ISR:HZB': 4, 'ISR:HOU': 8, 'ISR:HMS': 3, 'ISR:QAT': 44, 'ISR:KWT': 50, 'ISR:OMN': 52,
+  'SAU:UAE': 78, 'SAU:QAT': 74, 'SAU:KWT': 76, 'SAU:BHR': 75, 'SAU:OMN': 70,
+  'SAU:YEM': 18, 'SAU:HOU': 8, 'SAU:IRQ': 52, 'SAU:JOR': 68, 'SAU:EGY': 76,
+  'UAE:QAT': 74, 'UAE:KWT': 74, 'UAE:BHR': 74, 'UAE:OMN': 70, 'UAE:YEM': 28, 'UAE:HOU': 12,
+  'QAT:KWT': 72, 'QAT:BHR': 68, 'QAT:OMN': 66, 'QAT:HMS': 55, 'QAT:TUR': 78,
+  'KWT:BHR': 72, 'KWT:OMN': 66, 'KWT:IRQ': 48,
+  'BHR:OMN': 66, 'OMN:YEM': 42, 'OMN:HOU': 40, 'OMN:HMS': 40,
+  'TUR:SYR': 20, 'TUR:IRQ': 46, 'TUR:JOR': 54, 'TUR:EGY': 50, 'TUR:SAU': 52, 'TUR:HMS': 42,
+  'EGY:SYR': 44, 'EGY:JOR': 70, 'EGY:PSE': 62, 'EGY:LBN': 48, 'EGY:YEM': 40,
+  'JOR:SYR': 42, 'JOR:PSE': 55, 'JOR:LBN': 52, 'JOR:IRQ': 48,
+  'SYR:HZB': 34, 'SYR:LBN': 62, 'LBN:HZB': 28, 'PSE:HMS': 76, 'PSE:HZB': 42,
+  'HOU:HZB': 58, 'HOU:HMS': 50, 'HMS:HZB': 55, 'YEM:HOU': 24, 'YEM:HMS': 38
+};
+const SKIRMISH_BLOCS = {
+  GCC: ['SAU', 'UAE', 'QAT', 'KWT', 'BHR', 'OMN'],
+  IRAN_CAMP: ['IRN', 'SYR', 'HZB', 'HOU', 'HMS'],
+  ARAB_STATES: ['SAU', 'UAE', 'QAT', 'KWT', 'BHR', 'OMN', 'JOR', 'EGY', 'IRQ', 'YEM', 'PSE', 'LBN', 'SYR']
+};
+const SKIRMISH_START_WARS = [['ISR','IRN'], ['ISR','PSE'], ['ISR','HZB'], ['TUR','SYR']];
+function baseSkirmishScore(a, b) {
+  if (!a || !b) return 50;
+  const ov = SKIRMISH_RELATION_OVERRIDES[pairKey(a, b)];
+  if (ov != null) return ov;
+  const aGcc = SKIRMISH_BLOCS.GCC.includes(a), bGcc = SKIRMISH_BLOCS.GCC.includes(b);
+  if (aGcc && bGcc) return 70;
+  if (SKIRMISH_BLOCS.IRAN_CAMP.includes(a) && SKIRMISH_BLOCS.IRAN_CAMP.includes(b)) return 74;
+  if (SKIRMISH_BLOCS.ARAB_STATES.includes(a) && SKIRMISH_BLOCS.ARAB_STATES.includes(b)) return 56;
+  return 50;
+}
+
 /* ===================== DYNAMIC DIPLOMACY & REAL-MODE RELATIONS ===================== */
 function getRelation(idxA, idxB) {
   if (idxA === idxB) return 'ALLY';
@@ -3108,10 +3172,10 @@ function getRelation(idxA, idxB) {
   const key = idxA < idxB ? idxA + ':' + idxB : idxB + ':' + idxA;
   const rel = world.relations[key];
   if (rel) return rel;
-  /* Skirmish seeds this matrix from lobby teams; until that seed runs, teammates
-     are allies and everyone else is at war. Real mode defaults to neutral. */
+  /* Skirmish seeds this matrix from lobby teams and the authored table; until
+     that seed runs, teammates are allies and everyone else is neutral. */
   const pa = world.players[idxA], pb = world.players[idxB];
-  if (world.mode !== 'real') return (pa && pb && pa.team === pb.team) ? 'ALLY' : 'WAR';
+  if (world.mode !== 'real') return (pa && pb && pa.team === pb.team) ? 'ALLY' : 'NEUTRAL';
   return 'NEUTRAL';
 }
 
@@ -3120,24 +3184,29 @@ function setRelation(idxA, idxB, status, silent) {
   const key = idxA < idxB ? idxA + ':' + idxB : idxB + ':' + idxA;
   const pa0 = world.players[idxA], pb0 = world.players[idxB];
   const prev = world.relations[key] || (world.mode !== 'real'
-    ? ((pa0 && pb0 && pa0.team === pb0.team) ? 'ALLY' : 'WAR')
+    ? ((pa0 && pb0 && pa0.team === pb0.team) ? 'ALLY' : 'NEUTRAL')
     : 'NEUTRAL');
   if (prev === status) return;
   world.relations[key] = status;
+  if (status === 'WAR' && prev !== 'WAR') { world.warSince = world.warSince || {}; world.warSince[key] = world.time; }
   const pa = world.players[idxA], pb = world.players[idxB];
   if (!silent && pa && pb) {
     const msg = status === 'WAR' ? `WAR DECLARED — ${pa.country} ${pa.name} vs ${pb.country} ${pb.name}`
       : status === 'ALLY' ? `DEFENCE PACT — ${pa.country} ${pa.name} & ${pb.country} ${pb.name}`
       : status === 'TRADE' ? `TRADE PACT — ${pa.country} ${pa.name} & ${pb.country} ${pb.name}`
-      : `CEASEFIRE — ${pa.country} ${pa.name} & ${pb.country} ${pb.name}`;
+      : status === 'CEASEFIRE' ? `CEASEFIRE — ${pa.country} ${pa.name} & ${pb.country} ${pb.name}`
+      : `RELATIONS NORMALISED — ${pa.country} ${pa.name} & ${pb.country} ${pb.name}`;
     toast(msg, status === 'WAR' ? 'err' : 'aid');
   }
-  /* Keep the numeric score consistent with the diplomatic status. */
+  /* Keep the numeric score consistent with the diplomatic status. A status
+     change never leaves a stale war score behind, and a ceasefire preserves
+     the distrust that caused the war instead of pretending it never happened. */
   if (world.relScore) {
     const cur = scoreBetween(idxA, idxB);
-    if (status === 'WAR' && cur > -80) setScore(idxA, idxB, -80, null);
-    else if (status === 'ALLY' && cur < 60) setScore(idxA, idxB, 60, null);
-    else if (status === 'TRADE' && cur < 30) setScore(idxA, idxB, 30, null);
+    if (status === 'WAR') setScore(idxA, idxB, Math.min(cur, 15), 'war');
+    else if (status === 'ALLY' && cur < 80) setScore(idxA, idxB, 80, null);
+    else if (status === 'TRADE' && cur < 60) setScore(idxA, idxB, 60, null);
+    else if (status === 'CEASEFIRE') setScore(idxA, idxB, clamp(Math.min(cur, 35), 20, 35), 'ceasefire');
   }
 }
 
@@ -3285,35 +3354,92 @@ function initSkirmishSystems() {
   for (const p of world.players) if (!p.isHuman) {
     const per = AI_PERSONALITY[p.country] || 'opportunistic';
     p.aiCtl.personality = per;
+    p.aiCtl.profile = AI_PERSONALITY_PROFILES[per] || AI_PERSONALITY_PROFILES.opportunistic;
     /* Personality is an actual tempo/budget bias, not a label. */
-    if (per === 'aggressive') p.aiCtl.pushT *= 0.7;
-    else if (per === 'expansionist') p.aiCtl.pushT *= 0.9;
-    else if (per === 'defensive') p.aiCtl.pushT *= 1.45;
-    else if (per === 'economic') p.aiCtl.pushT *= 1.6;
+    p.aiCtl.pushT *= 1 / Math.max(0.55, p.aiCtl.profile.aggression);
   }
 }
+const AI_PERSONALITY_PROFILES = {
+  aggressive:   { aggression: 1.25, risk: 1.10, economy: 0.85, defence: 0.75, warChance: 0.55 },
+  expansionist: { aggression: 1.10, risk: 1.00, economy: 1.00, defence: 0.85, warChance: 0.48 },
+  hegemon:      { aggression: 1.20, risk: 0.95, economy: 1.00, defence: 0.95, warChance: 0.52 },
+  defensive:    { aggression: 0.70, risk: 0.65, economy: 1.00, defence: 1.30, warChance: 0.16 },
+  economic:     { aggression: 0.72, risk: 0.70, economy: 1.30, defence: 0.95, warChance: 0.20 },
+  opportunistic:{ aggression: 0.95, risk: 0.90, economy: 1.00, defence: 1.00, warChance: 0.34 },
+  cautious:     { aggression: 0.78, risk: 0.55, economy: 1.10, defence: 1.15, warChance: 0.22 }
+};
 const AI_PERSONALITY = {
-  IRN: 'aggressive', ISR: 'defensive', SAU: 'economic', TUR: 'expansionist', EGY: 'expansionist',
-  UAE: 'economic', QAT: 'economic', KWT: 'economic', OMN: 'defensive', BHR: 'defensive',
+  IRN: 'aggressive', ISR: 'hegemon', SAU: 'hegemon', TUR: 'expansionist', EGY: 'expansionist',
+  UAE: 'economic', QAT: 'cautious', KWT: 'defensive', OMN: 'defensive', BHR: 'defensive',
   IRQ: 'expansionist', SYR: 'defensive', JOR: 'defensive', LBN: 'defensive', YEM: 'aggressive',
   PSE: 'aggressive', HMS: 'aggressive', HZB: 'aggressive', HOU: 'aggressive'
 };
-const CLASSIC_RIVALS = [['ISR','IRN'],['ISR','PSE'],['ISR','HZB'],['IRN','SAU'],['TUR','SYR'],['EGY','ISR'],['SAU','YEM'],['SYR','ISR']];
+
+/* National inventories. Real mode already carries an audited roster in
+   REAL_COUNTRY_DB.build; Skirmish adds the overhaul's armoured/mechanised
+   classes only where the country actually fields that kind of equipment. */
+const SKIRMISH_GROUND = {
+  IRN: ['heavyTank', 'tankDestroyer', 'ifv', 'apc'], ISR: ['heavyTank', 'tankDestroyer', 'ifv', 'apc'],
+  SAU: ['heavyTank', 'tankDestroyer', 'ifv', 'apc'], TUR: ['heavyTank', 'tankDestroyer', 'ifv', 'apc'],
+  EGY: ['heavyTank', 'tankDestroyer', 'ifv', 'apc'], IRQ: ['ifv', 'apc'], SYR: ['tankDestroyer', 'ifv', 'apc'],
+  JOR: ['tankDestroyer', 'ifv', 'apc'], LBN: ['ifv', 'apc'], UAE: ['heavyTank', 'ifv', 'apc'],
+  KWT: ['ifv', 'apc'], QAT: ['ifv', 'apc'], BHR: ['ifv', 'apc'], OMN: ['ifv', 'apc'],
+  YEM: ['apc'], PSE: ['apc'], HMS: [], HZB: [], HOU: []
+};
+const SKIRMISH_IMPORTED = {
+  IRN: ['mig29', 'su24'], TUR: ['f16', 'tornado', 'typhoon', 'tb2'], EGY: ['f16', 'rafale', 'mig29', 'mirage', 'wingloong'],
+  IRQ: ['f16'], JOR: ['f16'], LBN: ['a29'], SAU: ['f15', 'typhoon', 'tornado', 'wingloong'],
+  UAE: ['f16', 'rafale', 'wingloong'], KWT: ['f16'], QAT: ['rafale', 'typhoon'], BHR: ['f16'], OMN: ['f16', 'typhoon'],
+  YEM: ['drone'], PSE: ['quad', 'ababil'], HMS: ['quad'], HZB: ['drone'], HOU: ['drone', 'quad']
+};
+function skirmishBuildList(p) {
+  const c = countryOf(p);
+  const base = (c.build && c.build.army) || [];
+  return [...new Set(base.concat(SKIRMISH_GROUND[p.country] || []))]
+    .filter(k => CFG.UNITS[k]);
+}
+function importedSupplyCap(p) {
+  /* Imported equipment is finite: two tranches plus one per active trade or
+     alliance partner. Domestic production is not capped this way. */
+  let partners = 0;
+  for (const o of world.players) if (o.alive && o.idx !== p.idx &&
+    (getRelation(p.idx, o.idx) === 'TRADE' || getRelation(p.idx, o.idx) === 'ALLY')) partners++;
+  return 2 + partners;
+}
+function equipmentAvailability(p, type) {
+  if (type === 'worker') return { ok: true, class: 'domestic' };
+  const c = countryOf(p);
+  const base = !!(c.build && c.build.army.includes(type));
+  const extra = (SKIRMISH_GROUND[p.country] || []).includes(type);
+  if (!base && !extra) return { ok: false, class: 'unavailable', why: 'not in ' + p.country + ' inventory' };
+  if ((SKIRMISH_IMPORTED[p.country] || []).includes(type)) {
+    let made = 0;
+    for (const u of world.units) if (!u.dead && u.owner === p.idx && u.type === type) made++;
+    for (const q of p.spawnQ) if (q === type) made++;
+    const cap = importedSupplyCap(p);
+    if (made >= cap) return { ok: false, class: 'imported', why: 'foreign supply exhausted (' + made + '/' + cap + ')' };
+    return { ok: true, class: 'imported', why: 'limited foreign supply ' + made + '/' + cap };
+  }
+  return { ok: true, class: extra ? 'licensed' : 'domestic' };
+}
 function seedClassicRelations() {
   const oneVsOne = world.players.length === 2;
+  world.relScore = world.relScore || {};
   for (const a of world.players) for (const b of world.players) {
     if (b.idx <= a.idx) continue;
     const allied = a.team === b.team;
-    const rival = CLASSIC_RIVALS.some(([x, y]) => (x === a.country && y === b.country) || (x === b.country && y === a.country));
-    /* A duel is a declared war. A multi-country skirmish starts mostly tense
-       and neutral: diplomacy, not an automatic world war, decides the map. */
-    setRelation(a.idx, b.idx, allied ? 'ALLY' : ((oneVsOne || rival) ? 'WAR' : 'NEUTRAL'), true);
+    const startWar = SKIRMISH_START_WARS.some(([x, y]) => (x === a.country && y === b.country) || (x === b.country && y === a.country));
+    /* Formal state and numeric relationship are separate: most neighbours are
+       tense without being at war, and a duel is the only automatic war. */
+    world.relScore[scoreKey(a.idx, b.idx)] = baseSkirmishScore(a.country, b.country);
+    setRelation(a.idx, b.idx, allied ? 'ALLY' : ((oneVsOne || startWar) ? 'WAR' : 'NEUTRAL'), true);
   }
   /* Credible opening pacts: small states shelter with a stronger neighbour. */
   const byCode = {}; world.players.forEach(p => { byCode[p.country] = p; });
   const pact = (a, b, type) => { if (byCode[a] && byCode[b]) setAgreement(byCode[a].idx, byCode[b].idx, type, true); };
   pact('JOR', 'SAU', 'NAP'); pact('KWT', 'SAU', 'DEFENSIVE'); pact('QAT', 'TUR', 'TRADE');
   pact('PSE', 'EGY', 'NAP'); pact('LBN', 'SYR', 'NAP'); pact('OMN', 'UAE', 'TRADE');
+  pact('ISR', 'EGY', 'NAP'); pact('ISR', 'JOR', 'NAP');
 }
 
 function agreementKey(a, b) { return a < b ? a + ':' + b : b + ':' + a; }
@@ -3328,7 +3454,8 @@ function setAgreement(a, b, type, silent) {
   if (a === b || a < 0 || b < 0 || !world) return false;
   const dur = (CFG.SKIRMISH.AGREEMENT_DAYS[type] || 300);
   world.agreements[agreementKey(a, b)] = { type, started: world.time, until: world.time + dur, a, b };
-  const status = (type === 'DEFENSIVE' || type === 'MILITARY' || type === 'MUTUAL_ENEMY') ? 'ALLY' : (type === 'TRADE' ? 'TRADE' : 'NEUTRAL');
+  const status = (type === 'DEFENSIVE' || type === 'MILITARY' || type === 'MUTUAL_ENEMY') ? 'ALLY'
+    : (type === 'TRADE' ? 'TRADE' : (type === 'CEASEFIRE' ? 'CEASEFIRE' : 'NEUTRAL'));
   setRelation(a, b, status, silent);
   return true;
 }
@@ -3346,11 +3473,20 @@ function proposeAgreement(a, b, type) {
   if (a === b || a < 0 || b < 0) return { ok: false, why: 'invalid' };
   const A = world.players[a], B = world.players[b];
   if (!A || !B || !A.alive || !B.alive) return { ok: false, why: 'unavailable' };
+  const nowAg = getAgreement(a, b);
+  if (nowAg && nowAg.type === 'CEASEFIRE' && type === 'CEASEFIRE') return { ok: false, why: 'ceasefire already active' };
+  if (type === 'CEASEFIRE' && world.ceasefireCd && world.ceasefireCd[agreementKey(a, b)] > world.time)
+    return { ok: false, why: 'ceasefire in cooldown' };
   if (getRelation(a, b) === 'WAR' && type !== 'CEASEFIRE') return { ok: false, why: 'at war' };
   const score = scoreBetween(a, b);
   const powerA = armyPower(a), powerB = armyPower(b);
   const weakSeeking = type === 'DEFENSIVE' && powerB > powerA * 1.25;
-  const chance = clamp(0.45 + score / 220 + (type === 'TRADE' ? 0.18 : 0) + (weakSeeking ? 0.18 : 0) - (B.credibility != null && B.credibility < 60 ? 0.15 : 0), 0.08, 0.95);
+  /* A ceasefire is more attractive to a state that is losing; friendship only
+     helps pacts, never makes a victor hand its advantage away. */
+  const losing = type === 'CEASEFIRE' && powerB < powerA * 0.75;
+  const chance = clamp(0.45 + (score - 50) / 160 + (type === 'TRADE' ? 0.16 : 0)
+    + (weakSeeking ? 0.16 : 0) + (losing ? 0.22 : 0)
+    - (B.credibility != null && B.credibility < 60 ? 0.15 : 0), 0.05, 0.95);
   if (Math.random() > chance) return { ok: false, why: 'refused' };
   setAgreement(a, b, type, false);
   return { ok: true, type };
@@ -3420,10 +3556,10 @@ function initNov2026Diplomacy() {
     }
   }
   /* Numeric relation scores back the war/trade status, so diplomacy has a
-     sliding scale instead of only four labels. */
+     sliding scale instead of only four labels. Neutral is 50, not zero. */
   for (const key in world.relations) {
     const st = world.relations[key];
-    const base = st === 'WAR' ? -90 : st === 'ALLY' ? 70 : st === 'TRADE' ? 35 : 0;
+    const base = st === 'WAR' ? 8 : st === 'ALLY' ? 85 : st === 'TRADE' ? 65 : (st === 'CEASEFIRE' ? 28 : 50);
     if (world.relScore[key] == null) world.relScore[key] = base;
   }
   initNonStateRelations();
@@ -3433,7 +3569,10 @@ function initNov2026Diplomacy() {
      of -100 is a war footing by definition; anything else keeps its label. */
   const sc = (a, b, v) => {
     if (byCode[a] == null || byCode[b] == null) return;
-    setScore(byCode[a], byCode[b], v, null);
+    /* The Nov-2026 table was authored on a -100..100 scale. Convert it once to
+       the canonical 0..100 scale (50 neutral) instead of leaving two scales. */
+    const norm = clamp(50 + v / 2, 0, 100);
+    setScore(byCode[a], byCode[b], norm, null);
     if (v <= -90 && getRelation(byCode[a], byCode[b]) !== 'WAR') setRelation(byCode[a], byCode[b], 'WAR', true);
   };
   // Israel
@@ -3600,6 +3739,103 @@ function geoOwnerAt(x, y) {
   if (!world || !world.map || !world.map.terrain || !world.map.terrain.countryAt) return null;
   return playerForGeo(world.map.terrain.countryAt(x, y));
 }
+/* Sovereignty and military control are deliberately separate. A captured city
+   seat projects its occupier's control over the surrounding ground, even while
+   the static map still names the original sovereign. */
+function territoryControllerAt(x, y) {
+  if (!world) return null;
+  const TS = world.spaceScale || 1;
+  let best = null, bd = (175 * TS) ** 2;
+  for (const c of (world.cities || [])) {
+    if (c.razed || c.owner < 0) continue;
+    const d = dist2(x, y, c.x, c.y);
+    if (d < bd) { bd = d; best = world.players[c.owner]; }
+  }
+  for (const b of world.buildings) {
+    if (b.dead || b.owner < 0) continue;
+    if (b.kind !== 'camp' && b.kind !== 'outpost' && b.kind !== 'economy' && b.kind !== 'depot') continue;
+    const r = (b.kind === 'camp' ? 210 : 150) * TS;
+    const d = dist2(x, y, b.x, b.y);
+    if (d < r * r && d < bd) { bd = d; best = world.players[b.owner]; }
+  }
+  return best || geoOwnerAt(x, y);
+}
+function transitAllowed(a, b) {
+  if (a === b) return true;
+  const rel = getRelation(a, b);
+  if (rel === 'WAR' || rel === 'ALLY') return rel === 'ALLY';
+  const ag = getAgreement(a, b);
+  return !!(ag && (ag.type === 'TRANSIT' || ag.type === 'DEFENSIVE' || ag.type === 'MILITARY'));
+}
+function friendlyAnchorNear(x, y, owner, r) {
+  const rr = r * r;
+  for (const c of (world.cities || [])) if (!c.razed && c.owner === owner && dist2(x, y, c.x, c.y) < rr) return true;
+  for (const b of world.buildings) if (!b.dead && b.owner === owner && dist2(x, y, b.x, b.y) < rr) return true;
+  return false;
+}
+function nearestFriendlyAnchor(x, y, owner) {
+  let best = null, bd = 1e18;
+  for (const c of (world.cities || [])) if (!c.razed && c.owner === owner) { const d = dist2(x, y, c.x, c.y); if (d < bd) { bd = d; best = c; } }
+  for (const b of world.buildings) if (!b.dead && b.owner === owner) { const d = dist2(x, y, b.x, b.y); if (d < bd) { bd = d; best = b; } }
+  return best;
+}
+function updateBorders() {
+  if (!world || world.mode !== 'classic') return;
+  world.borderTick = (world.borderTick || 0) + CFG.DT;
+  if (world.borderTick < 1) return;
+  world.borderTick = 0;
+  world.borderLog = world.borderLog || [];
+  const groups = new Map();
+  for (const u of world.units) {
+    if (u.dead || u.fly || u.owner < 0) continue;
+    const sovereign = geoOwnerAt(u.x, u.y);
+    if (!sovereign || sovereign.idx === u.owner) { u.foreignSince = 0; u.foreignOwner = -1; u.foreignReturn = false; continue; }
+    if (getRelation(u.owner, sovereign.idx) === 'WAR') { u.foreignSince = 0; u.foreignOwner = -1; u.foreignReturn = false; continue; }
+    const controller = territoryControllerAt(u.x, u.y);
+    if (controller && controller.idx === u.owner) { u.foreignSince = 0; u.foreignOwner = -1; u.foreignReturn = false; continue; }
+    if (transitAllowed(u.owner, sovereign.idx)) { u.foreignSince = 0; u.foreignOwner = -1; u.foreignReturn = false; continue; }
+    /* Staging on one's own side of a border is not an incursion. This also
+       absorbs small projection differences around divided cities. */
+    if (friendlyAnchorNear(u.x, u.y, u.owner, 280 * (world.spaceScale || 1))) { u.foreignSince = 0; u.foreignOwner = -1; u.foreignReturn = false; continue; }
+    if (!u.foreignSince || u.foreignOwner !== sovereign.idx) {
+      u.foreignSince = world.time;
+      u.foreignOwner = sovereign.idx;
+      const A = world.players[u.owner], B = sovereign;
+      if (A && B) {
+        addScore(u.owner, B.idx, -3, 'unauthorised border crossing');
+        const key = u.owner + ':' + B.idx;
+        if (!world._borderWarn || world.time - (world._borderWarn[key] || -999) > 45) {
+          world._borderWarn = world._borderWarn || {};
+          world._borderWarn[key] = world.time;
+          world.borderLog.push({ t: Math.round(world.time), msg: A.country + ' units crossed into ' + B.country + ' without transit rights' });
+          if (B.isHuman) toast('BORDER VIOLATION — ' + A.country + ' military units entered your territory. Demand withdrawal or mobilise.', 'warn');
+          if (B.aiCtl) B.aiCtl.borderAlert = { x: u.x, y: u.y, owner: u.owner, t: world.time };
+        }
+      }
+    }
+    if (!u.foreignReturn) {
+      const home = nearestFriendlyAnchor(u.x, u.y, u.owner);
+      if (home) { u.order = { k: 'move', x: home.x, y: home.y }; assignPath(u, home.x, home.y); u.foreignReturn = true; }
+    }
+    const key = u.owner + ':' + sovereign.idx;
+    const g = groups.get(key) || { n: 0, owner: u.owner, sovereign, since: u.foreignSince, x: 0, y: 0 };
+    g.n++; g.x += u.x; g.y += u.y; g.since = Math.min(g.since || world.time, u.foreignSince || world.time);
+    groups.set(key, g);
+  }
+  for (const g of groups.values()) {
+    const dwell = world.time - g.since;
+    const heavy = g.n >= 8 || dwell > 90;
+    if (!heavy) continue;
+    const key = g.owner + ':' + g.sovereign.idx;
+    world._borderPressure = world._borderPressure || {};
+    if (world.time - (world._borderPressure[key] || -999) > 30) {
+      world._borderPressure[key] = world.time;
+      addScore(g.owner, g.sovereign.idx, -1, 'military incursion');
+    }
+    if (g.sovereign.aiCtl) g.sovereign.aiCtl.borderAlert = { x: g.x / Math.max(1, g.n), y: g.y / Math.max(1, g.n), owner: g.owner, t: world.time };
+  }
+  if (world.borderLog.length > 100) world.borderLog.shift();
+}
 function humanPlayer() { return world.players.find(p => p.isHuman) || world.players[0]; }
 
 /* ===================== WORLD CREATION ===================== */
@@ -3620,7 +3856,7 @@ function createWorld(lobby, map, diff, mode) {
   world = {
     mode: mode, // 'real' or 'classic'
     diff: diff, time: 0, tick: 0,
-    w: map.w, h: map.h,
+    w: map.w, h: map.h, spaceScale: map.spaceScale || 1,
     obstacles: map.obstacles,
     deposits: map.deposits.map(d => ({ x: d.x, y: d.y, mineId: 0, n: d.n || '', geoName: d.geoName || '' })),
     players: [], units: [], buildings: [], missiles: [], interceptors: [], effects: [],
@@ -3852,14 +4088,15 @@ function newNeutralSoldier(x, y, homeCampId) {
 function newUnit(owner, type, x, y) {
   const st = CFG.UNITS[type]; if (!st) return null;
   const p = world.players[owner];
+  const S = world.spaceScale || 1;
   return {
     id: world.nextId++, kind: 'unit', type: type, owner: owner, team: p.team,
-    x: x, y: y, vx: 0, vy: 0, hp: st.hp, maxHp: st.hp, speed: st.speed,
-    dmg: st.dmg, atk: st.atk, range: st.range, r: st.r,
+    x: x, y: y, vx: 0, vy: 0, hp: st.hp, maxHp: st.hp, speed: st.speed * S,
+    dmg: st.dmg, atk: st.atk, range: st.range * S, r: st.r,
     dmgType: st.dmgType, armor: st.armor,
     aa: !!st.aa, fly: !!st.fly, siege: !!st.siege,
     capture: world.mode === 'real' ? !!st.capture : (!st.worker && !st.fly), vsAirOnly: !!st.vsAirOnly, kamikaze: !!st.kamikaze,
-    splash: st.splash || 0, stealth: st.stealth || 1,
+    splash: (st.splash || 0) * S, stealth: st.stealth || 1,
     isWorker: !!st.worker, mineId: 0, fleeT: 0,
     ammo: st.ammo || 0, maxAmmo: st.ammo || 0, airbaseId: 0, rearmT: 0,
     maxCargo: st.capacity || 0, cargo: [], readiness: st.fly ? 'READY' : null, repairT: 0,
@@ -4114,14 +4351,23 @@ function updateFog() {
     if (b.dead) continue;
     const isSharedVision = b.owner === hp.idx || (world.mode === 'real' ? getRelation(hp.idx, b.owner) === 'ALLY' : b.team === hp.team);
     if (!isSharedVision) continue;
-    const r = (CFG.BUILDINGS[b.kind] && CFG.BUILDINGS[b.kind].vision) || (b.kind === 'camp' ? 320 : 210);
+    const r = ((CFG.BUILDINGS[b.kind] && CFG.BUILDINGS[b.kind].vision) || (b.kind === 'camp' ? 320 : 210)) * (world.spaceScale || 1);
     fogReveal(b.x, b.y, r);
   }
   for (const u of world.units) {
     if (u.dead) continue;
     const isSharedVision = u.owner === hp.idx || (world.mode === 'real' ? getRelation(hp.idx, u.owner) === 'ALLY' : u.team === hp.team);
     if (!isSharedVision) continue;
-    fogReveal(u.x, u.y, u.fly ? 290 : 190);
+    fogReveal(u.x, u.y, (u.fly ? 290 : 190) * (world.spaceScale || 1));
+  }
+  if (world.mode === 'classic') {
+    world.contacts = world.contacts || new Map();
+    for (const [id, c] of world.contacts) if (world.time - c.t > 55) world.contacts.delete(id);
+    for (const u of world.units) {
+      if (u.dead || u.owner === hp.idx || (u.team === hp.team)) continue;
+      if (!fogVisibleAt(u.x, u.y)) continue;
+      world.contacts.set(u.id, { id: u.id, owner: u.owner, type: u.type, x: u.x, y: u.y, t: world.time });
+    }
   }
 }
 function fogVisibleAt(x, y) {
@@ -4178,10 +4424,12 @@ function armyCount(owner) {
 }
 function canBuildType(p, type) {
   const c = countryOf(p);
-  /* Skirmish keeps the full catalogue. Real mode builds only from the nation's
-     audited roster, so a state without an air force or missile arm cannot
-     order one. */
-  if (!world || world.mode !== 'real' || !c.build) return true;
+  if (!world || !c.build) return true;
+  if (world.mode === 'classic') {
+    /* A country may only produce what it actually fields. Iran cannot buy an
+       F-35, and no state gets the entire catalogue through a second screen. */
+    return type === 'worker' || skirmishBuildList(p).includes(type);
+  }
   return type === 'worker' || c.build.army.includes(type);
 }
 function airSlots(owner) {
@@ -4197,6 +4445,13 @@ function queueUnit(owner, type) {
   if (!canBuildType(p, type)) {
     if (p.isHuman) { toast(p.name + ' does not field that capability', 'err'); SFX.play('error'); }
     return false;
+  }
+  if (world.mode === 'classic') {
+    const avail = equipmentAvailability(p, type);
+    if (!avail.ok) {
+      if (p.isHuman) { toast(unitLabel(type, countryOf(p)) + ' unavailable — ' + avail.why, 'err'); SFX.play('error'); }
+      return false;
+    }
   }
   const st = CFG.UNITS[type];
   if (st.fly && !st.kamikaze) {
@@ -4236,6 +4491,7 @@ function queueUnit(owner, type) {
 
 function canPlaceBuilding(owner, kind, x, y) {
   const p = world.players[owner];
+  const PS = world.spaceScale || 1;
   if (!p || !p.alive || !CFG.BUILDINGS[kind]) return 'Cannot build';
   const cost = costOf(p, kind);
   if (p.cents < cost * 100) return 'Need ' + cost + ' cr';
@@ -4244,30 +4500,29 @@ function canPlaceBuilding(owner, kind, x, y) {
   if (insideObstacle(x, y, r + 6)) return 'Blocked by mountains';
   if (world.terrainBlocked && world.terrainBlocked(x, y)) return 'Cannot build on water';
   if (world.map && world.map.terrain && world.map.terrain.riverAt && world.map.terrain.riverAt(x, y)) return 'Cannot build in a river';
-  const homeOwner = geoOwnerAt(x, y);
+  const homeOwner = territoryControllerAt(x, y);
   const inSovereignLand = homeOwner && homeOwner.idx === owner;
 
   if (kind === 'economy' && world.mode === 'classic') {
     let field = null;
-    for (const d of world.oilFields || []) if (dist2(x, y, d.x, d.y) < 78 * 78) { field = d; break; }
+    for (const d of world.oilFields || []) if (dist2(x, y, d.x, d.y) < (78 * PS) ** 2) { field = d; break; }
     if (!field) return 'Economic Complex must be built on an oil field';
-    if (field.code && field.code !== p.country) return 'Oil field belongs to another country';
     if (field.econId) { const eb = ent(field.econId); if (eb && !eb.dead) return 'This oil field already has an Economic Complex'; }
-    const depOwner = geoOwnerAt(field.x, field.y);
+    const depOwner = territoryControllerAt(field.x, field.y);
     if (!(depOwner && depOwner.idx === owner)) return 'Oil field outside controlled territory';
     x = field.x; y = field.y;
   }
 
   if (kind === 'mine') {
     let dep = null;
-    for (const d of world.deposits) if (!d.mineId && dist2(x, y, d.x, d.y) < CFG.GOLD.MINE_SNAP_R * CFG.GOLD.MINE_SNAP_R) { dep = d; break; }
+    for (const d of world.deposits) if (!d.mineId && dist2(x, y, d.x, d.y) < (CFG.GOLD.MINE_SNAP_R * PS) ** 2) { dep = d; break; }
     if (!dep) return 'Place on a natural resource field';
-    const depOwner = geoOwnerAt(dep.x, dep.y);
+    const depOwner = territoryControllerAt(dep.x, dep.y);
     let inTerr = !!(depOwner && depOwner.idx === owner);
     if (!inTerr) {
       for (const b of world.buildings) {
         if (b.dead || b.owner !== owner) continue;
-        const rad = b.kind === 'camp' ? CFG.PLACE.CAMP_R + 120 : (b.kind === 'outpost' ? CFG.PLACE.TOWER_R + 110 : (b.kind === 'tower' ? 150 : 0));
+        const rad = (b.kind === 'camp' ? CFG.PLACE.CAMP_R + 120 : (b.kind === 'outpost' ? CFG.PLACE.TOWER_R + 110 : (b.kind === 'tower' ? 150 : 0))) * PS;
         if (rad && dist2(dep.x, dep.y, b.x, b.y) <= rad * rad) { inTerr = true; break; }
       }
     }
@@ -4278,8 +4533,8 @@ function canPlaceBuilding(owner, kind, x, y) {
   for (const b of world.buildings) {
     if (b.dead) continue;
     if (b.owner === owner) {
-      if (b.kind === 'camp' && dist2(x, y, b.x, b.y) <= CFG.PLACE.CAMP_R * CFG.PLACE.CAMP_R) near = true;
-      if ((b.kind === 'tower' || b.kind === 'outpost' || b.kind === 'airbase' || b.kind === 'sam') && dist2(x, y, b.x, b.y) <= CFG.PLACE.TOWER_R * CFG.PLACE.TOWER_R) near = true;
+      if (b.kind === 'camp' && dist2(x, y, b.x, b.y) <= (CFG.PLACE.CAMP_R * PS) ** 2) near = true;
+      if ((b.kind === 'tower' || b.kind === 'outpost' || b.kind === 'airbase' || b.kind === 'sam') && dist2(x, y, b.x, b.y) <= (CFG.PLACE.TOWER_R * PS) ** 2) near = true;
     }
     const min = r + b.r + CFG.PLACE.GAP;
     if (dist2(x, y, b.x, b.y) < min * min) return 'Too close to structure';
@@ -4288,7 +4543,7 @@ function canPlaceBuilding(owner, kind, x, y) {
   const onOwnOilField = kind === 'economy' && (world.oilFields || []).some(d => dist2(x, y, d.x, d.y) < 4);
   if (!onOwnOilField) {
     for (const d of world.deposits) {
-      if (dist2(x, y, d.x, d.y) < (r + CFG.GOLD.DEPOSIT_R + CFG.PLACE.DEPOSIT_GAP) ** 2) return 'Keep resource field clear';
+      if (dist2(x, y, d.x, d.y) < (r + CFG.GOLD.DEPOSIT_R + CFG.PLACE.DEPOSIT_GAP * PS) ** 2) return 'Keep resource field clear';
     }
   }
   return '';
@@ -4371,7 +4626,7 @@ function updateEconomy() {
         }
       }
     }
-    if (!controller) controller = geoOwnerAt(d.x, d.y);
+    if (!controller) controller = territoryControllerAt(d.x, d.y);
     depOwner[i] = controller ? controller.idx : -1;
   }
 
@@ -4621,13 +4876,17 @@ function applyDamage(target, amount, attacker) {
   }
   if (target.kind === 'unit' && target.isWorker && attacker && attacker.owner >= 0) target.fleeT = CFG.WORKER_FLEE_T;
 
-  // Dynamic war declaration in REAL mode if an attacker strikes a non-allied nation
-  if (world.mode === 'real' && attacker && attacker.owner >= 0 && target.owner >= 0 && attacker.owner !== target.owner) {
+  // A deliberate attack on another nation is attributable in every mode.
+  if (attacker && attacker.owner >= 0 && target.owner >= 0 && attacker.owner !== target.owner) {
     const rel = getRelation(attacker.owner, target.owner);
-    if (rel !== 'WAR' && rel !== 'ALLY') {
+    if (world.mode === 'classic') {
+      noteSovereignAttack(attacker.owner, target.x, target.y, {
+        targetOwner: target.owner, military: target.kind !== 'unit'
+      });
+    } else if (rel !== 'WAR' && rel !== 'ALLY') {
       setRelation(attacker.owner, target.owner, 'WAR', false);
     }
-    noteAidAggression(attacker.owner, target.owner);
+    if (world.mode === 'real') noteAidAggression(attacker.owner, target.owner);
     /* Insurgent survival wins only count a war they were actually dragged into. */
     const victim = world.players[target.owner];
     if (victim) victim.wasAttacked = true;
@@ -4675,6 +4934,85 @@ function splashDamage(x, y, rad, dmg, attacker, bldMult) {
   });
 }
 
+/* A deliberate strike is attributable immediately. The target's sovereignty
+   is derived from the nearest installation/city first, then the static map,
+   and the response depends on the target class and the prior relationship. */
+function sovereignOwnerAt(x, y) {
+  const SS = (world && world.spaceScale) || 1;
+  let best = -1, bd = (120 * SS) ** 2;
+  for (const b of world.buildings) {
+    if (b.dead || b.owner < 0 || (b.kind !== 'camp' && b.kind !== 'outpost' && b.kind !== 'ncamp')) continue;
+    const d = dist2(x, y, b.x, b.y);
+    if (d < bd) { bd = d; best = b.owner; }
+  }
+  if (best < 0) {
+    for (const c of (world.cities || [])) {
+      if (c.razed || c.owner < 0) continue;
+      const d = dist2(x, y, c.x, c.y);
+      if (d < (95 * SS) ** 2 && d < bd) { bd = d; best = c.owner; }
+    }
+  }
+  if (best < 0) { const g = geoOwnerAt(x, y); if (g) best = g.idx; }
+  return best;
+}
+function notifyAlliesOfAttack(victimIdx, attackerIdx, incident) {
+  for (const ally of world.players) {
+    if (!ally.alive || ally.idx === victimIdx || ally.idx === attackerIdx) continue;
+    if (getRelation(ally.idx, victimIdx) !== 'ALLY') continue;
+    addScore(ally.idx, attackerIdx, -18, 'ally attacked');
+    const pact = getAgreement(ally.idx, victimIdx);
+    if (pact && (pact.type === 'DEFENSIVE' || pact.type === 'MILITARY') && getRelation(ally.idx, attackerIdx) !== 'WAR') {
+      setRelation(ally.idx, attackerIdx, 'WAR', false);
+      logEvent(ally.country + ' honours its defence pact with ' + world.players[victimIdx].country + ' against ' + world.players[attackerIdx].country, 'crit');
+    } else {
+      logEvent(ally.country + ' condemns the ' + incident + ' against ' + world.players[victimIdx].country, 'hint');
+    }
+  }
+}
+function noteSovereignAttack(attackerIdx, x, y, opts) {
+  if (!world || attackerIdx < 0) return null;
+  const o = opts || {};
+  const victimIdx = o.targetOwner != null ? o.targetOwner : sovereignOwnerAt(x, y);
+  if (victimIdx < 0 || victimIdx === attackerIdx) return null;
+  const A = world.players[attackerIdx], V = world.players[victimIdx];
+  if (!A || !V || !V.alive) return null;
+  const rel = getRelation(attackerIdx, victimIdx);
+  if (rel === 'WAR') return { victimIdx, alreadyWar: true, severity: 'war' };
+  const HS = world.spaceScale || 1;
+  const cityHit = (world.cities || []).some(c => !c.razed && dist2(x, y, c.x, c.y) < (110 * HS) ** 2);
+  const impactBuilding = world.buildings.some(b => !b.dead && dist2(x, y, b.x, b.y) < (b.r + 18) ** 2);
+  const military = !!o.military || impactBuilding;
+  const severity = o.kind === 'missile' ? (cityHit ? 'civilian missile strike' : (military ? 'military missile strike' : 'territorial violation'))
+    : (o.military ? 'military attack' : 'armed incursion');
+  const cur = scoreBetween(attackerIdx, victimIdx);
+  if (rel === 'ALLY') {
+    const ag = getAgreement(attackerIdx, victimIdx);
+    if (ag) breakAgreement(attackerIdx, victimIdx, 'armed attack on an ally');
+    A.credibility = Math.max(0, (A.credibility == null ? 100 : A.credibility) - 35);
+    setScore(attackerIdx, victimIdx, Math.min(cur, 5), 'betrayal — attacked an ally');
+    setRelation(attackerIdx, victimIdx, 'WAR', false);
+  } else if (rel === 'CEASEFIRE') {
+    /* Violating a ceasefire is a deliberate act with an immediate formal cost. */
+    const ag = getAgreement(attackerIdx, victimIdx);
+    if (ag) breakAgreement(attackerIdx, victimIdx, 'ceasefire violated');
+    A.credibility = Math.max(0, (A.credibility == null ? 100 : A.credibility) - 30);
+    world.ceasefireCd = world.ceasefireCd || {};
+    world.ceasefireCd[agreementKey(attackerIdx, victimIdx)] = world.time + 300;
+    addScore(attackerIdx, victimIdx, -25, 'ceasefire violation');
+    setRelation(attackerIdx, victimIdx, 'WAR', false);
+  } else {
+    const delta = cityHit ? -45 : (military ? -30 : -18);
+    addScore(attackerIdx, victimIdx, delta, severity);
+    if (cityHit || scoreBetween(attackerIdx, victimIdx) <= 15) setRelation(attackerIdx, victimIdx, 'WAR', false);
+  }
+  V.wasAttacked = true;
+  V.aiCtl && (V.aiCtl.grievanceTarget = attackerIdx, V.aiCtl.grievanceUntil = world.time + 900, V.aiCtl.pushT = 0);
+  if (V.isHuman) toast('DIPLOMATIC CRISIS — ' + A.country + ' ' + severity + ' against your territory.', 'crit');
+  logEvent(A.country + ' committed a ' + severity + ' against ' + V.country + ' (relations ' + Math.round(scoreBetween(attackerIdx, victimIdx)) + '/100)', 'crit');
+  notifyAlliesOfAttack(victimIdx, attackerIdx, severity);
+  return { victimIdx, alreadyWar: false, severity, cityHit };
+}
+
 function launchMissile(owner, kind, tx, ty) {
   const p = world.players[owner];
   const m = CFG.MSL[kind];
@@ -4689,18 +5027,23 @@ function launchMissile(owner, kind, tx, ty) {
   p.mslStock[kind]--;
   p.stats.missiles++;
 
+  /* Declare/escalate before the warhead lands, so a neutral country is never
+     hit by a missile that silently fails to damage it. */
+  const diplomatic = noteSovereignAttack(owner, tx, ty, { kind: 'missile', military: false });
+
   const d = Math.hypot(tx - camp.x, ty - camp.y);
-  const flightT = Math.max(2.5, d / m.speed);
+  const MS = world.spaceScale || 1;
+  const flightT = Math.max(2.5, d / (m.speed * MS));
   world.missiles.push({
     id: world.nextId++, owner: owner, team: p.team, kind: kind, name: m.name,
     sx: camp.x, sy: camp.y, x: camp.x, y: camp.y, tx: tx, ty: ty,
-    t: 0, maxT: flightT, speed: m.speed, dmg: m.dmg, radius: m.radius,
+    t: 0, maxT: flightT, speed: m.speed * MS, dmg: m.dmg, radius: m.radius * MS,
     bldMult: m.bldMult, pk: m.pk, arc: m.arc, low: m.low,
-    color: p.color, dead: false, engagedBy: {}
+    color: p.color, dead: false, engagedBy: {}, targetIdx: diplomatic ? diplomatic.victimIdx : -1
   });
   SFX.play('launch');
   if (p.isHuman) toast('Launched ' + m.name + ' · ' + flightT.toFixed(1) + 's to impact', 'hint');
-  else if (dist2(tx, ty, humanPlayer().startX, humanPlayer().startY) < 600 * 600) {
+  else if (dist2(tx, ty, humanPlayer().startX, humanPlayer().startY) < (600 * MS) ** 2) {
     toast('INCOMING ' + m.name + ' — from ' + p.country + ' ' + p.name, 'err');
     SFX.play('alarm');
   }
@@ -4737,7 +5080,7 @@ function updateMissiles() {
     for (const m of world.missiles) {
       if (m.dead || !hostile(b, m)) continue;
       if (m.engagedBy[b.id]) continue;
-      if (dist2(b.x, b.y, m.x, m.y) <= CFG.CAPTURE.INTERCEPT_RANGE * CFG.CAPTURE.INTERCEPT_RANGE) {
+      if (dist2(b.x, b.y, m.x, m.y) <= (CFG.CAPTURE.INTERCEPT_RANGE * (world.spaceScale || 1)) ** 2) {
         targetMsl = m; break;
       }
     }
@@ -4750,7 +5093,7 @@ function updateMissiles() {
     const pk = clamp(targetMsl.pk * 1.15, 0.15, 0.95);
     logEvent('ANTI-MISSILE ENGAGEMENT — ' + (targetMsl.name || 'missile') + ': ' + Math.round(pk * 100) + '% intercept, 100 cr expended');
     world.interceptors.push({
-      x: b.x, y: b.y, targetMsl: targetMsl, speed: 420,
+      x: b.x, y: b.y, targetMsl: targetMsl, speed: 420 * (world.spaceScale || 1),
       pk, color: '#38bdf8', dead: false
     });
   }
@@ -4798,7 +5141,16 @@ function updateMissiles() {
 /* ===================== UNIT TARGETING & MOVEMENT ===================== */
 function findTargetFor(u) {
   if (u.isWorker || u.dmg <= 0) return null;
-  const acq = Math.max(u.range + 40, CFG.STANCE.AGG_ACQUIRE);
+  const acq = Math.max(u.range + 40 * (world.spaceScale || 1), CFG.STANCE.AGG_ACQUIRE * (world.spaceScale || 1));
+  if (u.assault) {
+    const a = ent(u.assault);
+    if (!a || a.dead || !hostile(u, a) || !canHit(u, a)) u.assault = 0;
+    else {
+      const suppressedObjective = world.mode === 'classic' && a.kind !== 'unit' && a.capturable && a.suppressed &&
+        u.capture && dist2(u.x, u.y, a.x, a.y) < (CFG.CAPTURE.RADIUS * (world.spaceScale || 1) * 1.35) ** 2;
+      if (!suppressedObjective) return a;
+    }
+  }
   let best = null, bestSc = 0, seen = 0;
   const CAP = 24;   // bounded scan keeps a 2,400-unit battle inside the frame budget
   forNear(u.x, u.y, acq + 30, e => {
@@ -4813,6 +5165,14 @@ function findTargetFor(u) {
     if (dd2 > lim * lim) return false;
     const d = Math.sqrt(dd2) - e.r;
     if (!hostile(u, e) || !canHit(u, e)) return false;
+    if (e.kind !== 'unit') { e._seenBy = e._seenBy || {}; e._seenBy[u.owner] = world.time; }
+    /* A suppressed capturable installation is an objective, not a target to
+       level. Ground units inside the capture ring stop firing so the 7–10 minute
+       capture clock can actually finish instead of destroying the prize. */
+    if (world.mode === 'classic' && e.kind !== 'unit' && e.capturable && e.suppressed) {
+      const cr = CFG.CAPTURE.RADIUS * (world.spaceScale || 1) * 1.35;
+      if (u.capture && dist2(u.x, u.y, e.x, e.y) < cr * cr) return false;
+    }
     if (!shotLOS(u, e)) return false;
     const sc = targetScore(u, e, d);
     if (sc > bestSc) { bestSc = sc; best = e; }
@@ -5122,7 +5482,7 @@ function updateBuildings() {
 
     const bd = CFG.BUILDINGS[b.kind] || {};
     const dmg = bd.dmg || (b.kind === 'ncamp' ? CFG.NEUTRAL.DMG : 0);
-    const range = bd.range || (b.kind === 'ncamp' ? CFG.NEUTRAL.RANGE : 0);
+    const range = (bd.range || (b.kind === 'ncamp' ? CFG.NEUTRAL.RANGE : 0)) * (world.spaceScale || 1);
     if (dmg > 0 && range > 0 && b.cd <= 0) {
       let tgt = null, bestD = range + 1;
       forNear(b.x, b.y, range + 30, e => {
@@ -5155,9 +5515,10 @@ function updateBuildings() {
       if (captureGracePassed) {
         const attackers = {};
         let defenders = 0;
-        forNear(b.x, b.y, CFG.CAPTURE.RADIUS + 20, u => {
+        const CR = CFG.CAPTURE.RADIUS * (world.spaceScale || 1);
+        forNear(b.x, b.y, CR + 20, u => {
           if (u.dead || u.kind !== 'unit' || !u.capture || u.fly) return false;
-          if (dist2(u.x, u.y, b.x, b.y) > CFG.CAPTURE.RADIUS * CFG.CAPTURE.RADIUS) return false;
+          if (dist2(u.x, u.y, b.x, b.y) > CR * CR) return false;
           if (friendly(u, b)) defenders++;
           else if (u.owner >= 0 && hostile(u, b)) {
             const captureKey = world.mode === 'real' ? u.owner : u.team;
@@ -5214,6 +5575,12 @@ function convertBuildingOwner(b, newOwner) {
   b.owner = newOwner; b.team = np.team; b.color = np.color;
   b.captureProg = 0; b.suppressed = false;
   b.hp = Math.round(b.maxHp * 0.65);
+  /* A captured city seat immediately transfers the city itself; geographic
+     sovereignty remains on the map, but military control changes now. */
+  if (b.cityKey) {
+    const city = (world.cities || []).find(c => c.id === b.cityKey);
+    if (city) { city.owner = newOwner; refreshCityShares(); applyCityCaps(); }
+  }
   /* Ownership changes get one audible, visible moment of consequence. */
   world.effects.push({ k: 'ring', x: b.x, y: b.y, r: b.r + 26, t: 0.55, maxT: 0.55, color: np.color });
   world.effects.push({ k: 'tag', x: b.x, y: b.y, txt: np.name + ' SECURED', t: 1.1, maxT: 1.1, color: np.color });
@@ -5280,8 +5647,12 @@ function repairBuilding(owner, b) {
 /* ===================== STRATEGIC AI CONTROLLER ===================== */
 function makeAI(owner, diff) {
   const d = CFG.AI.DIFF[diff] || CFG.AI.DIFF.Medium;
+  const pl = world && world.players ? world.players[owner] : null;
+  const personality = (pl && AI_PERSONALITY[pl.country]) || 'opportunistic';
   return {
     owner: owner, diff: diff, cfg: d,
+    personality: personality,
+    profile: AI_PERSONALITY_PROFILES[personality] || AI_PERSONALITY_PROFILES.opportunistic,
     thinkT: 0.6 + Math.random() * 1.2,
     spendT: 0.5 + Math.random() * 0.8,
     /* The opening delay is the difficulty's own knob, so a Hard AI moves
@@ -5317,6 +5688,10 @@ function buyBlockedReason(p, type) {
   const st = CFG.UNITS[type];
   if (!st) return 'unknown type';
   if (!canBuildType(p, type)) return 'not fielded';
+  if (world.mode === 'classic') {
+    const av = equipmentAvailability(p, type);
+    if (!av.ok) return av.why;
+  }
   if (st.fly && !st.kamikaze) {
     const a = airSlots(p.idx);
     if (!a.bases) return 'no airbase';
@@ -5604,11 +5979,29 @@ function aiEconomyAndBuild(p, ai, c) {
 
 function pickEnemyTargetFor(p) {
   let best = null, bestScore = -1e9;
+  const strategic = world.mode === 'classic';
+  const prof = (p.aiCtl && p.aiCtl.profile) || AI_PERSONALITY_PROFILES.opportunistic;
+  const coalition = p.aiCtl && p.aiCtl.coalition;
   for (const b of world.buildings) {
     if (b.dead || !hostile(p, b) || b.team === -1) continue;
-    if (b.kind !== 'camp' && b.kind !== 'outpost') continue;
+    if (!strategic && b.kind !== 'camp' && b.kind !== 'outpost') continue;
+    /* Only city seats and previously scouted installations are targetable. An
+       AI cannot see a hidden SAM site or airbase across the map for free. */
+    if (strategic && !b.city && !(b._seenBy && world.time - b._seenBy[p.idx] < 180)) continue;
     const d = dist(p.startX, p.startY, b.x, b.y);
-    let sc = -d * 0.5 + (b.kind === 'camp' ? 220 : 120);
+    const value = { camp: 360, outpost: 130, airbase: 230, missileFactory: 260, economy: 190,
+      sam: 150, radar: 125, depot: 105, mine: 90, tower: 65 }[b.kind] || 50;
+    let sc = -d * (strategic ? 0.18 / (world.spaceScale || 1) : 0.5) + value;
+    if (strategic) {
+      const city = cityForBuilding(b);
+      if (city) sc += (city.capital ? 300 : 45) + (city.pop || 0) * 24;
+      if (prof.economy >= 1.25 && (b.kind === 'economy' || b.kind === 'mine' || b.kind === 'depot')) sc += 160;
+      if (prof.aggression >= 1.2 && b.kind === 'camp') sc += 80;
+      if (p.aiCtl && p.aiCtl.grievanceTarget === b.owner && world.time < (p.aiCtl.grievanceUntil || 0)) sc += 900;
+      if (coalition && coalition.targetIdx === b.owner && world.time < coalition.until) sc += 850;
+      if (world.victoryLeader === b.owner) sc += 260;
+      sc += Math.max(0, 0.35 - (b.hp / Math.max(1, b.maxHp))) * 250;
+    }
     const pref = archetypeTargetFor(p);
     if (pref && b.owner === pref.idx) sc += 900;   // archetype target selection (decisive over distance)
     /* Focus (Medium+): a capital is the decisive objective, so concentrating on
@@ -5631,6 +6024,17 @@ function aiTacticalCommands(p, ai) {
   });
 
   const combatUnits = world.units.filter(u => !u.dead && u.owner === p.idx && !u.isWorker);
+  if (ai.borderAlert && world.time - ai.borderAlert.t < 18) {
+    const a = ai.borderAlert;
+    let sent = 0;
+    for (const u of combatUnits) {
+      if (sent >= 5) break;
+      if (u.order || u.target || dist2(u.x, u.y, camp.x, camp.y) < 150 * 150) continue;
+      if (dist2(u.x, u.y, a.x, a.y) > 1200 * 1200) continue;
+      u.order = { k: 'amove', x: a.x, y: a.y }; assignPath(u, a.x, a.y); sent++;
+    }
+    if (sent) { aiLog(p, 'responding to border incursion by ' + (world.players[a.owner] ? world.players[a.owner].country : 'unknown')); ai.borderAlert = null; }
+  }
   if (threat) {
     ai.panicUntil = world.time + 10;
     ai.posture = 'defend';
@@ -5666,6 +6070,7 @@ function aiTacticalCommands(p, ai) {
   const nowT = world.time;
   let siege = ai.siegeId ? ent(ai.siegeId) : null;
   if (!siege || siege.dead || !hostile(p, siege) || nowT > (ai.siegeUntil || 0)) { siege = null; ai.siegeId = 0; }
+  if (siege && siege.capturable && siege.suppressed) ai.siegeUntil = Math.max(ai.siegeUntil || 0, nowT + 180);
   /* Risk awareness: a push that meets a stronger force withdraws instead of
      feeding itself into a meat grinder. Hard presses on longer than Easy. */
   if (siege && nowT >= (ai.retreatT || 0)) {
@@ -5841,6 +6246,7 @@ function aiTacticalCommands(p, ai) {
         const oy = tgt.y + (Math.random() - 0.5) * 65;
         u.order = { k: 'amove', x: ox, y: oy };
         assignPath(u, ox, oy);
+        u.assault = tgt.id;
         sent++;
       }
     }
@@ -6240,6 +6646,7 @@ function addAdvisorRec(id, rec) {
   if (!a) return;
   rec.id = id + ':' + Math.round(world.time) + ':' + a.recs.length;
   rec.execute = rec.execute || null;
+  rec.status = 'open';
   a.recs.push(rec);
   if (a.recs.length > 6) a.recs.shift();
 }
@@ -6251,9 +6658,20 @@ function advisorLog(id, text) {
 function executeAdvisorRec(id, recId) {
   const a = advisorState(id); if (!a) return false;
   const rec = a.recs.find(r => r.id === recId);
-  if (!rec || !rec.execute) return false;
+  if (!rec || !rec.execute) { toast('Recommendation is no longer valid', 'err'); return false; }
   const ok = rec.execute();
-  if (ok) { advisorLog(id, (rec.short || rec.text) + ' — approved'); a.recs = a.recs.filter(r => r !== rec); renderAdvisorPanel(); }
+  if (ok) {
+    rec.status = 'completed';
+    (a.history = a.history || []).unshift({ t: world.time, status: 'completed', text: rec.short || rec.text });
+    advisorLog(id, (rec.short || rec.text) + ' — approved and executed');
+    a.recs = a.recs.filter(r => r !== rec); renderAdvisorPanel();
+  } else {
+    rec.status = 'failed';
+    const why = rec.failure || 'resources, location or prerequisites changed since the recommendation was issued';
+    toast('Advisor action failed — ' + why, 'err');
+    advisorLog(id, (rec.short || 'Recommendation') + ' failed — ' + why);
+    renderAdvisorPanel();
+  }
   return !!ok;
 }
 
@@ -6271,8 +6689,9 @@ function renderAdvisorPanel() {
   box.innerHTML = ADVISOR_DEFS.map(d => {
     const a = world.advisors[d.id];
     const modeBtn = m => '<button class="btn advMode" data-adv="' + d.id + '" data-mode="' + m + '" style="margin:0;padding:3px 7px;font-size:9px;' + (a.mode === m ? 'border-color:var(--cyan);color:var(--cyan)' : '') + '">' + m.toUpperCase() + '</button>';
-    const recs = a.recs.length ? a.recs.map(r => '<div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px"><span style="flex:1;color:' + (r.priority === 'danger' ? '#f87171' : r.priority === 'warn' ? '#fbbf24' : 'var(--text-2)') + '">' + r.text + '</span>' +
-      (r.execute ? '<button class="btn advApprove" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Approve</button>' : '') + '</div>').join('') : '<div class="dim" style="margin-top:4px">No recommendation.</div>';
+    const recs = a.mode === 'off' ? '<div class="dim" style="margin-top:4px">Advisor off — no recommendations or automatic actions.</div>' : (a.recs.length ? a.recs.map(r => '<div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px"><span style="flex:1;color:' + (r.priority === 'danger' ? '#f87171' : r.priority === 'warn' ? '#fbbf24' : 'var(--text-2)') + '">' + r.text + '</span>' +
+      (r.where ? '<button class="btn advJump" data-x="' + r.where.x + '" data-y="' + r.where.y + '" style="margin:0;padding:3px 8px;font-size:9px">Locate</button>' : '') +
+      (r.execute ? '<button class="btn advApprove" data-adv="' + d.id + '" data-rec="' + r.id + '" style="margin:0;padding:3px 8px;font-size:9px">Approve</button>' : '') + '</div>').join('') : '<div class="dim" style="margin-top:4px">No recommendation.</div>');
     const log = a.log.slice(0, 2).map(x => '<div class="dim" style="font-size:10px">' + fmtTime(x.t) + ' — ' + x.text + '</div>').join('');
     return '<div style="border-top:1px solid var(--line);padding:9px 0">' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="min-width:150px">' + d.icon + ' · ' + d.name + '</b>' + modeBtn('off') + modeBtn('suggest') + modeBtn('auto') +
@@ -6284,6 +6703,10 @@ function renderAdvisorPanel() {
     world.advisors[b.dataset.adv].mode = b.dataset.mode; renderAdvisorPanel();
   });
   box.querySelectorAll('.advApprove').forEach(b => b.onclick = () => executeAdvisorRec(b.dataset.adv, b.dataset.rec));
+  box.querySelectorAll('.advJump').forEach(b => b.onclick = () => {
+    cam.x = Number(b.dataset.x); cam.y = Number(b.dataset.y); cam.zT = Math.max(cam.zT || 0.62, 0.8);
+    $('advisorScr').classList.add('hidden'); clampCam();
+  });
   box.querySelectorAll('.advCap').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].cap = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
   box.querySelectorAll('.advReserve').forEach(inp => inp.onchange = () => { world.advisors[inp.dataset.adv].reserve = Math.max(0, Number(inp.value) || 0); renderAdvisorPanel(); });
   if (doc) doc.querySelectorAll('.docPick').forEach(b => b.onclick = () => switchDoctrine(b.dataset.doc));
@@ -6307,8 +6730,7 @@ function switchDoctrine(next) {
 function economicSites(p) {
   const out = [];
   for (const f of world.oilFields || []) {
-    if (f.code && f.code !== p.country) continue;
-    const owner = geoOwnerAt(f.x, f.y);
+    const owner = territoryControllerAt(f.x, f.y);
     if (!owner || owner.idx !== p.idx) continue;
     const eb = f.econId ? ent(f.econId) : null;
     if (eb && !eb.dead) continue;
@@ -6351,7 +6773,7 @@ function updateAdvisors() {
     let threat = 0;
     forNear(b.x, b.y, 260, e => { if (!e.dead && e.kind === 'unit' && hostile(hp, e)) threat++; return false; });
     if (threat) addAdvisorRec('eco', { short: 'Economic Complex under threat', priority: 'danger',
-      text: 'Economic Complex under attack: ' + threat + ' hostile units within 260 m. Defend the site or it will stop paying.' });
+      text: 'Economic Complex under attack: ' + threat + ' hostile units within 260 m. Defend the site or it will stop paying.', where: { x: b.x, y: b.y } });
   }
 
   /* Economic Advisor: highest-yield owned field without a complex. */
@@ -6362,7 +6784,7 @@ function updateAdvisors() {
     const canPay = hp.cents / 100 - cost >= a.eco.reserve;
     addAdvisorRec('eco', { short: 'Develop ' + f.n, priority: canPay ? 'normal' : 'warn',
       text: f.n + ' is undeveloped: Economic Complex adds ~' + f.yieldCpm + ' cr/min. Cost ' + cost + ' cr' + (canPay ? '.' : '; treasury below the ' + a.eco.reserve + ' cr reserve, postponed.'),
-      cost, execute: () => {
+      cost, where: { x: f.x, y: f.y }, failure: 'the field is no longer controlled, the treasury fell below ' + a.eco.reserve + ' cr, or the site became blocked', execute: () => {
         if (!advisorCanSpend('eco', cost)) return false;
         const b = placeBuilding(hp.idx, 'economy', f.x, f.y);
         if (!b) return false; advisorCharge('eco', cost); advisorLog('eco', 'Built Economic Complex on ' + f.n); return b.id;
@@ -6379,7 +6801,7 @@ function updateAdvisors() {
     const g = gaps[0], kind = g.need, cost = costOf(hp, kind);
     addAdvisorRec('military', { short: (kind === 'tower' ? 'Bunker ' : 'AA ') + g.name, priority: g.capital ? 'danger' : 'warn',
       text: g.name + (g.capital ? ' (capital)' : '') + ' has no ' + (kind === 'tower' ? 'bunker' : 'air defence') + '. Recommended: ' + (kind === 'tower' ? 'bunker' : 'AA gun') + ' (' + cost + ' cr).',
-      cost, execute: () => {
+      cost, where: { x: g.x, y: g.y }, failure: 'the site is blocked or the military advisor budget/reserve cannot cover ' + cost + ' cr', execute: () => {
         if (!advisorCanSpend('military', cost)) return false;
         const sp = freeSpotLocal(g.x + 46, g.y + 34, world.w, world.h, world.obstacles, world.terrainBlocked);
         const b = placeBuilding(hp.idx, kind, sp.x, sp.y);
@@ -6418,7 +6840,7 @@ function updateAdvisors() {
     if (rel === 'NEUTRAL' || rel === 'TRADE') { dipTarget = o; break; }
   }
   if (dipTarget) {
-    const type = scoreBetween(hp.idx, dipTarget.idx) >= 30 ? 'TRADE' : 'NAP';
+    const type = scoreBetween(hp.idx, dipTarget.idx) >= TRADE_MIN_SCORE ? 'TRADE' : 'NAP';
     addAdvisorRec('diplomacy', { short: type + ' with ' + dipTarget.country, priority: 'normal',
       text: 'Propose a ' + (type === 'NAP' ? 'non-aggression pact' : 'trade agreement') + ' with ' + dipTarget.name + ' (relations ' + scoreBetween(hp.idx, dipTarget.idx) + '/100).',
       cost: type === 'TRADE' ? 40 : 0, execute: () => {
@@ -6446,9 +6868,52 @@ function updateAdvisors() {
   const armour = seen.filter(u => u.armor === 'armor' || u.armor === 'heavy').length;
   const factories = world.buildings.filter(b => !b.dead && b.owner >= 0 && b.owner !== hp.idx && b.kind === 'missileFactory' && (!app.fog || fogVisibleAt(b.x, b.y))).length;
   if (seen.length) addAdvisorRec('intel', { short: 'Contact: ' + seen.length + ' enemy units', priority: armour >= 6 ? 'danger' : 'warn',
-    text: 'Confirmed: ' + seen.length + ' enemy units visible' + (armour ? ', including ' + armour + ' armoured vehicles' : '') + '.' + (factories ? ' Confirmed: ' + factories + ' enemy missile factory site(s).' : '') + ' Estimated intent: local pressure, not a confirmed offensive.' });
+    text: 'Confirmed: ' + seen.length + ' enemy units visible' + (armour ? ', including ' + armour + ' armoured vehicles' : '') + '.' + (factories ? ' Confirmed: ' + factories + ' enemy missile factory site(s).' : '') + ' Estimated intent: local pressure, not a confirmed offensive.',
+    where: { x: seen[0].x, y: seen[0].y } });
   else addAdvisorRec('intel', { short: 'No contacts', priority: 'ok', text: 'No enemy formation is currently visible inside friendly sensor range. Exact enemy missile stocks remain unknown.' });
+  for (const k in a) if (a[k].mode === 'off') a[k].recs = [];
   if ($('advisorScr') && !$('advisorScr').classList.contains('hidden')) renderAdvisorPanel();
+}
+
+/* Strategic AI war initiation. Relationships, distance, force balance along the
+   frontier and the personality profile all have to agree before a declaration. */
+function frontierDistance(a, b) {
+  let best = 1e18;
+  const ac = (world.cities || []).filter(c => !c.razed && c.owner === a.idx);
+  const bc = (world.cities || []).filter(c => !c.razed && c.owner === b.idx);
+  for (const x of ac) for (const y of bc) best = Math.min(best, dist2(x.x, x.y, y.x, y.y));
+  if (best === 1e18) best = dist2(a.startX, a.startY, b.startX, b.startY);
+  return Math.sqrt(best);
+}
+function strategicCityValue(p) {
+  let v = 0;
+  for (const c of (world.cities || [])) if (!c.razed && c.owner === p.idx) v += (c.capital ? 3 : 1) + (c.pop || 0) * 0.2;
+  return v;
+}
+function chooseWarTarget(p) {
+  const prof = p.aiCtl.profile || AI_PERSONALITY_PROFILES.opportunistic;
+  const wars = world.players.filter(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) === 'WAR').length;
+  const maxWars = prof.aggression >= 1.15 ? 3 : (prof.aggression >= 0.9 ? 2 : 1);
+  if (wars >= maxWars) return null;
+  const myPower = Math.max(1, armyPower(p.idx));
+  let best = null, bestScore = -1e9;
+  for (const o of world.players) {
+    if (!o.alive || o.idx === p.idx || o.team === p.team) continue;
+    const rel = getRelation(p.idx, o.idx);
+    if (rel === 'WAR' || rel === 'ALLY' || rel === 'CEASEFIRE') continue;
+    if (getAgreement(p.idx, o.idx) && getAgreement(p.idx, o.idx).type === 'CEASEFIRE') continue;
+    const score = scoreBetween(p.idx, o.idx);
+    if (score > (prof.aggression > 1.1 ? 36 : 26)) continue;
+    const dist = frontierDistance(p, o);
+    if (dist > 2600 * ((world && world.spaceScale) || 1)) continue;
+    const theirs = Math.max(1, armyPower(o.idx));
+    const theirWars = world.players.filter(x => x.alive && x.idx !== o.idx && getRelation(o.idx, x.idx) === 'WAR').length;
+    const needed = (prof.aggression > 1.15 ? 0.92 : (prof.defence > 1.15 ? 1.22 : 1.04)) - (theirWars ? 0.14 : 0);
+    if (myPower < theirs * needed) continue;
+    const value = strategicCityValue(o) * 8 + (50 - score) * 2 + (myPower - theirs) / Math.max(1, theirs) * 30 - dist * 0.02;
+    if (value > bestScore) { bestScore = value; best = o; }
+  }
+  return best;
 }
 
 /* AI diplomacy and agreement life-cycle. */
@@ -6461,25 +6926,50 @@ function updateSkirmishDiplomacy() {
     const ag = world.agreements[key];
     if (ag.until > 0 && world.time >= ag.until) {
       delete world.agreements[key];
-      logEvent('Agreement expired between ' + world.players[ag.a].country + ' and ' + world.players[ag.b].country, 'hint');
+      if (ag.type === 'CEASEFIRE') {
+        setRelation(ag.a, ag.b, 'NEUTRAL', true);
+        world.ceasefireCd = world.ceasefireCd || {};
+        world.ceasefireCd[agreementKey(ag.a, ag.b)] = world.time + 180;
+      }
+      logEvent(ag.type + ' expired between ' + world.players[ag.a].country + ' and ' + world.players[ag.b].country, 'hint');
     }
   }
+  /* Who is closest to winning? Every AI uses the same public scoreboard. */
+  const ranked = world.players.filter(p => p.alive).slice().sort((a, b) =>
+    (cityCount(b) - cityCount(a)) || (armyPower(b.idx) - armyPower(a.idx)));
+  world.victoryLeader = ranked.length > 1 ? ranked[0].idx : -1;
   for (const p of world.players) {
     if (!p.alive || p.isHuman || !p.aiCtl) continue;
     const wars = world.players.filter(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) === 'WAR');
     const personality = p.aiCtl.personality || 'opportunistic';
+    const prof = p.aiCtl.profile || AI_PERSONALITY_PROFILES.opportunistic;
     /* A state losing a war seeks a ceasefire; a weak state seeks shelter. */
-    if (wars.length && (p.warExhaustion > 0.35 || armyPower(p.idx) < 0.55 * Math.max(...wars.map(o => armyPower(o.idx))))) {
+    const oldestWar = wars.length ? Math.min(...wars.map(o => (world.warSince || {})[agreementKey(p.idx, o.idx)] || world.time)) : world.time;
+    const warAge = world.time - oldestWar;
+    if (wars.length && warAge > 360 && (p.warExhaustion > 0.5 || armyPower(p.idx) < 0.55 * Math.max(...wars.map(o => armyPower(o.idx))))) {
       const foe = wars[0];
-      if (Math.random() < 0.35) {
-        if (proposeAgreement(p.idx, foe.idx, 'CEASEFIRE').ok) aiLog(p, 'ceasefire with ' + foe.country);
+      const key = agreementKey(p.idx, foe.idx);
+      if (!(world.ceasefireCd && world.ceasefireCd[key] > world.time) && Math.random() < 0.09) {
+        if (proposeAgreement(p.idx, foe.idx, 'CEASEFIRE').ok) { aiLog(p, 'ceasefire with ' + foe.country); continue; }
       }
-      continue;
     }
-    if (wars.length >= (personality === 'aggressive' ? 3 : 2)) continue;
-    const partner = world.players.find(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) !== 'WAR' && !getAgreement(p.idx, o.idx) && scoreBetween(p.idx, o.idx) > 5);
-    if (partner && Math.random() < (personality === 'economic' || personality === 'defensive' ? 0.30 : 0.12)) {
-      const type = personality === 'economic' ? 'TRADE' : (personality === 'defensive' ? 'NAP' : 'DEFENSIVE');
+    /* Expansion is strategic, not automatic. A weak state prepares or shelters. */
+    if (world.time >= 150 && (!wars.length || wars.length < (prof.aggression >= 1.2 ? 3 : 2))) {
+      const target = chooseWarTarget(p);
+      const chance = 0.07 + prof.warChance * 0.22;
+      if (target && Math.random() < chance) {
+        const existing = getAgreement(p.idx, target.idx);
+        if (existing) breakAgreement(p.idx, target.idx, 'war declared');
+        setRelation(p.idx, target.idx, 'WAR', false);
+        target.wasAttacked = true;
+        p.aiCtl.siegeId = 0; p.aiCtl.pushT = 0;
+        aiLog(p, 'declared war on ' + target.country + ' for strategic advantage');
+      }
+    }
+    if (wars.length >= (prof.aggression >= 1.2 ? 3 : 2)) continue;
+    const partner = world.players.find(o => o.alive && o.idx !== p.idx && getRelation(p.idx, o.idx) !== 'WAR' && !getAgreement(p.idx, o.idx) && scoreBetween(p.idx, o.idx) >= 45);
+    if (partner && Math.random() < (personality === 'economic' || personality === 'defensive' || personality === 'cautious' ? 0.30 : 0.12)) {
+      const type = personality === 'economic' ? 'TRADE' : (personality === 'defensive' || personality === 'cautious' ? 'NAP' : 'DEFENSIVE');
       if (proposeAgreement(p.idx, partner.idx, type).ok) aiLog(p, type + ' with ' + partner.country);
     }
   }
@@ -6502,6 +6992,7 @@ function stepSim() {
   if (world.mode === 'classic') {
     updateAdvisors();
     updateSkirmishDiplomacy();
+    updateBorders();
   }
   if (world.mode === 'real') {
     updateAidFlows();
@@ -6522,6 +7013,13 @@ function stepSim() {
 /* ===================== RENDERING (MIDDLE EAST MAP + ENTITIES + HUD) ===================== */
 const canvas = $('game'), ctx = canvas.getContext('2d');
 const mini = $('minimap'), mctx = mini.getContext('2d');
+mini.addEventListener('pointerdown', e => {
+  if (!world) return;
+  const r = mini.getBoundingClientRect();
+  cam.x = clamp((e.clientX - r.left) / Math.max(1, r.width), 0, 1) * world.w;
+  cam.y = clamp((e.clientY - r.top) / Math.max(1, r.height), 0, 1) * world.h;
+  clampCam();
+});
 
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -7479,7 +7977,7 @@ function drawWorld() {
     }
 
     if (b.capturable) {
-      ctx.beginPath(); ctx.arc(b.x, b.y, CFG.CAPTURE.RADIUS, 0, TAU);
+      ctx.beginPath(); ctx.arc(b.x, b.y, CFG.CAPTURE.RADIUS * (world.spaceScale || 1), 0, TAU);
       ctx.strokeStyle = b.suppressed ? 'rgba(250, 204, 21, 0.55)' : 'rgba(148, 163, 184, 0.16)';
       ctx.lineWidth = b.suppressed ? 2 : 1;
       ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
@@ -7494,7 +7992,7 @@ function drawWorld() {
       const pulse = app.reduceMotion ? 0 : (Math.sin(performance.now() / 300) * 0.5 + 0.5);
       ctx.beginPath(); ctx.arc(pose.x, pose.y, b.r + 7 + pulse * 1.5, 0, TAU);
       ctx.strokeStyle = 'rgba(201,164,92,.85)'; ctx.lineWidth = 1.4; ctx.stroke();
-      const rng = (CFG.BUILDINGS[b.kind] && CFG.BUILDINGS[b.kind].range) || 0;
+      const rng = ((CFG.BUILDINGS[b.kind] && CFG.BUILDINGS[b.kind].range) || 0) * (world.spaceScale || 1);
       if (rng > 0) {
         ctx.beginPath(); ctx.arc(b.x, b.y, rng, 0, TAU);
         ctx.strokeStyle = 'rgba(201,164,92,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([3, 6]); ctx.stroke(); ctx.setLineDash([]);
@@ -7604,6 +8102,24 @@ function drawWorld() {
       const frac = clamp(u.hp / u.maxHp, 0, 1);
       ctx.fillStyle = frac > 0.55 ? '#4ade80' : (frac > 0.25 ? '#facc15' : '#f87171');
       ctx.fillRect(u.x - bw / 2, u.y - u.r - 7, bw * frac, 3);
+    }
+  }
+
+  /* Last-known contacts: faded, timestamped, never live positions. */
+  if (app.fog && world.contacts && world.contacts.size) {
+    for (const c of world.contacts.values()) {
+      if (fogVisibleAt(c.x, c.y)) continue;
+      const age = world.time - c.t;
+      if (age > 55) continue;
+      const a = clamp(1 - age / 55, 0.12, 0.65);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = (c.owner >= 0 && world.players[c.owner]) ? world.players[c.owner].color : '#f87171';
+      ctx.lineWidth = 1.3; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(c.x, c.y - 7); ctx.lineTo(c.x + 7, c.y); ctx.lineTo(c.x, c.y + 7); ctx.lineTo(c.x - 7, c.y); ctx.closePath(); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = ctx.strokeStyle; ctx.font = '8px ui-monospace,monospace'; ctx.textAlign = 'center';
+      ctx.fillText('?', c.x, c.y + 2.5);
+      ctx.restore();
     }
   }
 
@@ -8359,6 +8875,8 @@ function buildTabsAndBar() {
   const cmd = $('cmdbar');
   cmd.innerHTML = `
     <button class="cmdbtn" id="btnAllCombat">ALL ARMY<small>select</small></button>
+    <button class="cmdbtn" id="btnIdle">IDLE<small>select</small></button>
+    <button class="cmdbtn" id="btnAmove">ATTACK MOVE<small>armed</small></button>
     <button class="cmdbtn" id="btnLoad">LOAD<small>infantry</small></button>
     <button class="cmdbtn" id="btnUnload">UNLOAD<small>deploy</small></button>
     <button class="cmdbtn" id="btnStop">STOP<small>halt</small></button>
@@ -8373,6 +8891,15 @@ function buildTabsAndBar() {
     SFX.play('select');
   };
   $('btnLoad').onclick = () => loadTransports();
+  $('btnIdle').onclick = () => {
+    const hp = humanPlayer(); sel.bId = 0;
+    sel.units = world.units.filter(u => !u.dead && u.owner === hp.idx && !u.isWorker && !u.order && !u.target).map(u => u.id);
+    if (!sel.units.length) toast('No idle combat units', 'hint'); SFX.play('select');
+  };
+  $('btnAmove').onclick = () => {
+    if (!sel.units.length) { toast('Select units first, then arm attack-move', 'warn'); return; }
+    app.uimode = 'amove'; toast('ATTACK MOVE armed — click a destination; units engage contacts on the way', 'hint');
+  };
   $('btnUnload').onclick = () => unloadTransports();
   $('btnStop').onclick = () => {
     for (const id of sel.units) { const u = ent(id); if (u) { u.order = null; u.path = null; } }
@@ -8435,32 +8962,23 @@ function refreshBuildButtons() {
           });
         }
       } else {
-        const list = [
-          { k: 'soldier', lb: 'Infantry' },
-          { k: 'atgm',    lb: 'Tank Hunter' },
-          { k: 'manpads', lb: 'Missile Team' },
-          { k: 'spaag',   lb: 'AA Gun' },
-          { k: 'tank',    lb: 'Main Tank' },
-          { k: 't90',     lb: 'Heavy Tank' },
-          { k: 'heavyTank', lb: 'Assault Tank' },
-          { k: 'tankDestroyer', lb: 'Tank Destroyer' },
-          { k: 'ifv',     lb: 'IFV' },
-          { k: 'apc',     lb: 'APC' },
-          { k: 'drone',   lb: 'UAV Drone' },
-          { k: 'air',     lb: 'Fighter' },
-          { k: 'f35',     lb: 'F-35' },
-          { k: 'su34',    lb: 'Su-34' },
-          { k: 'j20',     lb: 'J-20' },
-          { k: 'bomber',  lb: 'Bomber' },
-          { k: 'b1',      lb: 'B-1B' }
-        ];
-        for (const it of list) {
-          createBtn('u_' + it.k, '', it.lb, '', () => {
-            if (queueUnit(hp.idx, it.k)) {
+        const available = skirmishBuildList(hp);
+        for (const k of available) {
+          const av = equipmentAvailability(hp, k);
+          const label = unitLabel(k, c) + (av.class === 'imported' ? ' · import' : (av.class === 'licensed' ? ' · licensed' : ''));
+          createBtn('u_' + k, '', label, '', () => {
+            if (queueUnit(hp.idx, k)) {
               SFX.play('build');
-              toast('Queued ' + unitLabel(it.k) + ' (' + hp.spawnQ.length + ' in queue)', 'hint');
+              toast('Queued ' + unitLabel(k, c) + ' (' + hp.spawnQ.length + ' in queue)', 'hint');
             }
           });
+        }
+        const denied = Object.keys(CFG.UNITS).filter(k => !available.includes(k)).slice(0, 6);
+        if (denied.length) {
+          const note = document.createElement('div');
+          note.className = 'bnote';
+          note.textContent = 'Not in the ' + hp.country + ' inventory: ' + denied.map(k => unitLabel(k, c)).join(', ') + '. Production is restricted to national equipment.';
+          row.appendChild(note);
         }
       }
     } else if (app.bbTab === 'eco') {
@@ -8646,16 +9164,20 @@ function openDiplomacyModal() {
       const agr = getAgreement(hp.idx, p.idx);
       const agrTxt = agr ? '<div class="dim" style="font-size:10px;margin-top:2px">' + agr.type + (agr.until ? ' · ' + Math.max(0, Math.ceil(agr.until - world.time)) + 's' : '') + '</div>' : '';
       const badgeColor = rel === 'WAR' ? '#f87171' : (rel === 'ALLY' ? '#4ade80' : (rel === 'TRADE' ? '#38bdf8' : '#94a3b8'));
+      const warTargets = world.players.filter(o => o.alive && o.idx !== hp.idx && o.idx !== p.idx && getRelation(hp.idx, o.idx) === 'WAR');
       return `<tr>
         <td><span class="dflag">${flagImg(p.country)}</span> <b>${p.name}</b> <span class="dim">(${p.capital})</span></td>
-        <td style="color:${badgeColor};font-weight:800">${rel}<div class="dim" style="font-weight:500">${sc}</div>${agrTxt}</td>
+        <td style="color:${badgeColor};font-weight:800">${rel}<div class="dim" style="font-weight:500">${sc}/100 · ${relationBand(sc)}</div>${agrTxt}</td>
         <td class="dim">${c.economy.gdp}<div><b style="color:#eaf2fb">${Math.floor(p.cents / 100)}${CICO}</b> treasury</div></td>
         <td>
-          ${rel !== 'WAR' ? `<button class="actMini war" onclick="window._setDiplo(${p.idx},'WAR')">Declare War</button>` : `<button class="actMini peace" onclick="window._setDiplo(${p.idx},'NEUTRAL')">Ceasefire (60 cr)</button>`}
+          ${rel !== 'WAR' ? `<button class="actMini war" onclick="window._setDiplo(${p.idx},'WAR')">Declare War</button>` : `<button class="actMini peace" onclick="window._setDiplo(${p.idx},'CEASEFIRE')">Ceasefire (60 cr)</button>`}
           ${rel !== 'WAR' && !agr ? `<button class="actMini" onclick="window._proposePact(${p.idx},'NAP')">Non-aggression</button>` : ''}
           ${rel !== 'WAR' && !agr ? `<button class="actMini" onclick="window._proposePact(${p.idx},'MUTUAL_ENEMY')">Mutual enemy</button>` : ''}
           ${rel === 'NEUTRAL' ? `<button class="actMini" onclick="window._setDiplo(${p.idx},'TRADE')" ${trade.ok ? '' : 'title="' + trade.why + '"'}>Trade Pact (40 cr)</button>` : ''}
           ${rel === 'TRADE' ? `<button class="actMini peace" onclick="window._setDiplo(${p.idx},'ALLY')">Defense Pact (90 cr)</button>` : ''}
+          ${rel !== 'WAR' && !agr ? `<button class="actMini" onclick="window._proposePact(${p.idx},'TRANSIT')">Transit rights</button>` : ''}
+          ${rel === 'ALLY' ? `<button class="actMini" onclick="window._requestHelp(${p.idx})">Request defensive help</button>` : ''}
+          ${rel === 'ALLY' && warTargets.length ? `<div style="margin-top:4px;display:flex;gap:4px"><select class="amtin" id="cta_${p.idx}" style="max-width:120px;padding:2px 4px">${warTargets.map(o => `<option value="${o.idx}">${o.country}</option>`).join('')}</select><button class="actMini" onclick="window._requestCall(${p.idx},document.getElementById('cta_${p.idx}').value)">Call to arms</button></div>` : ''}
           ${rel === 'NEUTRAL' && !trade.ok ? `<div class="dim" style="font-size:10px;margin-top:3px">${trade.why}</div>` : ''}
           <div style="margin-top:5px;display:flex;gap:4px;align-items:center">
             <input class="amtin" id="amt_${p.idx}" type="number" min="1" step="10" value="50" ${canGift ? '' : 'disabled'} aria-label="Amount to send to ${p.name}">
@@ -8687,15 +9209,11 @@ window._setDiplo = function (targetIdx, newRel) {
     toast('Need ' + cost + ' cr diplomatic capital', 'err'); return;
   }
   if (cost > 0) { hp.cents -= cost * 100; noteSpend(hp, cost * 100); }
-  setRelation(hp.idx, targetIdx, newRel, false);
+  if (newRel === 'CEASEFIRE') setAgreement(hp.idx, targetIdx, 'CEASEFIRE', false);
+  else setRelation(hp.idx, targetIdx, newRel, false);
   if (newRel === 'ALLY') setAgreement(hp.idx, targetIdx, 'DEFENSIVE', true);
   else if (newRel === 'TRADE') setAgreement(hp.idx, targetIdx, 'TRADE', true);
   else if (newRel === 'WAR' && getAgreement(hp.idx, targetIdx)) breakAgreement(hp.idx, targetIdx, 'war declared');
-  /* Skirmish starts every pair at war, so a paid ceasefire also normalises the
-     relationship score — otherwise no transfer or pact could ever be reached. */
-  if (world.mode === 'classic' && newRel === 'NEUTRAL' && targetIdx >= 0 && scoreBetween(hp.idx, targetIdx) < GIFT_MIN_SCORE) {
-    setScore(hp.idx, targetIdx, GIFT_MIN_SCORE, 'ceasefire');
-  }
   openDiplomacyModal();
 };
 window._proposePact = function (targetIdx, type) {
@@ -8711,6 +9229,70 @@ window._proposePact = function (targetIdx, type) {
   openDiplomacyModal();
   return true;
 };
+
+/* A real call to arms: the ally evaluates the request, declares war if it
+   accepts, and receives actual movement orders toward the named country. */
+function requestCallToArms(allyIdx, targetIdx) {
+  if (!world || world.mode !== 'classic') return { ok: false, why: 'skirmish only' };
+  const hp = humanPlayer(), ally = world.players[allyIdx], target = world.players[targetIdx];
+  if (!hp || !ally || !target || !ally.alive || !target.alive) return { ok: false, why: 'invalid participant' };
+  const pact = getAgreement(hp.idx, ally.idx);
+  if (getRelation(hp.idx, ally.idx) !== 'ALLY' && !(pact && (pact.type === 'DEFENSIVE' || pact.type === 'MILITARY')))
+    return { ok: false, why: 'no alliance with ' + ally.country };
+  if (target.idx === hp.idx || target.idx === ally.idx) return { ok: false, why: 'invalid target' };
+  if (getRelation(ally.idx, target.idx) === 'ALLY') return { ok: false, why: ally.country + ' is allied to ' + target.country };
+  const allyWars = world.players.filter(o => o.alive && o.idx !== ally.idx && getRelation(ally.idx, o.idx) === 'WAR').length;
+  const score = scoreBetween(hp.idx, ally.idx);
+  const powerRatio = armyPower(ally.idx) / Math.max(1, armyPower(target.idx));
+  const chance = clamp(0.20 + (score - 50) / 180 + Math.min(0.28, powerRatio * 0.12) - allyWars * 0.12, 0.05, 0.92);
+  if (Math.random() > chance) {
+    addScore(hp.idx, ally.idx, -3, 'refused call to arms');
+    toast(ally.country + ' refused to attack ' + target.country + ' (commitments or unfavourable balance)', 'warn');
+    return { ok: false, why: 'refused: commitments or balance' };
+  }
+  const existing = getAgreement(ally.idx, target.idx);
+  if (existing) breakAgreement(ally.idx, target.idx, 'joined a coalition war');
+  if (getRelation(ally.idx, target.idx) !== 'WAR') setRelation(ally.idx, target.idx, 'WAR', false);
+  ally.aiCtl.coalition = { targetIdx: target.idx, until: world.time + 600, requester: hp.idx };
+  ally.aiCtl.pushT = 0;
+  ally.aiCtl.siegeId = 0;
+  const tgt = pickEnemyTargetFor(ally);
+  let sent = 0;
+  if (tgt) for (const u of world.units) {
+    if (sent >= 8) break;
+    if (u.dead || u.owner !== ally.idx || u.isWorker || u.fly) continue;
+    u.order = { k: 'amove', x: tgt.x, y: tgt.y }; assignPath(u, tgt.x, tgt.y); sent++;
+  }
+  ally.credibility = Math.min(100, (ally.credibility == null ? 100 : ally.credibility) + 3);
+  addScore(hp.idx, ally.idx, 6, 'honoured call to arms');
+  logEvent(ally.country + ' joined the war against ' + target.country + ' at ' + hp.country + '’s request (' + sent + ' units committed)', 'aid');
+  toast(ally.country + ' ACCEPTS — ' + sent + ' units moving against ' + target.country, 'aid');
+  return { ok: true, units: sent, chance };
+}
+function requestDefensiveAssistance(allyIdx) {
+  if (!world || world.mode !== 'classic') return false;
+  const hp = humanPlayer(), ally = world.players[allyIdx];
+  if (!hp || !ally || !ally.alive || getRelation(hp.idx, ally.idx) !== 'ALLY') return false;
+  const camp = ent(hp.campId);
+  if (!camp) return false;
+  ally.aiCtl.defendFor = hp.idx;
+  ally.aiCtl.defendUntil = world.time + 300;
+  let sent = 0;
+  for (const u of world.units) {
+    if (sent >= 6) break;
+    if (u.dead || u.owner !== ally.idx || u.isWorker || u.fly) continue;
+    u.order = { k: 'amove', x: camp.x, y: camp.y }; assignPath(u, camp.x, camp.y); sent++;
+  }
+  toast(ally.country + ' sends ' + sent + ' units to defend your capital', 'aid');
+  return sent > 0;
+}
+window._requestCall = function (allyIdx, rawTarget) {
+  const targetIdx = Number(rawTarget);
+  const r = requestCallToArms(Number(allyIdx), targetIdx);
+  if (!r.ok) toast(r.why, 'err');
+  openDiplomacyModal();
+};
+window._requestHelp = function (allyIdx) { requestDefensiveAssistance(Number(allyIdx)); openDiplomacyModal(); };
 
 function openMajorPowersModal() {
   if (!world || world.mode !== 'real') return;
@@ -8868,6 +9450,18 @@ let lpTimer = null;
 
 const TOAST_CATEGORY = { crit: 'ALERT · COMMAND', err: 'WARNING', aid: 'DIPLOMACY', hint: 'OPERATION' };
 function toast(msg, cls) {
+  app.notifs = app.notifs || [];
+  const now = world ? world.time : performance.now() / 1000;
+  const recent = app.notifs.find(n => n.msg === msg && n.cls === cls && now - n.t < 6);
+  if (recent) {
+    recent.count = (recent.count || 1) + 1; recent.t = now;
+    if (recent.el && recent.el.parentNode) {
+      const b = recent.el.querySelector('.tbody'); if (b) b.textContent = msg + ' (×' + recent.count + ')';
+      recent.el.style.animation = 'none'; void recent.el.offsetWidth; recent.el.style.animation = '';
+    }
+    if ($('notifPanel') && !$('notifPanel').classList.contains('hidden')) renderNotifHistory();
+    return;
+  }
   const box = $('toasts');
   const d = document.createElement('div');
   d.className = 'toast' + (cls ? ' ' + cls : '');
@@ -8875,12 +9469,27 @@ function toast(msg, cls) {
   const catEl = document.createElement('span'); catEl.className = 'tcat'; catEl.textContent = cat;
   const timeEl = document.createElement('span'); timeEl.className = 'ttime';
   timeEl.textContent = world ? fmtTime(world.time) : '';
-  const body = document.createElement('span'); body.textContent = msg;
+  const body = document.createElement('span'); body.className = 'tbody'; body.textContent = msg;
   d.appendChild(catEl); d.appendChild(body); d.appendChild(timeEl);
   box.appendChild(d);
   while (box.children.length > 4) box.removeChild(box.firstChild);
-  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, 4200);
+  const rec = { msg, cls: cls || 'info', t: now, count: 1, el: d, cat };
+  app.notifs.unshift(rec);
+  if (app.notifs.length > 80) app.notifs.length = 80;
+  if ($('notifPanel') && !$('notifPanel').classList.contains('hidden')) renderNotifHistory();
+  setTimeout(() => { if (d.parentNode) d.parentNode.removeChild(d); }, cls === 'crit' ? 9000 : (cls === 'warn' || cls === 'err' ? 6500 : 4500));
 }
+function renderNotifHistory() {
+  const box = $('notifPanel'); if (!box) return;
+  const list = (app.notifs || []).slice(0, 50);
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:11px;letter-spacing:.12em">FIELD LOG</b><button class="btn" onclick="window._toggleNotifs()" style="margin:0;padding:2px 7px;font-size:9px">CLOSE</button></div>' +
+    (list.length ? list.map(n => '<div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid rgba(255,255,255,.05);font-size:10px"><span class="dim" style="min-width:34px">' + fmtTime(n.t) + '</span><span style="flex:1;color:' + (n.cls === 'crit' || n.cls === 'err' ? '#f0a08a' : n.cls === 'warn' ? '#e0c07a' : '#b9c7d2') + '">' + n.msg + (n.count > 1 ? ' ×' + n.count : '') + '</span></div>').join('') : '<div class="dim">No reports yet.</div>');
+}
+window._toggleNotifs = function () {
+  const p = $('notifPanel'); if (!p) return;
+  p.classList.toggle('hidden');
+  if (!p.classList.contains('hidden')) renderNotifHistory();
+};
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
@@ -8888,6 +9497,7 @@ canvas.addEventListener('mousedown', e => {
   const w = s2w(e.clientX, e.clientY);
   app.mouseW = w;
   if (e.button === 2) { issueMoveOrder(w.x, w.y); return; }
+  if (app.uimode === 'amove') { issueMoveOrder(w.x, w.y); app.uimode = 'none'; return; }
   if (app.uimode === 'place') {
     if (placeBuilding(humanPlayer().idx, app.placeKind, w.x, w.y)) {
       SFX.play('build'); app.uimode = 'none'; $('placeBtns').classList.add('hidden');
@@ -9120,6 +9730,7 @@ function issueMoveOrder(tx, ty) {
   sel.units.forEach((id, idx) => {
     const u = ent(id);
     if (!u || u.dead) return;
+    u.assault = 0;
     const hadEngagement = !!u.target || (u.order && u.order.k === 'attack') || (u.order && u.order.k === 'amove');
     const ox = tx + ((idx % cols) - cols / 2) * 18;
     const oy = ty + (Math.floor(idx / cols) - cols / 2) * 18;
@@ -9567,13 +10178,13 @@ function startMatch() {
     toast('Invalid lobby: countries must be unique and exactly one human player is required', 'err'); return;
   }
   ['titleScr', 'menuScr', 'settingsScr', 'creditsScr', 'howtoScr', 'resultScr'].forEach(id => $(id).classList.add('hidden'));
-  ['topbar', 'minimapWrap', 'cmdbar', 'buildbar'].forEach(id => $(id).classList.remove('hidden'));
+  ['topbar', 'minimapWrap', 'cmdbar', 'buildbar', 'notifLogBtn'].forEach(id => $(id).classList.remove('hidden'));
   app.paused = false;
   app.uimode = 'none';
   if (app.gameMode !== 'real' && app.bbTab === 'aid') app.bbTab = 'army';
   sel.units = []; sel.bId = 0;
   const seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-  const map = genMiddleEastMap(app.lobby, seed);
+  const map = genMiddleEastMap(app.lobby, seed, app.gameMode);
   createWorld(app.lobby, map, app.difficulty, app.gameMode);
   if (app.gameMode === 'classic') seedClassicRelations();
 
@@ -9586,7 +10197,7 @@ function startMatch() {
   const hp = humanPlayer();
   $('tbCountry').textContent = hp.country + (app.gameMode === 'real' ? '' : ' · SKM');
   if ($('tbFlag')) $('tbFlag').innerHTML = flagImg(hp.country, 'tbflag');
-  cam.x = hp.startX; cam.y = hp.startY; cam.z = 0.62; cam.zT = 0.62;
+  cam.x = hp.startX; cam.y = hp.startY; cam.z = cam.zT = (world.mode === 'classic' ? 0.46 : CFG.CAMERA.START_Z);
   rebuildChips();
   $('bbRow').dataset.sig = '';
   buildTabsAndBar();
@@ -10036,6 +10647,27 @@ for (const c of EXTRA_CITY_TABLE) {
   if (!CITY_TABLE.some(x => x.c === c.c && x.n === c.n)) CITY_TABLE.push(c);
 }
 
+/* Skirmish uses a deliberately reduced strategic city network. Capitals and
+   high-value ports/industrial/oil centres survive; secondary urban labels stay
+   in the terrain bake as visual detail but no longer become capturable clutter. */
+const SKIRMISH_CITY_LIMIT = {
+  IRN: 12, ISR: 7, PSE: 3, SAU: 10, TUR: 10, EGY: 8, IRQ: 8, SYR: 6,
+  JOR: 4, LBN: 4, UAE: 5, KWT: 4, QAT: 3, BHR: 3, OMN: 4, YEM: 5
+};
+const SKIRMISH_CITY_KEEP = (() => {
+  const keep = new Set(), groups = {};
+  for (const c of CITY_TABLE) (groups[c.c] = groups[c.c] || []).push(c);
+  for (const code in groups) {
+    const limit = SKIRMISH_CITY_LIMIT[code];
+    if (!limit) { for (const c of groups[code]) keep.add(code + '|' + c.n); continue; }
+    const role = { capital: 100, industrial: 30, oil: 28, economic: 26, port: 20, holy: 18, city: 5 };
+    const chosen = groups[code].slice().sort((a, b) =>
+      (role[b.role] || 0) + (b.pop || 0) - ((role[a.role] || 0) + (a.pop || 0))).slice(0, limit);
+    for (const c of chosen) keep.add(code + '|' + c.n);
+  }
+  return keep;
+})();
+
 const US_BASES = [
   { code: 'BHR', name: 'NSA Bahrain', type: 'Naval', lon: 50.59, lat: 26.21 },
   { code: 'QAT', name: 'Al Udeid', type: 'Air', lon: 51.32, lat: 25.12 },
@@ -10118,8 +10750,8 @@ function patronAffinity(p, spKey) {
   for (const s of (AID_ROWS[p.country] || [])) if (s.from === code) amt += s.amt;
   if (amt > 0) return clamp(0.45 + amt / 12, 0.45, 0.95);
   const rel = world.relScore ? relationScoreToCode(p, code) : 0;
-  if (rel > 40) return 0.6;
-  if (rel > 0) return 0.4;
+  if (rel >= 75) return 0.6;
+  if (rel >= 50) return 0.4;
   return 0.15;
 }
 function relationScoreToCode(p, fromCode) {
@@ -10130,19 +10762,20 @@ function relationScoreToCode(p, fromCode) {
 function scoreKey(a, b) { return a < b ? a + ':' + b : b + ':' + a; }
 function scoreBetween(a, b) {
   if (a === b) return 100;
-  if (!world.relScore) return 0;
-  return world.relScore[scoreKey(a, b)] || 0;
+  if (!world.relScore) return 50;
+  const v = world.relScore[scoreKey(a, b)];
+  return v == null ? 50 : v;
 }
 function setScore(a, b, v, why) {
   if (a === b || a < 0 || b < 0 || !world.relScore) return;
   const k = scoreKey(a, b);
-  const next = clamp(v, -100, 100);
+  const next = clamp(v, 0, 100);
   if (world.relScore[k] === next) return;
   world.relScore[k] = next;
   if (why) {
     world.relWhy = world.relWhy || {};
     world.relWhy[k] = why;
-    logEvent(world.players[a].country + '-' + world.players[b].country + ' relations ' + next + ' (' + why + ')');
+    logEvent(world.players[a].country + '-' + world.players[b].country + ' relations ' + next + '/100 · ' + relationBand(next) + ' (' + why + ')');
   }
 }
 function addScore(a, b, dv, why) { setScore(a, b, scoreBetween(a, b) + dv, why); }
@@ -10161,7 +10794,7 @@ function bakeTerrain(map) {
   const road = new Uint8Array(nx * ny);
   const regs = TERRAIN_REGIONS.map(R => {
     const q = meProj(R.lon, R.lat);
-    return { code: TCODE[R.t], x: q.x, y: q.y, rx: R.rx * ME_LONPX, ry: R.ry * ME_LATPX, rot: (R.rot || 0) * Math.PI / 180 };
+    return { code: TCODE[R.t], x: q.x, y: q.y, rx: R.rx * ME_LONPX * ME_SPACE, ry: R.ry * ME_LATPX * ME_SPACE, rot: (R.rot || 0) * Math.PI / 180 };
   });
   const priority = [0, 3, 2, 1, 2, 4, 3, 0];
   for (let cy = 0; cy < ny; cy++) for (let cx = 0; cx < nx; cx++) {
@@ -10286,6 +10919,7 @@ function buildCities() {
   world.players.forEach(p => { byCode[p.country] = p; });
   world.cities = [];
   for (const c of CITY_TABLE) {
+    if (world.mode === 'classic' && !SKIRMISH_CITY_KEEP.has(c.c + '|' + c.n)) continue;
     const q = meProj(c.lon, c.lat);
     if (q.x < 10 || q.y < 10 || q.x > world.w - 10 || q.y > world.h - 10) continue;
     const owner = byCode[c.c] ? byCode[c.c].idx : -1;
@@ -10453,7 +11087,7 @@ function updateCities() {
     /* One radius, used everywhere (CFG.CAPTURE.RADIUS). This loop used to check
        45 px while the rest of the game used 75, so a formation that had reached
        the city and stopped at collision range still counted as outside it. */
-    const RADIUS = CFG.CAPTURE.RADIUS;
+    const RADIUS = CFG.CAPTURE.RADIUS * (world.spaceScale || 1);
     forNear(c.x, c.y, RADIUS, e => {
       if (e.dead || e.kind !== 'unit' || e.fly || e.isWorker) return false;
       if (e.owner < 0) return false;
@@ -10757,7 +11391,7 @@ function nukeTargets(p) {
     /* Only a ground breakthrough is a nuclear problem: aircraft overhead are
        what the air force and SAMs are for. */
     if (u.fly) continue;
-    if (dist2(u.x, u.y, camp.x, camp.y) <= (CFG.CAPTURE.RADIUS + 10) * (CFG.CAPTURE.RADIUS + 10)) out.push(u);
+    if (dist2(u.x, u.y, camp.x, camp.y) <= ((CFG.CAPTURE.RADIUS + 10) * (world.spaceScale || 1)) ** 2) out.push(u);
   }
   return out;
 }
@@ -11165,8 +11799,8 @@ window.GD = {
 
 /* One definition of the thresholds, used by both the diplomacy screen and the
    trade-route gate so the UI can state exactly what is required. */
-const TRADE_MIN_SCORE = 20;    // a route needs relations at 20/100 or better
-const GIFT_MIN_SCORE = 10;     // money may be sent at neutral (10+) or better
+const TRADE_MIN_SCORE = 60;    // a route needs friendly relations (60/100) or better
+const GIFT_MIN_SCORE = 40;     // money may be sent at neutral (40+) or better
 
 /* Partner economic weight in billions of nominal USD, parsed from the existing
    GDP string (e.g. "$418B nominal ($1.7T PPP)"). No new economic variable. */

@@ -37,7 +37,7 @@ module.exports = {
     })()`);
     if (taken.error) check.ok(false, 'ground post still exists for the capture test');
     else {
-      check.eq(taken.changed, true, 'the sync notices the ground changed hands');
+      check.eq(taken.changed, false, 'capture transfers the city immediately; the later sync has nothing left to do');
       check.eq(taken.cityOwnerCode, 'SAU', 'the city follows its command post');
       check.ok(taken.out < base.out, 'the former owner loses city income', { before: base.out, after: taken.out });
     }

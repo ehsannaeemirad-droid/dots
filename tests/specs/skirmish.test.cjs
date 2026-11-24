@@ -26,8 +26,12 @@ module.exports = {
     const outside = await page.json(`(() => {
       const me = GEOTEST.player('IRN'); me.cents = 400000;
       const f = economicSites(me)[0];
-      return { field: f && f.n, cost: costOf(me, 'economy'),
-        wrong: canPlaceBuilding(me.idx, 'economy', f.x + 260, f.y + 260) };
+      let wrong = 'no dry land near field';
+      for (let k = 0; k < 16 && wrong === 'no dry land near field'; k++) {
+        const a = k / 16 * Math.PI * 2, x = f.x + Math.cos(a) * 150, y = f.y + Math.sin(a) * 150;
+        if (!world.terrainBlocked(x, y) && !insideObstacle(x, y, 20)) wrong = canPlaceBuilding(me.idx, 'economy', x, y);
+      }
+      return { field: f && f.n, cost: costOf(me, 'economy'), wrong };
     })()`);
     check.eq(outside.cost, 1400, 'skirmish Economic Complex costs 1400 cr', outside);
     check.ok(/oil field/i.test(outside.wrong), 'an Economic Complex is refused off an oil field', outside.wrong);
